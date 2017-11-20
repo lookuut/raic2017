@@ -66,7 +66,7 @@ public final class MyStrategy implements Strategy {
 
             this.armyFieldAnalisys(world);
             this.battleField.formArmies();
-            this.commander.formDivisions();
+            this.commander.logic();
 
             this.commander.check();
             this.commander.run();
@@ -85,7 +85,7 @@ public final class MyStrategy implements Strategy {
     }
 
     public void armyFieldAnalisys(World world) {
-        List<AllyArmy> activeArmyList = commander.getRunningArmy();
+        List<Command> runningCommands = commander.getRunningCommands();
         Arrays.stream(
             world.getNewVehicles()).
             forEach(vehicle -> {
@@ -102,8 +102,8 @@ public final class MyStrategy implements Strategy {
                 battleField.addVehicle(smartVehicle);
                 CommandQueue.getInstance().prevCommandRunResult(smartVehicle);
 
-                for (AllyArmy army : activeArmyList) {
-                    army.result(smartVehicle);
+                for (Command command : runningCommands) {
+                    command.result(smartVehicle);
                 }
             });
 
@@ -119,8 +119,8 @@ public final class MyStrategy implements Strategy {
                     smartVehicle.vehicleUpdate(vehicleUpdate);
                     battleField.addVehicle(smartVehicle);
 
-                    for (AllyArmy army : activeArmyList) {
-                        army.result(smartVehicle);
+                    for (Command command : runningCommands) {
+                        command.result(smartVehicle);
                     }
 
                 } catch (Exception e) {

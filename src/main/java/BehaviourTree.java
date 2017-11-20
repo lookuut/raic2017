@@ -21,10 +21,8 @@ public class BehaviourTree<E> {
 
         visitedNodes.add(currentNode);
 
-        if (currentNode instanceof BTreeAction && ((BTreeAction) currentNode).isRun() == false) {
-            return currentNode;
-        } else if (((BTreeAction) currentNode).isRun() == true) {
-            return null;
+        if (currentNode instanceof BTreeAction) {
+            return (((BTreeAction) currentNode).isRun() == false) ? currentNode : null;
         }
 
         //@TODO реализовать не детерминированный выбор

@@ -59,4 +59,8 @@ public class Command {
     public void result(SmartVehicle vehicle) {
 
     }
+
+    public boolean isRun () {
+        return getState() == CommandStates.Run;
+    }
 }

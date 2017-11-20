@@ -12,6 +12,7 @@ class Commander {
     protected MyStrategy strategy;
     protected BehaviourTree<Commander> behaviourTree;
     protected List<Command> runningCommandList;
+    protected BattleField battleField;
 
     public Commander(MyStrategy strategy) {
         this.strategy = strategy;
@@ -20,15 +21,18 @@ class Commander {
         runningCommandList = new ArrayList<>();
 
         BTreeNodeCondition<Commander> rootNode = new BTreeNodeCondition(
-                (Predicate<Commander>)((commander) -> commander.isHaveFighterArmy()),
+                (Predicate<Commander>)((commander) -> !commander.isHaveFighterArmy()),
                 this);
 
         AllyArmy fighterArmy = new FighterArmy();
-
+        fighterArmy.setGroupId(1);
         rootNode.addChildNode(new BTreeAction(new CommandCreateArmy(fighterArmy, VehicleType.FIGHTER)));
         rootNode.addChildNode(new BTreeAction(new CommandMove(500,500, fighterArmy)));
+        rootNode.addChildNode(new BTreeAction(new CommandMove(1000,500, fighterArmy)));
 
         behaviourTree.addRoot(rootNode);
+
+        divisions.put(1, fighterArmy);
     }
 
 
@@ -55,9 +59,17 @@ class Commander {
     }
     public void logic () {
         BTreeAction action = behaviourTree.getAction();
-        action.getCommand().run();
-        runningCommandList.add(action.getCommand());
+        if (action != null) {
+            action.getCommand().run();
+            runningCommandList.add(action.getCommand());
+        }
+
     }
+
+    public List<Command> getRunningCommands () {
+        return runningCommandList.stream().filter(command -> command.isRun()).collect(Collectors.toList());
+    }
+
 
     public List<AllyArmy> getRunningArmy() {
         return divisions.values().stream().filter(army -> army.isRun()).collect(Collectors.toList());
@@ -72,6 +84,9 @@ class Commander {
     public void check () {
         for (Command command : runningCommandList) {
             command.check();
+            if (command.getState() == CommandStates.Complete || command.getState() == CommandStates.Failed) {
+                runningCommandList.remove(command);
+            }
         }
 
         for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
