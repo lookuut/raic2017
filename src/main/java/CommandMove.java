@@ -5,17 +5,12 @@ import java.util.function.Consumer;
 public class CommandMove extends Command {
     protected double x;
     protected double y;
-    protected AllyArmy army;
 
-
-    public CommandMove(double x, double y, AllyArmy army) {
+    public CommandMove(AllyArmy army, double x, double y) {
         super(army);
 
         this.x = x;
         this.y = y;
-
-        this.setState(CommandStates.New);
-        this.army = army;
 
         Consumer<Command> funcMove = (command) -> {
             double localX = this.x - command.getArmy().getAvgX();
@@ -26,8 +21,8 @@ public class CommandMove extends Command {
             MyStrategy.move.setY(localY);
         };
 
-        queue.add(selectArmy);
-        queue.add(funcMove);
+        queue.add(new CommandWrapper(selectArmy, this, -1));
+        queue.add(new CommandWrapper(funcMove, this, -1));
     }
 
     public boolean check () {
@@ -39,15 +34,23 @@ public class CommandMove extends Command {
         double x = this.army.getAvgX();
         double y = this.army.getAvgY();
 
-        if (Math.abs(x - this.x) < 20 && Math.abs(y - this.y) < 20) {
-            CommandQueue.getInstance().addCommand(new CommandWrapper(this.selectArmy, this));
+        this.army.recalculationMaxMin();
+        double maxX = this.army.getMaxX();
+        double maxY = this.army.getMaxY();
 
+        double minX = this.army.getMinX();
+        double minY = this.army.getMinY();
+
+        if (this.x <= maxX && this.y <= maxY && this.x >= minX && this.y >= minY) {
+            //CommandQueue.getInstance().addCommand(new CommandWrapper(this.selectArmy, this));
+
+            /*
             Consumer<Command> funcStop = (command) -> {
                 MyStrategy.move.setAction(ActionType.MOVE);
                 MyStrategy.move.setX(0);
                 MyStrategy.move.setY(0);
-            };
-            CommandQueue.getInstance().addCommand(new CommandWrapper(funcStop , this));
+            };*/
+            //CommandQueue.getInstance().addCommand(new CommandWrapper(funcStop , this));
             setState(CommandStates.Complete);
             return true;
         }

@@ -5,7 +5,6 @@ import java.util.function.Function;
 
 public class BattleFieldCell {
 
-    protected MyStrategy strategy;
     protected SortedMap<Long, SmartVehicle> vehicles[];
     protected Integer x;
     protected Integer y;
@@ -19,9 +18,7 @@ public class BattleFieldCell {
     public static final int min_x = 2;
     public static final int min_y = 3;
 
-    public BattleFieldCell(Integer x, Integer y, MyStrategy strategy) {
-
-        this.strategy = strategy;
+    public BattleFieldCell(Integer x, Integer y) {
         this.x = x;
         this.y = y;
 
@@ -34,8 +31,8 @@ public class BattleFieldCell {
 
             minMaxXY[playerIndex][max_x] = 0.0;
             minMaxXY[playerIndex][max_y] = 0.0;
-            minMaxXY[playerIndex][min_x] = strategy.getWorld().getWidth();
-            minMaxXY[playerIndex][min_y] = strategy.getWorld().getHeight();
+            minMaxXY[playerIndex][min_x] = MyStrategy.world.getWidth();
+            minMaxXY[playerIndex][min_y] = MyStrategy.world.getHeight();
         }
 
         playerIdToIndex = (playerId) -> playerId.intValue() - 1;

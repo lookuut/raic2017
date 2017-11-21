@@ -1,73 +1,83 @@
+import model.TerrainType;
 import model.VehicleType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 class Commander {
     protected Map<Integer, AllyArmy> divisions;
     protected MyStrategy strategy;
     protected BehaviourTree<Commander> behaviourTree;
-    protected List<Command> runningCommandList;
+    protected Queue<BTreeAction> activeActions;
+
     protected BattleField battleField;
+
+    protected PPField staticTerrainField;
+    protected PPField staticAirField;
 
     public Commander(MyStrategy strategy) {
         this.strategy = strategy;
         divisions = new HashMap();
+        activeActions = new LinkedList<>();
         behaviourTree = new BehaviourTree<>();
-        runningCommandList = new ArrayList<>();
+        AllyArmy fighterArmy = new FighterArmy();
 
         BTreeNodeCondition<Commander> rootNode = new BTreeNodeCondition(
                 (Predicate<Commander>)((commander) -> !commander.isHaveFighterArmy()),
                 this);
 
-        AllyArmy fighterArmy = new FighterArmy();
+        BTreeNodeCondition<Commander> nuclearAttackCond = new BTreeNodeCondition(
+                (Predicate<Commander>)((commander) -> MyStrategy.canNuclearAttack()),
+                this);
+
+        BTreeNode isNuclearAtttack = new BTreeNodeCondition((Predicate<Commander>)((commander) -> MyStrategy.player.getNextNuclearStrikeTickIndex() > 0), this);
+
+        isNuclearAtttack.addChildNode(new BTreeAction(() -> new CommandNuclearDefence(this)));
+        isNuclearAtttack.addChildNode(new BTreeAction((Supplier<Command>)(() -> new CommandEmpty(fighterArmy))));
+
         fighterArmy.setGroupId(1);
-        rootNode.addChildNode(new BTreeAction(new CommandCreateArmy(fighterArmy, VehicleType.FIGHTER)));
-        rootNode.addChildNode(new BTreeAction(new CommandMove(500,500, fighterArmy)));
-        rootNode.addChildNode(new BTreeAction(new CommandMove(1000,500, fighterArmy)));
+        rootNode.addChildNode(new BTreeAction((Supplier<Command>)(() -> new CommandCreateArmy(fighterArmy, VehicleType.FIGHTER))));
+        rootNode.addChildNode(nuclearAttackCond);
+
+        BTreeNode nucAttack = new BTreeActionSequence((Supplier<Command>)(() -> new CommandMove(fighterArmy, 400, 100)));
+        ((BTreeActionSequence)nucAttack).addCommand((Supplier<Command>)(() -> new CommandNuclearAttack(fighterArmy, 400, 100)));
 
         behaviourTree.addRoot(rootNode);
+        nuclearAttackCond.addChildNode(nucAttack);
+        nuclearAttackCond.addChildNode(isNuclearAtttack);
 
         divisions.put(1, fighterArmy);
     }
 
+    public void initStaticPPField () {
 
-    /**
-     * @desc analysis divisions, create new divisions if need, generate command to
-     */
-    public void formDivisions () {
-        /*
-        if (divisions.size() == 0) {
-            AllyArmy fighterArmy = new AllyArmy();
-            fighterArmy.setGroupId(1);
-            fighterArmy.addCommand(new CommandCreateArmy(fighterArmy, VehicleType.FIGHTER));
-            fighterArmy.addCommand(new CommandMove(500,500, fighterArmy));
-            fighterArmy.addCommand(new CommandMove(0,500, fighterArmy));
-            divisions.put(1, fighterArmy);
+        int ppFieldX = (int)(strategy.getWorld().getWidth() / strategy.getGame().getTerrainWeatherMapColumnCount());
+        int ppFieldY = (int)(strategy.getWorld().getHeight() / strategy.getGame().getTerrainWeatherMapRowCount());
+        PPField terrainPPField = new PPField(ppFieldX, ppFieldY);
+        terrainPPField.addTerrainMap(strategy.getWorld().getTerrainByCellXY());
 
-            AllyArmy helicopterArmy = new AllyArmy();
-            helicopterArmy.setGroupId(2);
-            helicopterArmy.addCommand(new CommandCreateArmy(helicopterArmy, VehicleType.HELICOPTER));
-            helicopterArmy.addCommand(new CommandMove(500,100, helicopterArmy));
-            helicopterArmy.addCommand(new CommandMove(1000,500, helicopterArmy));
-            divisions.put(2, helicopterArmy);
-        }*/
+        PPField weatherPPField = new PPField(ppFieldX, ppFieldY);
+        weatherPPField.addWeatherMap(strategy.getWorld().getWeatherByCellXY());
     }
-    public void logic () {
+
+    public void logic (BattleField battleField) {
         BTreeAction action = behaviourTree.getAction();
-        if (action != null) {
-            action.getCommand().run();
-            runningCommandList.add(action.getCommand());
+        if (action != null && !activeActions.contains(action)) {
+            activeActions.add(action);
         }
 
+        for (BTreeAction _action : activeActions) {
+            Command command = _action.getCommand();
+            if (command != null) {
+                _action.getCommand().run();
+            }
+        }
     }
 
     public List<Command> getRunningCommands () {
-        return runningCommandList.stream().filter(command -> command.isRun()).collect(Collectors.toList());
+        return activeActions.stream().filter(command -> command.isRun()).map(BTreeAction::getCommand).collect(Collectors.toList());
     }
 
 
@@ -82,10 +92,15 @@ class Commander {
     }
 
     public void check () {
-        for (Command command : runningCommandList) {
-            command.check();
-            if (command.getState() == CommandStates.Complete || command.getState() == CommandStates.Failed) {
-                runningCommandList.remove(command);
+
+        for (BTreeAction action : activeActions) {
+            if (!action.isComplete()) {
+                Command command = action.getCommand();
+                command.check();
+
+                if (command.getState() == CommandStates.Complete || command.getState() == CommandStates.Failed) {
+                    //activeActions.remove(command);
+                }
             }
         }
 

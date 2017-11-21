@@ -1,18 +1,21 @@
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
+import model.VehicleType;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class AllyArmy extends Army {
 
     protected Queue<Command> commandQueue;
     protected Map<Long, SmartVehicle> vehicles;
     protected Integer groupId;
+    protected BattleField armyBattleField;
+    protected BattleField globalBattleField;
 
     public AllyArmy() {
         super();
         vehicles = new HashMap<>();
         commandQueue = new LinkedList<>();
+        //armyBattleField = new BattleField();
     }
 
     public void setGroupId (Integer groupId) {
@@ -93,5 +96,34 @@ public class AllyArmy extends Army {
 
     public boolean containVehicle(Long vehicleId) {
         return vehicles.containsKey(vehicleId);
+    }
+
+    public SmartVehicle getNearestVehicle(double x, double y) {
+        Map.Entry<Long, SmartVehicle> item = vehicles.entrySet().stream().min(
+                (entry1, entry2) ->  Double.compare(
+                        Math.pow((entry1.getValue().getX() - x) , 2) + Math.pow((entry1.getValue().getY()) - y , 2),
+                        Math.pow(entry2.getValue().getX() - x , 2) + Math.pow(entry2.getValue().getY() - y , 2)
+                )
+        ).get();
+
+        return item.getValue();
+    }
+
+    public void moveTo(double x, double y) {
+        List<VehicleType> armyTypes = getVehiclesType();
+
+        double armyX = getAvgX();
+        double armyY = getAvgY();
+
+
+    }
+
+    /**
+     * @TODO rewrite with local cache
+     * @desc
+     * @return
+     */
+    public List<VehicleType> getVehiclesType () {
+        return vehicles.entrySet().stream().map((entry) -> entry.getValue().getType()).collect(Collectors.toList());
     }
 }

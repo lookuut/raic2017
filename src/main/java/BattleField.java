@@ -5,25 +5,26 @@ import java.util.List;
 
 public class BattleField {
 
-    protected MyStrategy strategy;
     protected BattleFieldCell[][] battleField;
+    protected List<Army> armyList;
+    protected Integer last_calc_army_tick_index = -1;
+    public static int calc_army_interval = 1;
 
     protected int pFieldWidth;
     protected int pFieldHeight;
 
     public static Integer cellSize = 16;
 
-    public BattleField (MyStrategy strategy) {
-        this.strategy = strategy;
+    public BattleField () {
 
-        pFieldWidth = (int)(Math.ceil(strategy.getGame().getWorldWidth() / BattleField.cellSize));
-        pFieldHeight = (int)(Math.ceil(strategy.getGame().getWorldHeight() / BattleField.cellSize));
+        pFieldWidth = (int)(Math.ceil(MyStrategy.game.getWorldWidth() / BattleField.cellSize));
+        pFieldHeight = (int)(Math.ceil(MyStrategy.game.getWorldHeight() / BattleField.cellSize));
 
         this.battleField = new BattleFieldCell[pFieldWidth][pFieldHeight];
 
         for (int y = 0; y < pFieldHeight; y++) {
             for (int x = 0; x < pFieldWidth; x++) {
-                this.battleField[y][x] = new BattleFieldCell(x,y, strategy);
+                this.battleField[y][x] = new BattleFieldCell(x,y);
             }
         }
     }
@@ -50,20 +51,24 @@ public class BattleField {
     }
 
     public List<Army> formArmies () {
-        List<Army> armyList = new ArrayList();
-        Collection<Integer> visitedPoints = new ArrayList();
+        if (last_calc_army_tick_index + calc_army_interval <=  MyStrategy.world.getTickIndex()) {
+            armyList = new ArrayList();
+            Collection<Integer> visitedPoints = new ArrayList();
 
-        for (Integer playerId = 0; playerId < MyStrategy.max_player_index; playerId++) {
-            for (int y = 0; y < pFieldHeight; y++) {
-                for (int x = 0; x < pFieldWidth; x++ ) {
-                    Integer point = y * pFieldWidth + x;
-                    if (battleField[y][x].isHaveVehicles(playerId) && !visitedPoints.contains(point)) {
-                        Army army = (playerId == this.strategy.getMyPlayerId() - 1) ? new AllyArmy() : new EnemyArmy();
-                        this.recursiveCircumVention(x, y, army, visitedPoints, playerId);
-                        armyList.add(army);
+            for (Integer playerId = 0; playerId < MyStrategy.max_player_index; playerId++) {
+                for (int y = 0; y < pFieldHeight; y++) {
+                    for (int x = 0; x < pFieldWidth; x++ ) {
+                        Integer point = y * pFieldWidth + x;
+                        if (battleField[y][x].isHaveVehicles(playerId) && !visitedPoints.contains(point)) {
+                            Army army = (playerId == MyStrategy.player.getId() - 1) ? new AllyArmy() : new EnemyArmy();
+                            this.recursiveCircumVention(x, y, army, visitedPoints, playerId);
+                            armyList.add(army);
+                        }
                     }
                 }
             }
+
+            last_calc_army_tick_index = MyStrategy.world.getTickIndex();
         }
 
         return armyList;

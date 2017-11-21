@@ -159,4 +159,17 @@ public class SmartVehicle  {
     public boolean getSelected () {
         return this.selected;
     }
+
+    public double getVisionRange () {
+        return visionRange;
+    }
+
+    public double distanceToPoint(double x, double y) {
+        return Math.sqrt(Math.pow(x - this.getX(), 2) + Math.pow(y - this.getY(), 2));
+    }
+
+    public boolean isVisiblePoint (double x, double y) {
+        return distanceToPoint(x,y) < this.visionRange;
+    }
+
 }

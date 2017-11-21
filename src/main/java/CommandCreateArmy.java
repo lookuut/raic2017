@@ -19,15 +19,15 @@ public class CommandCreateArmy extends Command {
             MyStrategy.move.setBottom(MyStrategy.world.getWidth());
         };
 
-        CommandQueue.getInstance().addCommand(new CommandWrapper(selectVehicleType, this));
+        //CommandQueue.getInstance().addCommand(new CommandWrapper(selectVehicleType, this));
 
         Consumer<Command> assign = (command) -> {
             MyStrategy.move.setAction(ActionType.ASSIGN);
             MyStrategy.move.setGroup(command.getArmy().getGroupId());
         };
 
-        queue.add(selectVehicleType);
-        queue.add(assign);
+        queue.add(new CommandWrapper(selectVehicleType, this, -1));
+        queue.add(new CommandWrapper(assign, this, -1));
     }
 
 
@@ -38,6 +38,11 @@ public class CommandCreateArmy extends Command {
     }
 
     public boolean check () {
-        return army.getVehicles().size() > 0;
+        if (army.getVehicles().size() > 0) {
+            setState(CommandStates.Complete);
+            return true;
+        } else {
+            return false;
+        }
     }
 }

@@ -32,11 +32,14 @@ public class CommandQueue {
         }
         this.prevCommand = null;
 
-        if (this.size() > 0) {
-            CommandWrapper cw = this.queue.poll();
-            cw.consumer.accept(cw.command);
-            cw.command.setState(CommandStates.Run);
-            this.prevCommand = cw;
+        if (this.queue.size() > 0) {
+            CommandWrapper cw = this.queue.peek();
+            if (MyStrategy.world.getTickIndex() - cw.command.getRunTickIndex() >= cw.tickIndex) {
+                cw.consumer.accept(cw.command);
+                cw.command.setState(CommandStates.Run);
+                this.prevCommand = cw;
+                this.queue.poll();
+            }
         }
 
         this.currentTick = tick;

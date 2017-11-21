@@ -11,7 +11,8 @@ public final class MyStrategy implements Strategy {
     public static World world;
     public static Game game;
     public static Move move;
-    protected BattleField battleField;
+
+    public static BattleField battleField;
 
     protected HashMap<Long, SmartVehicle> previousVehiclesStates;
     protected HashMap<Long, SmartVehicle> vehicles;
@@ -23,7 +24,7 @@ public final class MyStrategy implements Strategy {
     protected Commander commander;
 
     public MyStrategy() {
-        this.previousVehiclesStates = new HashMap<Long, SmartVehicle>();
+        this.previousVehiclesStates = new HashMap();
         this.vehicles = new HashMap<>();
         this.commander = new Commander(this);
     }
@@ -39,7 +40,7 @@ public final class MyStrategy implements Strategy {
         this.myPlayerId = this.player.getId();
 
         if (this.battleField == null) {
-            this.battleField = new BattleField(this);
+            this.battleField = new BattleField();
         }
     }
 
@@ -66,7 +67,7 @@ public final class MyStrategy implements Strategy {
 
             this.armyFieldAnalisys(world);
             this.battleField.formArmies();
-            this.commander.logic();
+            this.commander.logic(battleField);
 
             this.commander.check();
             this.commander.run();
@@ -155,5 +156,19 @@ public final class MyStrategy implements Strategy {
 
     public SmartVehicle getVehiclePrevState(Long vehicleId) {
         return previousVehiclesStates.get(vehicleId);
+    }
+
+    public static boolean canNuclearAttack() {
+        return MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0;
+    }
+
+    public static boolean isNuclearAttack() {
+        Player player = Arrays.stream(MyStrategy.world.getPlayers()).filter(player1 -> player1.getNextNuclearStrikeTickIndex() > 0).findFirst().orElse(null);
+        return player != null;
+    }
+
+    public static Player nuclearAttack() {
+        Player player = Arrays.stream(MyStrategy.world.getPlayers()).filter(player1 -> player1.getNextNuclearStrikeTickIndex() > 0).findFirst().orElse(null);
+        return player;
     }
 }
