@@ -113,10 +113,12 @@ public class ArmyDamageField {
         Arrays.stream(
                 this.strategy.getWorld().
                         getNewVehicles()).
-                filter(vehicle -> vehicle.getDurability() > 0 && vehicle.getPlayerId() != this.strategy.getMyPlayerId()).
+                filter(vehicle -> vehicle.getDurability() > 0 && vehicle.getPlayerId()!= this.strategy.getMyPlayerId()).
                 forEach(vehicle -> {
                     SmartVehicle smartVehicle = previousVehiclesStates.get(vehicle.getId());
-                    this.updateVehiclePField(smartVehicle, previousVehiclesStates, vehicle.getX(), vehicle.getY());
+                    if (smartVehicle != null) {
+                        this.updateVehiclePField(smartVehicle, previousVehiclesStates, vehicle.getX(), vehicle.getY());
+                    }
         });
 
         Arrays.stream(this.strategy.getWorld().getVehicleUpdates())
@@ -131,4 +133,7 @@ public class ArmyDamageField {
         return enemyArmyField;
     }
 
+    public void print() {
+        System.out.println(Arrays.deepToString(enemyArmyField).replaceAll("],", "]," + System.getProperty("line.separator")));
+    }
 }

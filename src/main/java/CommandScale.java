@@ -4,8 +4,7 @@ import java.util.function.Consumer;
 
 public class CommandScale extends Command {
     protected Integer scaleStartedIndex;
-    public CommandScale(AllyArmy army, double x, double y, double scale) {
-        super(army);
+    public CommandScale(double x, double y, double scale) {
 
         Consumer<Command> commandScale = (command) -> {
             MyStrategy.move.setAction(ActionType.SCALE);
@@ -14,16 +13,15 @@ public class CommandScale extends Command {
             MyStrategy.move.setFactor(scale);
         };
 
-        queue.add(new CommandWrapper(selectArmy, this, -1));
         queue.add(new CommandWrapper(commandScale, this, -1));
     }
 
-    public void run () {
+    public void run (AllyArmy army) {
         scaleStartedIndex = MyStrategy.world.getTickIndex();
-        super.run();
+        super.run(army);
     }
 
-    public boolean check () {
+    public boolean check (AllyArmy army) {
         if (getState() == CommandStates.Run) {
             if (MyStrategy.world.getTickIndex() - scaleStartedIndex > MyStrategy.game.getTacticalNuclearStrikeDelay()) {
                 setState(CommandStates.Complete);
@@ -32,5 +30,11 @@ public class CommandScale extends Command {
         }
 
         return false;
+    }
+
+
+    @Override
+    public void runned(){
+
     }
 }

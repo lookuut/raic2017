@@ -1,6 +1,8 @@
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class BTreeActionSequence extends BTreeAction {
     protected Queue<Supplier<Command>> commandsSupplierQueue;
@@ -20,13 +22,8 @@ public class BTreeActionSequence extends BTreeAction {
         return commandsSupplierQueue.size() > 0 && commandsSupplierQueue.peek().get().getState() == CommandStates.Run;
     }
 
-    public Command getCommand () {
-
-        if ((command == null || command.isFinished()) && commandsSupplierQueue.size() > 0) {
-            command = commandsSupplierQueue.poll().get();
-        }
-
-        return command;
+    public List<Command> getCommand () {
+        return commandsSupplierQueue.stream().map(Supplier::get).collect(Collectors.toList());
     }
 
     public boolean isComplete() {

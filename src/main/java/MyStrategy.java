@@ -1,4 +1,5 @@
 import model.*;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,6 +42,9 @@ public final class MyStrategy implements Strategy {
 
         if (this.battleField == null) {
             this.battleField = new BattleField();
+            this.commander.initStaticPPField();
+            System.out.println("Seed : " + MyStrategy.game.getRandomSeed());
+            armyDamageField = new ArmyDamageField(this);
         }
     }
 
@@ -67,26 +71,26 @@ public final class MyStrategy implements Strategy {
 
             this.armyFieldAnalisys(world);
             this.battleField.formArmies();
-            this.commander.logic(battleField);
-
-            this.commander.check();
-            this.commander.run();
             //this.armyDamageField.defineArmyForm();
-            this.updatePreviousVehiclesStates(world);
+            //this.battleField.print();
 
+            this.commander.logic(battleField);
+            this.commander.check();
+            this.updatePreviousVehiclesStates(world);
             CommandQueue.getInstance().run(world.getTickIndex());
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (world.getTickIndex() % 200 == 0) {
-                System.out.println("Out of tick " + world.getTickIndex() + " my player id " + this.myPlayerId);
-            }
+            //if (world.getTickIndex() % 200 == 0) {
+            System.out.println("Out of tick " + world.getTickIndex() + " commands count " + player.getRemainingActionCooldownTicks());
+            //}
+
         }
 
     }
 
     public void armyFieldAnalisys(World world) {
-        List<Command> runningCommands = commander.getRunningCommands();
+        List<AllyArmy> activeArmy = commander.getArmyRunningCommands();
         Arrays.stream(
             world.getNewVehicles()).
             forEach(vehicle -> {
@@ -101,10 +105,9 @@ public final class MyStrategy implements Strategy {
                 }
 
                 battleField.addVehicle(smartVehicle);
-                CommandQueue.getInstance().prevCommandRunResult(smartVehicle);
 
-                for (Command command : runningCommands) {
-                    command.result(smartVehicle);
+                for (AllyArmy army : activeArmy) {
+                    army.result(smartVehicle);
                 }
             });
 
@@ -120,8 +123,8 @@ public final class MyStrategy implements Strategy {
                     smartVehicle.vehicleUpdate(vehicleUpdate);
                     battleField.addVehicle(smartVehicle);
 
-                    for (Command command : runningCommands) {
-                        command.result(smartVehicle);
+                    for (AllyArmy army : activeArmy) {
+                        army.result(smartVehicle);
                     }
 
                 } catch (Exception e) {
@@ -170,5 +173,9 @@ public final class MyStrategy implements Strategy {
     public static Player nuclearAttack() {
         Player player = Arrays.stream(MyStrategy.world.getPlayers()).filter(player1 -> player1.getNextNuclearStrikeTickIndex() > 0).findFirst().orElse(null);
         return player;
+    }
+
+    public static Long getEnemyPlayerId() {
+        return MyStrategy.world.getOpponentPlayer().getId();
     }
 }

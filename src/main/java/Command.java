@@ -9,20 +9,13 @@ enum CommandStates {
     New, Run, Canceled, Failed, Complete, Hold
 }
 
-public class Command {
+abstract public class Command {
 
     protected CommandStates state;
-    protected AllyArmy army;
-    protected Consumer<Command> selectArmy;
     protected Queue<CommandWrapper> queue;
     protected Integer runTickIndex = -1;
 
-    public Command(AllyArmy army) {
-        this.army = army;
-        this.selectArmy = (command) -> {
-            MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
-            MyStrategy.move.setGroup(command.getArmy().getGroupId());
-        };
+    public Command() {
         this.setState(CommandStates.New);
         queue = new LinkedList<>();
     }
@@ -35,16 +28,9 @@ public class Command {
         this.state = state;
     }
 
-    public boolean check() {
-        setState(CommandStates.Complete);
-        return true;
-    }
+    abstract public boolean check(AllyArmy army);
 
-    public AllyArmy getArmy () {
-        return army;
-    }
-
-    public void run() {
+    public void run(AllyArmy army) {
 
         if (this.getState() != CommandStates.New) {
             return;
@@ -54,13 +40,12 @@ public class Command {
 
         while (iter.hasNext()) {
             CommandQueue.getInstance().addCommand(iter.next());
-            //CommandQueue.getInstance().addCommand(new CommandWrapper(iter.next(), this, -1));
         }
 
         this.setState(CommandStates.Hold);
     }
 
-    public void result(SmartVehicle vehicle) {
+    public void result(AllyArmy army, SmartVehicle vehicle) {
         if (runTickIndex < 0) {
             runTickIndex = MyStrategy.world.getTickIndex();
         }
@@ -86,6 +71,13 @@ public class Command {
     public boolean isFinished() {
         return getState() == CommandStates.Complete || getState() == CommandStates.Failed || getState() == CommandStates.Canceled;
     }
+
+    public Command prepare(AllyArmy army)  throws Exception {
+        return this;
+    }
+
+    abstract public void runned();
+
 
     public void addCommand(CommandWrapper cw) {
         queue.add(cw);

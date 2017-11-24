@@ -22,7 +22,7 @@ public class BehaviourTree<E> {
         visitedNodes.add(currentNode);
 
         if (currentNode instanceof BTreeAction) {
-            return (((BTreeAction) currentNode).isRun() == false) ? currentNode : null;
+            return currentNode;
         }
 
         //@TODO реализовать не детерминированный выбор

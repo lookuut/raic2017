@@ -1,55 +1,143 @@
-import model.TerrainType;
 import model.VehicleType;
 
 import java.util.*;
+
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 class Commander {
     protected Map<Integer, AllyArmy> divisions;
     protected MyStrategy strategy;
-    protected BehaviourTree<Commander> behaviourTree;
+    protected BehaviourTree<AllyArmy> behaviourTree;
     protected Queue<BTreeAction> activeActions;
 
     protected BattleField battleField;
 
-    protected PPField staticTerrainField;
-    protected PPField staticAirField;
 
+    public static Integer fighterArmyId = 2;
+    /**
+     * @desc all armies must be init in constructor
+     * @param strategy
+     */
     public Commander(MyStrategy strategy) {
         this.strategy = strategy;
         divisions = new HashMap();
         activeActions = new LinkedList<>();
         behaviourTree = new BehaviourTree<>();
+
+        AllyArmy arrvArmy = new ARRVArmy();
         AllyArmy fighterArmy = new FighterArmy();
+        AllyArmy helicopterArmy = new AllyArmy();
+        AllyArmy tankArmy = new AllyArmy();
+        AllyArmy ifvArmy = new AllyArmy();
+        AllyArmy allArmy = new AllyArmy();
 
-        BTreeNodeCondition<Commander> rootNode = new BTreeNodeCondition(
-                (Predicate<Commander>)((commander) -> !commander.isHaveFighterArmy()),
-                this);
+        arrvArmy.setGroupId(1);
+        fighterArmy.setGroupId(fighterArmyId);
+        helicopterArmy.setGroupId(3);
+        tankArmy.setGroupId(4);
+        ifvArmy.setGroupId(5);
+        allArmy.setGroupId(6);
 
-        BTreeNodeCondition<Commander> nuclearAttackCond = new BTreeNodeCondition(
-                (Predicate<Commander>)((commander) -> MyStrategy.canNuclearAttack()),
-                this);
+        //divisions.put(1, arrvArmy);
+        divisions.put(fighterArmyId, fighterArmy);
+        divisions.put(3, helicopterArmy);
+        divisions.put(4, tankArmy);
+        divisions.put(5, ifvArmy);
+        //divisions.put(6, allArmy);
 
+        arrvArmy.addCommand(new CommandCreateArmy(VehicleType.ARRV));
+        fighterArmy.addCommand(new CommandCreateArmy(VehicleType.FIGHTER));
+        helicopterArmy.addCommand(new CommandCreateArmy(VehicleType.HELICOPTER));
+        tankArmy.addCommand(new CommandCreateArmy(VehicleType.TANK));
+        ifvArmy.addCommand(new CommandCreateArmy(VehicleType.IFV));
+        allArmy.addCommand(new CommandCreateArmy(null));
+
+        //setEmptyBehaviourTree(arrvArmy);
+
+        //fighter behaviour tree
+        BehaviourTree fighterBehaviourTree = new BehaviourTree<>();
+
+        BTreeNodeCondition<AllyArmy> rootNode = new BTreeNodeCondition(
+                (Predicate<AllyArmy>)((army) -> false),
+                fighterArmy);
+
+
+        BTreeNodeCondition<AllyArmy> nuclearAttackCond = new BTreeNodeCondition(
+                (Predicate<AllyArmy>)((army) -> MyStrategy.canNuclearAttack()),
+                fighterArmy);
+        BTreeNode gotoHeal = new BTreeActionSequence(() -> new CommandAttack());
+        rootNode.addChildNode(gotoHeal);
+        rootNode.addChildNode(nuclearAttackCond);
+        nuclearAttackCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
+        nuclearAttackCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
+
+        fighterBehaviourTree.addRoot(rootNode);
+
+        fighterArmy.setBehaviourTree(fighterBehaviourTree);
+        this.setEmptyBehaviourTree(helicopterArmy);
+        this.setEmptyBehaviourTree(tankArmy);
+        this.setEmptyBehaviourTree(ifvArmy);
+
+        this.setAllArmyBehaviourTree(allArmy);
+
+
+        /*
         BTreeNode isNuclearAtttack = new BTreeNodeCondition((Predicate<Commander>)((commander) -> MyStrategy.player.getNextNuclearStrikeTickIndex() > 0), this);
 
+
         isNuclearAtttack.addChildNode(new BTreeAction(() -> new CommandNuclearDefence(this)));
-        isNuclearAtttack.addChildNode(new BTreeAction((Supplier<Command>)(() -> new CommandEmpty(fighterArmy))));
+        isNuclearAtttack.addChildNode(new BTreeAction(() -> new CommandEmpty()));
 
-        fighterArmy.setGroupId(1);
-        rootNode.addChildNode(new BTreeAction((Supplier<Command>)(() -> new CommandCreateArmy(fighterArmy, VehicleType.FIGHTER))));
+
+        rootNode.addChildNode(new BTreeAction(() -> new CommandCreateArmy(VehicleType.FIGHTER)));
         rootNode.addChildNode(nuclearAttackCond);
+        */
 
-        BTreeNode nucAttack = new BTreeActionSequence((Supplier<Command>)(() -> new CommandMove(fighterArmy, 400, 100)));
-        ((BTreeActionSequence)nucAttack).addCommand((Supplier<Command>)(() -> new CommandNuclearAttack(fighterArmy, 400, 100)));
 
-        behaviourTree.addRoot(rootNode);
-        nuclearAttackCond.addChildNode(nucAttack);
-        nuclearAttackCond.addChildNode(isNuclearAtttack);
 
-        divisions.put(1, fighterArmy);
+        //nuclearAttackCond.addChildNode(nucAttack);
+        //nuclearAttackCond.addChildNode(isNuclearAtttack);
+
+
+
+        /*
+        fighterArmy.addCommand(new CommandCreateArmy(VehicleType.HELICOPTER));
+        fighterArmy.addCommand(new CommandMove(100, 400));
+        fighterArmy.addCommand(new CommandMove( 400, 400));
+        */
+
+        //divisions.put(2, helicopterArmy);
+
+        //helicopterArmy.setBehaviourTree(fighterBehaviourTree);
+
     }
+
+    public void setAllArmyBehaviourTree(AllyArmy army) {
+        BehaviourTree<AllyArmy> bTree = new BehaviourTree<>();
+        BTreeNode root = new BTreeNodeCondition(
+                (Predicate<AllyArmy>)((armyLocal) -> MyStrategy.isNuclearAttack()),
+                army
+        );
+        root.addChildNode(new BTreeAction(() -> new CommandNuclearDefence(army)));
+        root.addChildNode(new BTreeAction(() -> new CommandEmpty()));
+
+        bTree.addRoot(root);
+        army.setBehaviourTree(bTree);
+    }
+
+    public void setEmptyBehaviourTree(AllyArmy army) {
+        BehaviourTree<AllyArmy> bTree = new BehaviourTree<>();
+        BTreeNode root = new BTreeNodeCondition(
+                (Predicate<AllyArmy>)((armyLocal) -> true),
+                army
+        );
+        root.addChildNode(new BTreeAction(() -> new CommandAttack()));
+        root.addChildNode(new BTreeAction(() -> new CommandEmpty()));
+        bTree.addRoot(root);
+        army.setBehaviourTree(bTree);
+    }
+
 
     public void initStaticPPField () {
 
@@ -60,50 +148,31 @@ class Commander {
 
         PPField weatherPPField = new PPField(ppFieldX, ppFieldY);
         weatherPPField.addWeatherMap(strategy.getWorld().getWeatherByCellXY());
-    }
 
-    public void logic (BattleField battleField) {
-        BTreeAction action = behaviourTree.getAction();
-        if (action != null && !activeActions.contains(action)) {
-            activeActions.add(action);
-        }
-
-        for (BTreeAction _action : activeActions) {
-            Command command = _action.getCommand();
-            if (command != null) {
-                _action.getCommand().run();
-            }
+        for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
+            entry.getValue().init(terrainPPField, weatherPPField);
         }
     }
 
-    public List<Command> getRunningCommands () {
-        return activeActions.stream().filter(command -> command.isRun()).map(BTreeAction::getCommand).collect(Collectors.toList());
+    public void logic (BattleField battleField) throws Exception {
+        //run divisions logic
+        //@TODO boolshit
+        if (MyStrategy.canNuclearAttack() && MyStrategy.world.getTickIndex() > 100 && !(divisions.get(fighterArmyId).isHaveNuclearAttackCommand())) {
+            divisions.get(fighterArmyId).addCommandToHead(new CommandNuclearAttack());
+        }
+
+        for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
+            entry.getValue().run(battleField);
+            entry.getValue().check();
+        }
     }
 
 
-    public List<AllyArmy> getRunningArmy() {
+    public List<AllyArmy> getArmyRunningCommands() {
         return divisions.values().stream().filter(army -> army.isRun()).collect(Collectors.toList());
     }
 
-    public void run() {
-        for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
-            entry.getValue().run();
-        }
-    }
-
     public void check () {
-
-        for (BTreeAction action : activeActions) {
-            if (!action.isComplete()) {
-                Command command = action.getCommand();
-                command.check();
-
-                if (command.getState() == CommandStates.Complete || command.getState() == CommandStates.Failed) {
-                    //activeActions.remove(command);
-                }
-            }
-        }
-
         for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
             entry.getValue().check();
         }
@@ -113,14 +182,5 @@ class Commander {
         return divisions;
     }
 
-    public boolean isHaveFighterArmy() {
-        for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
-            if (entry.getValue() instanceof FighterArmy && entry.getValue().getVehicles().size() > 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
+    public static int selectGroupId = -1;
 }

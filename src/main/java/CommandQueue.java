@@ -32,23 +32,18 @@ public class CommandQueue {
         }
         this.prevCommand = null;
 
-        if (this.queue.size() > 0) {
+        if (this.queue.size() > 0 && MyStrategy.player.getRemainingActionCooldownTicks() == 0) {
             CommandWrapper cw = this.queue.peek();
             if (MyStrategy.world.getTickIndex() - cw.command.getRunTickIndex() >= cw.tickIndex) {
                 cw.consumer.accept(cw.command);
                 cw.command.setState(CommandStates.Run);
                 this.prevCommand = cw;
                 this.queue.poll();
+                cw.command.runned();
             }
         }
 
         this.currentTick = tick;
-    }
-
-    public void prevCommandRunResult(SmartVehicle vehicle) {
-        if (prevCommand != null) {
-            prevCommand.command.result(vehicle);
-        }
     }
 
     public int size() {

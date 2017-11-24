@@ -1,38 +1,23 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
 
 public class BTreeAction extends BTreeNode {
 
-    protected Command command;
-    protected Supplier<Command> commandSupplier;
+    protected Supplier<Command> commandConsumer;
 
     public BTreeAction(Supplier<Command> commandSupplier) {
-        this.commandSupplier = commandSupplier;
-        command = null;
+        this.commandConsumer = commandSupplier;
+
     }
 
-    public void run() {
-        if (command == null) {
-            command = commandSupplier.get();
-        }
-
-        if (command.getState() == CommandStates.New || command.getState() == CommandStates.Hold) {
-            command.run();
-        }
+    /**
+     * @TODO bad style, rewrite it
+     * @return
+     */
+    public List<Command> getCommand() {
+        return Arrays.asList(commandConsumer.get());
     }
 
-    public boolean isRun () {
-        return  command != null && command.getState() == CommandStates.Run;
-    }
-
-    public Command getCommand () {
-        if (command == null) {
-            command = commandSupplier.get();
-        }
-
-        return command;
-    }
-
-    public boolean isComplete() {
-        return command != null && command.getState() == CommandStates.Complete;
-    }
 }

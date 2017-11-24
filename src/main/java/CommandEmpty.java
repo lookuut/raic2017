@@ -1,5 +1,16 @@
 public class CommandEmpty extends Command {
-    public CommandEmpty(AllyArmy army) {
-        super(army);
+    public CommandEmpty() {
+        super();
     }
+
+    public boolean check (AllyArmy army) {
+        setState(CommandStates.Complete);
+        return true;
+    }
+
+    @Override
+    public void runned(){
+
+    }
+
 }

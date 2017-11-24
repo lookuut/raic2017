@@ -6,6 +6,7 @@ import java.util.function.Function;
 public class BattleFieldCell {
 
     protected SortedMap<Long, SmartVehicle> vehicles[];
+
     protected Integer x;
     protected Integer y;
 
@@ -93,5 +94,29 @@ public class BattleFieldCell {
 
     public boolean isHaveVehicles (Integer playerIndex) {
         return vehicles[playerIndex].size() > 0;
+    }
+
+    /**
+     * @TODO optimize it
+     * @param x
+     * @param y
+     * @return
+     */
+    public SmartVehicle getNearestVehicle(double x, double y) {
+        SmartVehicle nearestVehicle = null;
+        double minDistance = Double.MAX_VALUE;
+        for (SortedMap.Entry<Long, SmartVehicle> entry : vehicles[playerIdToIndex.apply(MyStrategy.getEnemyPlayerId().intValue())].entrySet()) {
+            if (entry.getValue().getDurability() > 0) {
+                double localX = (entry.getValue().getX() - x);
+                double localY = (entry.getValue().getY() - y);
+                double length =  Math.sqrt (localX * localX + localY * localY);
+                if (minDistance > length) {
+                    minDistance = length;
+                    nearestVehicle = entry.getValue();
+                }
+            }
+        }
+
+        return nearestVehicle;
     }
 }
