@@ -13,4 +13,9 @@ public class CommandEmpty extends Command {
 
     }
 
+    @Override
+    public void processing(SmartVehicle vehicle) {
+
+    }
+
 }

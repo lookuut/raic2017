@@ -40,6 +40,7 @@ public class CommandQueue {
                 this.prevCommand = cw;
                 this.queue.poll();
                 cw.command.runned();
+                System.out.println(cw.command.toString());
             }
         }
 

@@ -13,6 +13,9 @@ public final class MyStrategy implements Strategy {
     public static Game game;
     public static Move move;
 
+    public static WeatherType[][] weatherMap;
+    public static TerrainType[][] terrainMap;
+
     public static BattleField battleField;
 
     protected HashMap<Long, SmartVehicle> previousVehiclesStates;
@@ -27,7 +30,7 @@ public final class MyStrategy implements Strategy {
     public MyStrategy() {
         this.previousVehiclesStates = new HashMap();
         this.vehicles = new HashMap<>();
-        this.commander = new Commander(this);
+        //this.commander = new Commander(this);
     }
 
     public double x;
@@ -42,10 +45,16 @@ public final class MyStrategy implements Strategy {
 
         if (this.battleField == null) {
             this.battleField = new BattleField();
+            this.commander = new Commander(this);
+
             this.commander.initStaticPPField();
             System.out.println("Seed : " + MyStrategy.game.getRandomSeed());
             armyDamageField = new ArmyDamageField(this);
+
+            weatherMap = world.getWeatherByCellXY();
+            terrainMap = world.getTerrainByCellXY();
         }
+
     }
 
     public void updatePreviousVehiclesStates (World world) throws Exception {

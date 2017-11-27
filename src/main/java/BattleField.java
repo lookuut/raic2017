@@ -1,4 +1,5 @@
 
+import javafx.geometry.Point2D;
 import model.TerrainType;
 import model.VehicleType;
 import model.WeatherType;
@@ -6,7 +7,7 @@ import model.WeatherType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.WeakHashMap;
+import java.util.Map;
 
 public class BattleField {
 
@@ -54,6 +55,14 @@ public class BattleField {
     }
 
     public void addVehicle(SmartVehicle vehicle) {
+        if (vehicle.isAlly() && (vehicle.getDurability() == 0 || vehicle.isVehicleMoved())) {
+            for (AllyArmy army : vehicle.getArmySet()) {
+                Command command = army.getRunningCommand();
+                if (command != null) {
+                    army.getRunningCommand().processing(vehicle);
+                }
+            }
+        }
 
         if (vehicle.getDurability() > 0 && vehicle.isVehicleMoved()) {
             Integer battleFieldX = (int)Math.floor(vehicle.getX() / cellSize);
@@ -65,8 +74,8 @@ public class BattleField {
 
             if (vehicleBattleFieldCell != null && vehicleBattleFieldCell != battleFieldCell) {
                 vehicleBattleFieldCell.remove(vehicle);
-                aerialPPField.addFactor(-vehicle.getAerialPPFactor(), vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY());
-                terrainPPField.addFactor(-vehicle.getTerrainPPFactor(), vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY());
+                aerialPPField.addLinearPPValue(vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY(),-vehicle.getAerialPPFactor());
+                terrainPPField.addLinearPPValue(vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY(),-vehicle.getTerrainPPFactor());
 
                 if (!vehicle.isAlly()) {
                     tankDamageField.addFactor(-vehicle.getDamagePPFactor(VehicleType.TANK, false), vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY());
@@ -80,8 +89,10 @@ public class BattleField {
 
             if (vehicleBattleFieldCell == null || (vehicleBattleFieldCell != null && vehicleBattleFieldCell != battleFieldCell)) {
                 battleFieldCell.addVehicle(vehicle);
-                aerialPPField.addFactor(vehicle.getAerialPPFactor(), battleFieldX, battleFieldY);
-                terrainPPField.addFactor(vehicle.getTerrainPPFactor(), battleFieldX, battleFieldY);
+
+                aerialPPField.addLinearPPValue(battleFieldX, battleFieldY, vehicle.getAerialPPFactor());
+                terrainPPField.addLinearPPValue(battleFieldX, battleFieldY, vehicle.getTerrainPPFactor());
+
                 if (!vehicle.isAlly()) {
                     tankDamageField.addFactor(vehicle.getDamagePPFactor(VehicleType.TANK, false), battleFieldX, battleFieldY);
                     fighterDamageField.addFactor(vehicle.getDamagePPFactor(VehicleType.FIGHTER, true), battleFieldX, battleFieldY);
@@ -94,8 +105,8 @@ public class BattleField {
             vehicle.setBattleFieldCell(battleFieldCell);
         } else if (vehicle.getDurability() == 0) {
             BattleFieldCell vehicleBattleFieldCell = vehicle.getBattleFieldCell();
-            aerialPPField.addFactor(-vehicle.getAerialPPFactor(), vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY());
-            terrainPPField.addFactor(-vehicle.getTerrainPPFactor(), vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY());
+            aerialPPField.addLinearPPValue(vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY(),-vehicle.getAerialPPFactor());
+            terrainPPField.addLinearPPValue(vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY(),-vehicle.getTerrainPPFactor());
 
             if (!vehicle.isAlly()) {
                 tankDamageField.addFactor(-vehicle.getDamagePPFactor(VehicleType.TANK, false), vehicleBattleFieldCell.getX(), vehicleBattleFieldCell.getY());
@@ -107,6 +118,10 @@ public class BattleField {
             }
         }
      }
+
+    public void addPPValue(int x, int y, int value) {
+
+    }
 
     public List<Army> formArmies () {
         if (last_calc_army_tick_index + calc_army_interval <=  MyStrategy.world.getTickIndex()) {
@@ -192,71 +207,124 @@ public class BattleField {
         throw new Exception("Unknown vehicle type " + type.toString());
     }
 
-    public double[] getNearestEnemyPoint(double x, double y, double interval) {
-        //@TODO bad style
 
+    public Point2D[] getNearestEnemyPointAndSafetyPoint(Point2D point, float safetyDistance) {
+        //@TODO bad style
+        int intSafetyDistance = (int)Math.ceil(safetyDistance * enemyField.getWidth() / MyStrategy.world.getWidth());
+
+        float minEnemyDist = Float.MAX_VALUE;
+        Point2D nearestEnemyPoint = new Point2D(0,0);
+
+        float minSafetyDist = Float.MAX_VALUE;
+        Point2D nearestSafetyPoint = new Point2D(0,0);
 
         for (int j = 0; j < getPFieldHeight(); j++) {
             for (int i = 0; i < getPFieldWidth(); i++) {
+
                 if (enemyField.getFactor(i, j) > 0) {
-                    double[] result = {enemyField.getWorldY(i), enemyField.getWorldY(j)};
-                    return result;
+                    Point2D vector = new Point2D(point.getX() - enemyField.getWorldX(i), point.getY() - enemyField.getWorldY(j));
+
+                    if (vector.magnitude() < minEnemyDist) {
+                        minEnemyDist = (float)vector.magnitude();
+                        nearestEnemyPoint = new Point2D(enemyField.getWorldY(i), enemyField.getWorldY(j));
+                    }
+                }
+
+                if (enemyField.getFactor(i, j) == 0) {
+                    int startII = Math.max(0, i - intSafetyDistance);
+                    int startJJ = Math.max(0, j - intSafetyDistance);
+
+                    int endII = Math.min(enemyField.getWidth(), i + intSafetyDistance);
+                    int endJJ = Math.min(enemyField.getHeight(), j + intSafetyDistance);
+
+                    boolean goodShape = true;
+                    for (int jj = startJJ; jj < endJJ && goodShape; jj++) {
+                        for (int ii = startII; ii <  endII; ii++) {
+                            if (enemyField.getFactor(jj, ii) > 0) {
+                                goodShape = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (goodShape) {
+                        Point2D vector = new Point2D(point.getX() - enemyField.getWorldX(i), point.getY() - enemyField.getWorldY(j));
+
+                        if (vector.magnitude() < minSafetyDist) {
+                            minSafetyDist = (float)vector.magnitude();
+                            nearestSafetyPoint = new Point2D(enemyField.getWorldY(i), enemyField.getWorldY(j));
+                        }
+                    }
+
                 }
             }
         }
-        return null;
+
+        Point2D[] result = {nearestEnemyPoint, nearestSafetyPoint};
+        return result;
     }
 
-    public double[] nuclearAttackTarget() {
+
+    public Point2D nuclearAttackTarget() {
         int maxX = 0;
         int maxY = 0;
         double maxValue = 0;
         for (int j = 0; j < getPFieldHeight(); j++) {
             for (int i = 0; i < getPFieldWidth(); i++) {
                 double localMaxValue = 0;
+                int localMaxX = 0;
+                int localMaxY = 0;
+                double localMax = 0;
+
                 for (int jj = -2; jj <= 2 && jj + j >= 0 && jj + j < getPFieldHeight(); jj++){
                     for (int ii = -2; ii <= 2 && ii + i >= 0 && ii + i < getPFieldHeight(); ii++) {
+                        if (enemyField.getFactor(ii + i, jj + j) > localMax) {
+                            localMax = enemyField.getFactor(ii + i, jj + j);
+                            localMaxX = ii + i;
+                            localMaxY = jj + j;
+                        }
                         localMaxValue += enemyField.getFactor(ii + i, jj + j);
                     }
                 }
 
                 if (maxValue < localMaxValue) {
                     maxValue = localMaxValue;
-                    maxX = i;
-                    maxY = j;
+                    maxX = localMaxX;
+                    maxY = localMaxY;
                 }
             }
         }
 
-        double[] result = {enemyField.getWorldX(maxX), enemyField.getWorldY(maxY)};
-        return result;
+        return new Point2D(enemyField.getWorldX(maxX), enemyField.getWorldY(maxY));
     }
 
-    public double[] getNearestEnemyToVehicleInCell (SmartVehicle vehicle, int x, int y) throws Exception {
-        SmartVehicle enemyVehicle = battleField[y][x].getNearestVehicle(x, y);
+    /**
+     * @desc get nearest safety point for vehicle in cell point
+     * @param allyVehicle
+     * @param point
+     * @return
+     * @throws Exception
+     */
+    public Point2D getNearestEnemyToVehicleInCell (SmartVehicle allyVehicle, Point2D point) throws Exception {
+        SmartVehicle enemyVehicle = battleField[(int)point.getX()][(int)point.getY()].getNearestVehicle((int)point.getX(), (int)point.getY());
+
+        double attackRange = 0;
+        Point2D vector = point;
+
+        //@TODO workaround, use terrain and weather factor
+        if (enemyVehicle != null) {
+            attackRange = enemyVehicle.getAttackRange(allyVehicle);
+            vector = enemyVehicle.getPoint().subtract(allyVehicle.getPoint());
+        }
 
         if (enemyVehicle == null) {
-            throw new Exception("Blya");
+            System.out.println("Cant find enemy in " + point);
         }
-        //@TODO workaround, wotk with terrain and weather factor
-        enemyVehicle.getAerialAttackRange();
 
-        double vectorX = enemyVehicle.getX() - vehicle.getX();
-        double vectorY = enemyVehicle.getY() - vehicle.getY();
+        double distance = vector.magnitude();
+        double safetyDistance = (distance - attackRange) / distance;
 
-
-        double localX = (enemyVehicle.getX() - vehicle.getX());
-        double localY = (enemyVehicle.getY() - vehicle.getY());
-
-        double distance = Math.sqrt(localX * localX + localY * localY);
-
-        double safetyDistance = (distance - enemyVehicle.getAerialAttackRange()) / distance;
-
-        double safetyX = safetyDistance * vectorX + vehicle.getX();
-        double safetyY = safetyDistance * vectorY + vehicle.getY();
-
-        double[] result = {safetyX, safetyY};
-        return result;
+        return vector.multiply(safetyDistance).add(allyVehicle.getPoint());
     }
 
     public double getVisionRange(SmartVehicle vehicle) {
@@ -286,7 +354,6 @@ public class BattleField {
     }
 
     public void print() {
-        enemyField.print();
-        fighterDamageField.print();
+        helicopterDamageField.print();
     }
 }

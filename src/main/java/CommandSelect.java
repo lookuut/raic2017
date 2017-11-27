@@ -4,11 +4,15 @@ import java.util.function.Consumer;
 
 public class CommandSelect extends Command {
 
-    public CommandSelect(int groupId) {
+    public CommandSelect(AllyArmy army) {
 
         Consumer<Command> select = (command) -> {
-            MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
-            MyStrategy.move.setGroup(groupId);
+
+            if (!army.isSelected()) {
+                MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
+                MyStrategy.move.setGroup(army.getGroupId());
+                army.selected();
+            }
         };
 
         queue.add(new CommandWrapper(select, this, -1));
@@ -19,7 +23,10 @@ public class CommandSelect extends Command {
     }
 
     @Override
-    public void runned(){
+    public void runned() {
 
+    }
+
+    public void processing(SmartVehicle vehicle) {
     }
 }

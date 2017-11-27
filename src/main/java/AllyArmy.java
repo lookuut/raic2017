@@ -1,6 +1,8 @@
+import javafx.geometry.Point2D;
 import model.VehicleType;
 
 import java.util.*;
+import java.util.List;
 
 public class AllyArmy extends Army {
 
@@ -124,6 +126,7 @@ public class AllyArmy extends Army {
             ppFields.add(staticAerialPPField);
             sum.minusField(aerialPPField);
         }
+
         if (types.contains(VehicleType.TANK) || types.contains(VehicleType.IFV) || types.contains(VehicleType.ARRV)) {
             ppFields.add(battleField.getTerrainPPField());
             ppFields.add(staticTerrainPPField);
@@ -132,9 +135,9 @@ public class AllyArmy extends Army {
 
         sum.sumFields(ppFields);
 
-        float factor = CustomParams.allyUnitPPFactor;
-        double newDestX = 0.0;
-        double newDestY = 0.0;
+        float factor = Float.MAX_VALUE;
+        double newDestX = fromX;
+        double newDestY = fromY;
 
         float x = (float)(destX - fromX);
         float y = (float)(destY - fromY);
@@ -222,6 +225,7 @@ public class AllyArmy extends Army {
             }
         }
 
+
         if (newDestX < (getMaxX() - getMinX())/2.0) {
             newDestX = (getMaxX() - getMinX())/2.0;
         }
@@ -243,7 +247,7 @@ public class AllyArmy extends Army {
         }
 
         if (isChangedXY) {
-            return new CommandMove(newDestX, newDestY);
+            return new CommandMove(new Point2D(Math.ceil(newDestX), Math.ceil(newDestY)));
         } else {
             return command;
         }
@@ -264,11 +268,11 @@ public class AllyArmy extends Army {
         return vehicles.containsKey(vehicleId);
     }
 
-    public SmartVehicle getNearestVehicle(double x, double y) {
+    public SmartVehicle getNearestVehicle(Point2D point) {
         Map.Entry<Long, SmartVehicle> item = vehicles.entrySet().stream().min(
                 (entry1, entry2) ->  Double.compare(
-                        Math.pow((entry1.getValue().getX() - x) , 2) + Math.pow((entry1.getValue().getY()) - y , 2),
-                        Math.pow(entry2.getValue().getX() - x , 2) + Math.pow(entry2.getValue().getY() - y , 2)
+                        Math.pow((entry1.getValue().getX() - point.getX()) , 2) + Math.pow((entry1.getValue().getY()) - point.getY() , 2),
+                        Math.pow(entry2.getValue().getX() - point.getX(), 2) + Math.pow(entry2.getValue().getY() - point.getY() , 2)
                 )
         ).get();
 
@@ -288,12 +292,21 @@ public class AllyArmy extends Army {
         return set;
     }
 
-    public void select() {
+    public void selected() {
+        Commander.selectGroupId = getGroupId();
+    }
 
-        if (Commander.selectGroupId != getGroupId()) {
-            new CommandSelect(this.getGroupId()).run(this);
-            Commander.selectGroupId = getGroupId();
+    public boolean isSelected() {
+        return Commander.selectGroupId == getGroupId();
+    }
+
+    public void selectCommand() {
+        try {
+            new CommandSelect(this).run(this);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
     }
 
     public boolean needHeal() {
@@ -325,8 +338,8 @@ public class AllyArmy extends Army {
         for (Map.Entry<Long, SmartVehicle> entry : getVehicles().entrySet()) {
             SmartVehicle vehicle = entry.getValue();
 
-            terrainPPField.addFactor(vehicle.getTerrainPPFactor(), terrainPPField.getTransformedXCoordinat(vehicle.getX()) , terrainPPField.getTransformedYCoordinat(vehicle.getY()));
-            aerialPPField.addFactor(vehicle.getAerialPPFactor(), aerialPPField.getTransformedXCoordinat(vehicle.getX()) , aerialPPField.getTransformedYCoordinat(vehicle.getY()));
+            aerialPPField.addLinearPPValue(aerialPPField.getTransformedXCoordinat(vehicle.getX()), aerialPPField.getTransformedXCoordinat(vehicle.getY()), vehicle.getAerialPPFactor());
+            terrainPPField.addLinearPPValue(terrainPPField.getTransformedXCoordinat(vehicle.getX()), terrainPPField.getTransformedXCoordinat(vehicle.getY()), vehicle.getTerrainPPFactor());
         }
     }
 
@@ -353,16 +366,20 @@ public class AllyArmy extends Army {
      * @TODO bad style rewrite it
      * @return
      */
-    public double getAvgX () {
-        return (maxX + minX) / 2.0;
+    public float getAvgX () {
+        return (float)((maxX + minX) / 2.0);
+    }
+
+    public Point2D getAvgPoint() {
+        return new Point2D(getAvgX(), getAvgY());
     }
 
     /**
      * @TODO bad style rewrite it
      * @return
      */
-    public double getAvgY () {
-        return (maxY + minY) / 2.0;
+    public float getAvgY () {
+        return (float)((maxY + minY) / 2.0);
     }
 
     protected double avgX = 0;
@@ -396,30 +413,35 @@ public class AllyArmy extends Army {
     }
 
     public boolean isOnCoordinates(double x, double y) {
-        return x >= getMinX() && x <= getMaxX() && y >= getMinY() && y <= getMaxY();
+        return x >= (int)Math.floor(getMinX()) && x <= (int)Math.ceil(getMaxX()) && y >= (int)Math.floor(getMinY()) && y <= (int)Math.ceil(getMaxY());
     }
 
-    public double[] getNuclearAttackTarget() {
+    public boolean isOnCoordinates(Point2D point) {
+        return point.getX() >= (int)Math.floor(getMinX()) && point.getX() <= (int)Math.ceil(getMaxX()) && point.getY() >= (int)Math.floor(getMinY()) && point.getY() <= (int)Math.ceil(getMaxY());
+    }
+
+    public Point2D getNuclearAttackTarget() {
         return battleField.nuclearAttackTarget();
     }
 
-    public double[] getNearestSafetyPointForVehicle(SmartVehicle vehicle, double targetX, double targetY) throws Exception {
-        PPField damageField = null;
+    public Point2D getNearestSafetyPointForVehicle(SmartVehicle vehicle, Point2D target) throws Exception {
 
-        damageField = battleField.getDamageField(vehicle.getType());
+        PPField damageField = battleField.getDamageField(vehicle.getType());
 
         LineSegment lineSegment = new LineSegment(
                 damageField.getTransformedXCoordinat(vehicle.getX()),
                 damageField.getTransformedYCoordinat(vehicle.getY()),
-                damageField.getTransformedXCoordinat(targetX),
-                damageField.getTransformedYCoordinat(targetY)
+                damageField.getTransformedXCoordinat(target.getX()),
+                damageField.getTransformedYCoordinat(target.getY())
         );
 
-        int[] point = damageField.getNearestSafetyPoint(vehicle.getX(), vehicle.getY(), lineSegment);
-        double[]target = battleField.getNearestEnemyToVehicleInCell(vehicle, point[0], point[1]);
+        Point2D point = damageField.getNearestSafetyPoint(vehicle.getX(), vehicle.getY(), lineSegment);
 
-        return target;
+        if (point == null) {
+            point = new Point2D(damageField.getTransformedXCoordinat(target.getX()), damageField.getTransformedYCoordinat(target.getY()));
+        }
 
+        return battleField.getNearestEnemyToVehicleInCell(vehicle, point);
     }
 
     public double getVehicleVisionRange(SmartVehicle vehicle) {
@@ -447,7 +469,46 @@ public class AllyArmy extends Army {
         return false;
     }
 
+    public Point2D[] getNearestEnemyPointAndSafetyPoint(int safetyDistance) {
+        return battleField.getNearestEnemyPointAndSafetyPoint(new Point2D(getAvgX(), getAvgY()), safetyDistance);
+    }
+
     public void printEnemyField() {
         battleField.print();
+    }
+
+    public float percentOfDeathVehicles() {
+        return (float)vehicles.entrySet().stream().filter(entry -> entry.getValue().getDurability() == 0).count() / vehicles.size();
+    }
+
+    public Long getVehicleCount() {
+        return vehicles.entrySet().stream().filter(entry -> entry.getValue().getDurability() > 0).count();
+    }
+
+    public boolean isNeedToScale() {
+
+        double maxValue = 0;
+        for (SmartVehicle vehicle : vehicles.values()) {
+            if (vehicle.getDurability() > 0) {
+                double max = vehicles.values().stream().filter(_vehicle -> _vehicle != vehicle && _vehicle.getDurability() > 0).map(_vehicle -> _vehicle.getPoint().subtract(vehicle.getPoint()).magnitude()).max(Double::compare).get();
+                if (maxValue < max) {
+                    maxValue = max;
+                }
+            }
+        }
+
+        if (maxValue >= CustomParams.maxVehicleDistInArmy) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public Point2D getArmySize () {
+        return new Point2D((getMaxX() - getMinX()) ,(getMaxY() - getMinY()));
+    }
+
+    public boolean isArmyAlive () {
+        return vehicles.size() == 0 || getVehicleCount() > 0;
     }
 }

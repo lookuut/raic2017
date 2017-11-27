@@ -30,7 +30,7 @@ abstract public class Command {
 
     abstract public boolean check(AllyArmy army);
 
-    public void run(AllyArmy army) {
+    public void run(AllyArmy army) throws Exception {
 
         if (this.getState() != CommandStates.New) {
             return;
@@ -82,4 +82,6 @@ abstract public class Command {
     public void addCommand(CommandWrapper cw) {
         queue.add(cw);
     }
+
+    abstract public void processing(SmartVehicle vehicle);
 }

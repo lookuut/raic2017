@@ -50,12 +50,12 @@ public class Army {
         return minY;
     }
 
-    public double getAvgX () {
-        return (getMinX() + getMaxX()) / 2.0D;
+    public float getAvgX () {
+        return (float)((getMinX() + getMaxX()) / 2.0);
     }
 
-    public double getAvgY () {
-        return (getMinY() + getMaxY()) / 2.0D;
+    public float getAvgY () {
+        return (float) ((getMinY() + getMaxY()) / 2.0);
     }
 
 }

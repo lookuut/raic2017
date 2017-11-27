@@ -14,11 +14,12 @@ public class CommandCreateArmy extends Command {
 
     public void result(AllyArmy army, SmartVehicle vehicle) {
         if (vehicle.getSelected()) {
+            vehicle.addArmy(army);
             army.addVehicle(vehicle);
         }
     }
 
-    public void run(AllyArmy army) {
+    public void run(AllyArmy army) throws Exception {
         if (isNew()) {
             Consumer<Command> selectVehicleType = (command) -> {
                 MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
@@ -55,6 +56,11 @@ public class CommandCreateArmy extends Command {
 
     @Override
     public void runned(){
+
+    }
+
+    @Override
+    public void processing(SmartVehicle vehicle) {
 
     }
 }

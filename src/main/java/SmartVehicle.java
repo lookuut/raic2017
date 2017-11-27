@@ -1,13 +1,18 @@
 
+import javafx.geometry.Point2D;
 import model.Vehicle;
 import model.VehicleType;
 import model.VehicleUpdate;
+
+import java.util.HashSet;
+import java.util.List;
 
 public class SmartVehicle  {
 
     protected double radius;
     protected double x;
     protected double y;
+    protected Point2D point;
 
     protected long id;
     protected long playerId;
@@ -33,6 +38,7 @@ public class SmartVehicle  {
     protected MyStrategy strategy;
 
     protected BattleFieldCell battleFieldCell;
+    protected HashSet<AllyArmy> armySet;
 
     // null if vehicle is not in any army;
     protected Army army;
@@ -67,6 +73,8 @@ public class SmartVehicle  {
         this.army = null;
         this.battleFieldCell = null;
         this.strategy = strategy;
+        this.point = new Point2D(vehicle.getX(), vehicle.getY());
+        armySet = new HashSet();
     }
 
 
@@ -79,6 +87,7 @@ public class SmartVehicle  {
         this.remainingAttackCooldownTicks = vehicleUpdate.getRemainingAttackCooldownTicks();
         this.groups = vehicleUpdate.getGroups();
         this.selected = vehicleUpdate.isSelected();
+        this.point = new Point2D(vehicleUpdate.getX(), vehicleUpdate.getY());
     }
 
     public void vehicleUpdate(Vehicle vehicle) {
@@ -89,6 +98,7 @@ public class SmartVehicle  {
         this.remainingAttackCooldownTicks = vehicle.getRemainingAttackCooldownTicks();
         this.groups = vehicle.getGroups();
         this.selected = vehicle.isSelected();
+        this.point = new Point2D(vehicle.getX(), vehicle.getY());
     }
 
 
@@ -113,7 +123,26 @@ public class SmartVehicle  {
     }
 
     public double getAerialAttackRange () {
+
         return aerialAttackRange;
+    }
+
+    public Point2D getTerrainPoint(Point2D point) {
+        int x = (int)Math.floor(MyStrategy.game.getTerrainWeatherMapColumnCount() * (getX() / MyStrategy.world.getWidth()));
+        int y = (int)Math.floor(MyStrategy.game.getTerrainWeatherMapRowCount() * (getY() / MyStrategy.world.getHeight()));
+        return new Point2D(x, y);
+    }
+
+    public double getAttackRange(SmartVehicle enemyVehicle) {
+        if (enemyVehicle.isAerial()) {
+            return getAerialAttackRange();
+        } else {
+            return getGroundAttackRange();
+        }
+    }
+
+    public Point2D getPoint() {
+        return point;
     }
 
     public double getGroundAttackRange () {
@@ -153,7 +182,8 @@ public class SmartVehicle  {
      * @return
      */
     public boolean isVehicleMoved() {
-        return strategy.getVehiclePrevState(getId()) == null || (int)getX() != (int)strategy.getVehiclePrevState(getId()).getX() || (int)getY() != (int)strategy.getVehiclePrevState(getId()).getY();
+
+        return strategy.getVehiclePrevState(getId()) == null || getX() != strategy.getVehiclePrevState(getId()).getX() || getY() != strategy.getVehiclePrevState(getId()).getY();
     }
 
     public boolean getSelected () {
@@ -196,6 +226,18 @@ public class SmartVehicle  {
         }else if (!isAlly() && (isAerialAttacker())) {
             factor += getAerialDamage();
         }
+        return factor;
+    }
+
+    public int getTerrainPPFactor() {
+        int factor = 0;
+
+        if (isTerrain()) {
+            factor += CustomParams.allyUnitPPFactor;
+        } else if (!isAlly() && isTerrainAttacker()) {
+            factor += getGroundDamage();
+        }
+
         return factor;
     }
 
@@ -306,25 +348,19 @@ public class SmartVehicle  {
         }
     }
 
-    public int getTerrainPPFactor() {
-        int factor = 0;
-
-        if (isTerrain()) {
-            factor += CustomParams.allyUnitPPFactor;
-        }
-
-        if (!isAlly() && isTerrainAttacker()) {
-            factor += getAerialDamage();
-        }
-
-        return factor;
-    }
-
     public boolean isAerial() {
         return aerial;
     }
 
     public int getRemainingAttackCooldownTicks () {
         return this.remainingAttackCooldownTicks;
+    }
+
+    public void addArmy(AllyArmy army) {
+        armySet.add(army);
+    }
+
+    public HashSet<AllyArmy> getArmySet () {
+        return armySet;
     }
 }

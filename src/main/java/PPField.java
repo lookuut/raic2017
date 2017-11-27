@@ -1,3 +1,4 @@
+import javafx.geometry.Point2D;
 import model.TerrainType;
 import model.WeatherType;
 import java.util.*;
@@ -67,6 +68,16 @@ public class PPField {
         throw new Exception("Boolchit");
     }
 
+    public void addLinearPPValue(int x, int y, int factor) {
+
+        for (int j = -CustomParams.maxLinearPPRange; j <= CustomParams.maxLinearPPRange; j++) {
+            for (int i = -CustomParams.maxLinearPPRange; i <= CustomParams.maxLinearPPRange; i++) {
+                if (x + i >= 0 && x + i < getWidth() && y + j >= 0 && y + j < getHeight()) {
+                    addFactor((float)Math.ceil(factor / (1 + Math.abs(j) + Math.abs(i))), x + i, y + j);
+                }
+            }
+        }
+    }
 
     public void addFactor (float factor, int x, int y) {
         this.field[y][x] += factor;
@@ -175,28 +186,21 @@ public class PPField {
         return result;
     }
 
-    public double getWorldX(int x) {
-        return (Math.floor(x * MyStrategy.world.getWidth()) / (double)getWidth());
+    public float getWorldX(int x) {
+        return (float)(Math.floor(x * MyStrategy.world.getWidth()) / (float)getWidth());
     }
 
-    public double getWorldY(int y) {
-        return (Math.floor(y * MyStrategy.world.getHeight()) / (double)getHeight());
+    public float getWorldY(int y) {
+        return (float)(Math.floor(y * MyStrategy.world.getHeight()) / (float)getHeight());
     }
 
 
-    public int[] getNearestSafetyPoint(double targetX, double targetY, LineSegment lineSegment) throws Exception {
+    public Point2D getNearestSafetyPoint(double targetX, double targetY, LineSegment lineSegment) throws Exception {
         HashSet<Integer> visitedCells = new HashSet<>();
-        int[] result = deepSearch(visitedCells, getTransformedXCoordinat(targetX), getTransformedYCoordinat(targetY), lineSegment);
-
-        if (result == null) {
-            throw new Exception("getNearestSafetyPoint  " + targetX + " " + targetY);
-        }
-
-        int[] coors = {result[0], result[1]};
-        return coors;
+        return deepSearch(visitedCells, getTransformedXCoordinat(targetX), getTransformedYCoordinat(targetY), lineSegment);
     }
 
-    public int[] deepSearch (HashSet<Integer> visitedCells, int x, int y, LineSegment line) {
+    public Point2D deepSearch (HashSet<Integer> visitedCells, int x, int y, LineSegment line) {
         for (int j = -1; j <= 1 && j + y >= 0 && j + y < getHeight(); j++) {
             for (int i = -1; i <= 1 && x + i >= 0 && x + i < getWidth(); i++) {
                 int number = x + i + (y + j) * getWidth();
@@ -205,11 +209,10 @@ public class PPField {
                     visitedCells.add(number);
 
                     if (line.isIntersectSquare(x + i, y + j, 1)) {
-                        if (getFactor(x + i, y + j) != 0) {
-                            int [] result = {x + i, y + j};
-                            return result;
-                        } else {
+                        if (getFactor(x + i, y + j) == 0) {
                             return deepSearch(visitedCells, x + i, y + j, line);
+                        } else {
+                            return new Point2D(x + i, y + j);
                         }
                     }
                 }

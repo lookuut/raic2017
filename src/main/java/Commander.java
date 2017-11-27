@@ -1,3 +1,5 @@
+import javafx.geometry.Point2D;
+import jdk.nashorn.internal.runtime.ECMAException;
 import model.VehicleType;
 
 import java.util.*;
@@ -39,12 +41,12 @@ class Commander {
         ifvArmy.setGroupId(5);
         allArmy.setGroupId(6);
 
-        //divisions.put(1, arrvArmy);
+        divisions.put(1, arrvArmy);
         divisions.put(fighterArmyId, fighterArmy);
         divisions.put(3, helicopterArmy);
         divisions.put(4, tankArmy);
         divisions.put(5, ifvArmy);
-        //divisions.put(6, allArmy);
+        divisions.put(6, allArmy);
 
         arrvArmy.addCommand(new CommandCreateArmy(VehicleType.ARRV));
         fighterArmy.addCommand(new CommandCreateArmy(VehicleType.FIGHTER));
@@ -53,31 +55,31 @@ class Commander {
         ifvArmy.addCommand(new CommandCreateArmy(VehicleType.IFV));
         allArmy.addCommand(new CommandCreateArmy(null));
 
-        //setEmptyBehaviourTree(arrvArmy);
-
         //fighter behaviour tree
         BehaviourTree fighterBehaviourTree = new BehaviourTree<>();
 
-        BTreeNodeCondition<AllyArmy> rootNode = new BTreeNodeCondition(
-                (Predicate<AllyArmy>)((army) -> false),
-                fighterArmy);
-
-
-        BTreeNodeCondition<AllyArmy> nuclearAttackCond = new BTreeNodeCondition(
+        BTreeNodeCondition<AllyArmy> nuckAttackCond = new BTreeNodeCondition(
                 (Predicate<AllyArmy>)((army) -> MyStrategy.canNuclearAttack()),
                 fighterArmy);
-        BTreeNode gotoHeal = new BTreeActionSequence(() -> new CommandAttack());
-        rootNode.addChildNode(gotoHeal);
-        rootNode.addChildNode(nuclearAttackCond);
-        nuclearAttackCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
-        nuclearAttackCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
 
-        fighterBehaviourTree.addRoot(rootNode);
+
+        BTreeNodeCondition<AllyArmy> defenceCond = new BTreeNodeCondition(
+                (Predicate<AllyArmy>)((army) -> army.percentOfDeathVehicles() > 0.75),
+                fighterArmy);
+
+        nuckAttackCond.addChildNode(new BTreeAction(() -> new CommandNuclearAttack()));
+        nuckAttackCond.addChildNode(defenceCond);
+        defenceCond.addChildNode(new BTreeAction(() -> new CommandDefence()));
+        defenceCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
+
+        fighterBehaviourTree.addRoot(nuckAttackCond);
 
         fighterArmy.setBehaviourTree(fighterBehaviourTree);
+
         this.setEmptyBehaviourTree(helicopterArmy);
         this.setEmptyBehaviourTree(tankArmy);
         this.setEmptyBehaviourTree(ifvArmy);
+        this.setDefenceBehaviourTree(arrvArmy);
 
         this.setAllArmyBehaviourTree(allArmy);
 
@@ -119,9 +121,22 @@ class Commander {
                 (Predicate<AllyArmy>)((armyLocal) -> MyStrategy.isNuclearAttack()),
                 army
         );
-        root.addChildNode(new BTreeAction(() -> new CommandNuclearDefence(army)));
+
+        root.addChildNode(new BTreeAction(() -> new CommandNuclearDefence()));
         root.addChildNode(new BTreeAction(() -> new CommandEmpty()));
 
+        bTree.addRoot(root);
+        army.setBehaviourTree(bTree);
+    }
+
+    public void setDefenceBehaviourTree(AllyArmy army) {
+        BehaviourTree<AllyArmy> bTree = new BehaviourTree<>();
+        BTreeNode root = new BTreeNodeCondition(
+                (Predicate<AllyArmy>)((armyLocal) -> true),
+                army
+        );
+        root.addChildNode(new BTreeAction(() -> new CommandDefence()));
+        root.addChildNode(new BTreeAction(() -> new CommandEmpty()));
         bTree.addRoot(root);
         army.setBehaviourTree(bTree);
     }
@@ -156,14 +171,11 @@ class Commander {
 
     public void logic (BattleField battleField) throws Exception {
         //run divisions logic
-        //@TODO boolshit
-        if (MyStrategy.canNuclearAttack() && MyStrategy.world.getTickIndex() > 100 && !(divisions.get(fighterArmyId).isHaveNuclearAttackCommand())) {
-            divisions.get(fighterArmyId).addCommandToHead(new CommandNuclearAttack());
-        }
-
         for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
-            entry.getValue().run(battleField);
-            entry.getValue().check();
+            if (entry.getValue().isArmyAlive()) {
+                entry.getValue().run(battleField);
+                entry.getValue().check();
+            }
         }
     }
 

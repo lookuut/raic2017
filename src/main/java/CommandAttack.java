@@ -1,3 +1,5 @@
+import javafx.geometry.Point2D;
+
 public class CommandAttack extends Command {
 
     public CommandAttack () {
@@ -20,7 +22,7 @@ public class CommandAttack extends Command {
         return y;
     }
 
-    public void run(AllyArmy army) {
+    public void run(AllyArmy army) throws Exception {
         setState(CommandStates.Complete);
     }
 
@@ -31,9 +33,7 @@ public class CommandAttack extends Command {
             return this;
         }
 
-        army.addCommandToHead(this);
-
-        CommandMove move = new CommandMove(coors[0], coors[1]);
+        CommandMove move = new CommandMove(new Point2D(coors[0], coors[1]));
         return army.pathFinder(move);
     }
 
@@ -47,6 +47,11 @@ public class CommandAttack extends Command {
 
     @Override
     public void runned(){
+
+    }
+
+    @Override
+    public void processing(SmartVehicle vehicle) {
 
     }
 }
