@@ -1,7 +1,7 @@
 import model.ActionType;
 
 
-import javafx.geometry.Point2D;
+import geom.Point2D;
 
 import java.util.HashMap;
 
@@ -29,19 +29,11 @@ public class CommandMove extends Command {
         readyVehicles = new HashSet<>();
     }
 
-    public double getX() {
-        return targetPosition.getX();
+    public Point2D getTargetPosition() {
+        return targetPosition;
     }
 
-    public double getY() {
-        return targetPosition.getY();
-    }
-
-    ///kostiil
-    protected Point2D lastPoint;
-    protected int lastActiveIndex;
-
-    public boolean check (AllyArmy army) {
+    public boolean check (ArmyAllyOrdering army) {
 
         if (getState() == CommandStates.Complete || getState() == CommandStates.Failed) {
             return true;
@@ -57,31 +49,17 @@ public class CommandMove extends Command {
             return true;
         }
 
-
-        //@TODO workaround
-        if (CustomParams.coorsCeil(lastPoint.getX()) != CustomParams.coorsCeil(army.getAvgX()) || CustomParams.coorsCeil(lastPoint.getY()) != CustomParams.coorsCeil(army.getAvgY())) {
-            lastActiveIndex = MyStrategy.world.getTickIndex();
-        }
-
-        if (MyStrategy.world.getTickIndex() - lastActiveIndex > 200) {
-            army.addCommand(new CommandScale());
-            setState(CommandStates.Failed);
-            return true;
-        }
-
-        lastPoint = new Point2D(army.getAvgX(), army.getAvgY());
-
         return false;
     }
 
-    public void run(AllyArmy army) throws Exception {
+    public void run(ArmyAllyOrdering army) throws Exception {
 
 
         if (isNew()) {
 
-            army.recalculationMaxMin();
+            army.getForm().recalc(army.getVehicles());
             //be carefull with double values
-            Point2D avgPoint = new Point2D(Math.ceil(army.getAvgPoint().getX()), Math.ceil(army.getAvgPoint().getY()));
+            Point2D avgPoint = new Point2D(army.getForm().getAvgPoint().getX(), army.getForm().getAvgPoint().getY());
 
             targetVector = targetPosition.subtract(avgPoint);
 
@@ -91,8 +69,8 @@ public class CommandMove extends Command {
             }
 
             for (SmartVehicle vehicle : army.getVehicles().values()) {
-                Point2D point = vehicle.point.add(targetVector);
-                vehiclesTargetPositions.put(vehicle.getId(), new Point2D(CustomParams.coorsCeil(point.getX()), CustomParams.coorsCeil(point.getY())));
+                Point2D point = vehicle.getPoint().add(targetVector);
+                vehiclesTargetPositions.put(vehicle.getId(), point);
             }
 
             startTick = MyStrategy.world.getTickIndex();
@@ -102,13 +80,13 @@ public class CommandMove extends Command {
                 MyStrategy.move.setY(targetVector.getY());
 
             };
-            army.selectCommand();
-            queue.add(new CommandWrapper(funcMove, this, -1));
+
+            addCommand(new CommandWrapper(funcMove, this, CustomParams.runImmediatelyTick, army.getGroupId()));
             super.run(army);
         }
     }
 
-    public Command prepare(AllyArmy army) throws Exception {
+    public Command prepare(ArmyAllyOrdering army) throws Exception {
 
 
         CommandMove move = army.pathFinder(this);
@@ -120,25 +98,21 @@ public class CommandMove extends Command {
         return move;
     }
 
-    public void result(AllyArmy army, SmartVehicle vehicle) {
+    public void result(ArmyAlly army, SmartVehicle vehicle) {
         if (army.containVehicle(vehicle.getId())) {
             army.putVehicle(vehicle);
         }
     }
 
     @Override
-    public void runned() {
-        lastActiveIndex = MyStrategy.world.getTickIndex();
-        lastPoint = new Point2D(0,0);
+    public void pinned() {
     }
 
     @Override
     public void processing(SmartVehicle vehicle) {
         if (vehicle.getDurability() == 0) {
             vehiclesTargetPositions.remove(vehicle.getId());
-        } else if (vehiclesTargetPositions.get(vehicle.getId()).getX()  == CustomParams.coorsCeil(vehicle.getX())
-                &&
-                vehiclesTargetPositions.get(vehicle.getId()).getY()  == CustomParams.coorsCeil(vehicle.getY())) {
+        } else if (vehiclesTargetPositions.get(vehicle.getId()).equals(vehicle.getPoint())) {
             readyVehicles.add(vehicle.getId());
         }
     }

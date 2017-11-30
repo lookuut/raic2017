@@ -113,7 +113,7 @@ public class ArmyDamageField {
         Arrays.stream(
                 this.strategy.getWorld().
                         getNewVehicles()).
-                filter(vehicle -> vehicle.getDurability() > 0 && vehicle.getPlayerId()!= this.strategy.getMyPlayerId()).
+                filter(vehicle -> vehicle.getDurability() > 0 && vehicle.getPlayerId()== MyStrategy.getEnemyPlayerId()).
                 forEach(vehicle -> {
                     SmartVehicle smartVehicle = previousVehiclesStates.get(vehicle.getId());
                     if (smartVehicle != null) {
@@ -122,7 +122,7 @@ public class ArmyDamageField {
         });
 
         Arrays.stream(this.strategy.getWorld().getVehicleUpdates())
-                .filter(vehicle -> previousVehiclesStates.get(vehicle.getId()).getPlayerId() != this.strategy.getMyPlayerId())
+                .filter(vehicle -> previousVehiclesStates.get(vehicle.getId()).getPlayerId() == MyStrategy.getEnemyPlayerId())
                 .forEach(vehicleUpdate -> {
                     SmartVehicle smartVehicle = previousVehiclesStates.get(vehicleUpdate.getId());
                     this.updateVehiclePField(smartVehicle, previousVehiclesStates, vehicleUpdate.getX(), vehicleUpdate.getY());

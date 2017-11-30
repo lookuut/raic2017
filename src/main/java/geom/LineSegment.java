@@ -1,3 +1,5 @@
+package geom;
+
 public class LineSegment {
     protected float a;
     protected float c;
@@ -14,19 +16,19 @@ public class LineSegment {
     protected int miny;
     protected int maxy;
 
-    LineSegment(int startX, int startY, int endX, int endY) {
+    public LineSegment(Point2D start, Point2D end) {
 
-        minx = Math.min(startX, endX);
-        miny = Math.min(startY, endY);
+        minx = Math.min(start.getIntX(), end.getIntX());
+        miny = Math.min(start.getIntY(), end.getIntY());
 
-        maxx = Math.max(startX, endX);
-        maxy = Math.max(startY, endY);;
+        maxx = Math.max(start.getIntX(), end.getIntX());
+        maxy = Math.max(start.getIntY(), end.getIntY());;
 
-        this.startX = startX;
-        this.startY = startY;
+        this.startX = start.getIntX();
+        this.startY = start.getIntY();
 
-        this.endX = endX;
-        this.endY = endY;
+        this.endX = end.getIntX();
+        this.endY = end.getIntY();
 
         if (endX == startX) {//except situation
             a = Float.POSITIVE_INFINITY;

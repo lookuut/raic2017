@@ -1,4 +1,4 @@
-import javafx.geometry.Point2D;
+import geom.Point2D;
 
 public class CommandAttack extends Command {
 
@@ -6,7 +6,7 @@ public class CommandAttack extends Command {
 
     }
 
-    public boolean check(AllyArmy army) {
+    public boolean check(ArmyAllyOrdering army) {
         setState(CommandStates.Complete);
         return true;
     }
@@ -22,31 +22,31 @@ public class CommandAttack extends Command {
         return y;
     }
 
-    public void run(AllyArmy army) throws Exception {
+    public void run(ArmyAllyOrdering army) throws Exception {
         setState(CommandStates.Complete);
     }
 
-    public Command prepare(AllyArmy army) throws Exception {
-        double[] coors = army.searchNearestEnemy();
-        army.recalculationMaxMin();
-        if (army.isOnCoordinates(coors[0], coors[1])) {
+    public Command prepare(ArmyAllyOrdering army) throws Exception {
+        army.getForm().recalc(army.getVehicles());
+        Point2D nearestEnemyPoint = army.searchNearestEnemy();
+        if (army.getForm().isOnCoordinates(nearestEnemyPoint)) {
             return this;
         }
 
-        CommandMove move = new CommandMove(new Point2D(coors[0], coors[1]));
+        CommandMove move = new CommandMove(nearestEnemyPoint);
         return army.pathFinder(move);
     }
 
 
 
-    public void result(AllyArmy army, SmartVehicle vehicle) {
+    public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {
         if (army.containVehicle(vehicle.getId())) {
             army.putVehicle(vehicle);
         }
     }
 
     @Override
-    public void runned(){
+    public void pinned(){
 
     }
 

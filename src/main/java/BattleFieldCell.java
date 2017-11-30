@@ -23,10 +23,10 @@ public class BattleFieldCell {
         this.x = x;
         this.y = y;
 
-        minMaxXY = new Double[MyStrategy.max_player_index][4];
+        minMaxXY = new Double[CustomParams.max_player_index][4];
         vehicles = new SortedMap[2];
 
-        for (int playerIndex = 0; playerIndex < MyStrategy.max_player_index; playerIndex++) {
+        for (int playerIndex = 0; playerIndex < CustomParams.max_player_index; playerIndex++) {
             vehicles[playerIndex] = new TreeMap<>();
             minMaxXY[playerIndex] = new Double[4];
 

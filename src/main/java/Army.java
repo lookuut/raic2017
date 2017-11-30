@@ -1,61 +1,108 @@
-import java.util.HashMap;
+import geom.Point2D;
+import model.VehicleType;
+
+import java.util.*;
 
 public class Army {
 
+    private Map<Long, SmartVehicle> vehicles;
+    private ArmyForm form;
+    private Integer lastModificateTick = -1;
+    private HashMap<VehicleType, Integer> vehicleTypes;
+
     protected HashMap<Integer, BattleFieldCell> battleFieldCellMap;
-
-    protected double maxX;
-    protected double maxY;
-
-    protected double minX = Double.MAX_VALUE;
-    protected double minY = Double.MAX_VALUE;
-
 
     public Army() {
         battleFieldCellMap = new HashMap<>();
-    }
-
-    public void addBattleFieldCell (Integer index, BattleFieldCell cell, Integer pid) {
-
-        maxX = Math.max(cell.getMaxX(pid), maxX);
-        maxY = Math.max(cell.getMaxY(pid), maxY);
-        minX = Math.min(cell.getMinX(pid), minX);
-        minY = Math.min(cell.getMinY(pid), minY);
-
-        battleFieldCellMap.put(index, cell);
-    }
-
-    protected void minMaxUpdate(SmartVehicle vehicle) {
-        this.maxX = Math.max(vehicle.getX(), maxX);
-        this.maxY = Math.max(vehicle.getY(), maxY);
-
-        this.minX = Math.min(vehicle.getX(), minX);
-        this.minY = Math.min(vehicle.getY(), minY);
+        vehicles = new HashMap<>();
+        form = new ArmyForm();
+        vehicleTypes = new HashMap<>();
     }
 
 
-    public double getMaxX() {
-        return maxX;
+    public Map<Long, SmartVehicle> getVehicles() {
+        return vehicles;
     }
 
-    public double getMinX() {
-        return minX;
+    public void addVehicle (SmartVehicle vehicle) {
+        setLastModificateTick(MyStrategy.world.getTickIndex());
+        form.addPoint(vehicle.getPoint());
+        this.putVehicle(vehicle);
+        Integer count = 1;
+        if (vehicleTypes.containsKey(vehicle.getType())) {
+            count += vehicleTypes.get(vehicle.getType());
+        }
+
+        vehicleTypes.put(vehicle.getType(), count);
     }
 
-    public double getMaxY() {
-        return maxY;
+    public void putVehicle(SmartVehicle vehicle) {
+        vehicles.put(vehicle.getId(), vehicle);
+        form.addPoint(vehicle.getPoint());
     }
 
-    public double getMinY() {
-        return minY;
+    public void removeVehicle(SmartVehicle vehicle) {
+        vehicles.remove(vehicle);
+        vehicleTypes.put(vehicle.getType(), vehicleTypes.get(vehicle.getType()) - 1);
     }
 
-    public float getAvgX () {
-        return (float)((getMinX() + getMaxX()) / 2.0);
+    public boolean containVehicle(Long vehicleId) {
+        return vehicles.containsKey(vehicleId);
     }
 
-    public float getAvgY () {
-        return (float) ((getMinY() + getMaxY()) / 2.0);
+    public Set<VehicleType> getVehiclesType () {
+        return vehicleTypes.keySet();
     }
 
+    public Long getVehicleCount() {
+        return vehicles.entrySet().stream().filter(entry -> entry.getValue().getDurability() > 0).count();
+    }
+
+    public float percentOfDeathVehicles() {
+        return (float)vehicles.entrySet().stream().filter(entry -> entry.getValue().getDurability() == 0).count() / vehicles.size();
+    }
+
+    public ArmyForm getForm() {
+        return form;
+    }
+
+    public boolean isArmyAlive () {
+        return getVehicles().size() == 0 || getVehicleCount() > 0;
+    }
+
+    public SmartVehicle getNearestVehicle(Point2D point) {
+        Point2D[] points = new Point2D[1];
+        points[0] = point;
+        SmartVehicle[] vehicles = getNearestVehicle(points);
+        return vehicles[0];
+    }
+
+    public SmartVehicle[] getNearestVehicle(Point2D[] points) {
+
+        Double[] minLenght = new Double[points.length];
+        Arrays.fill(minLenght, Double.MAX_VALUE);//boolshit get first element length
+
+        SmartVehicle[] vehicles = new SmartVehicle[points.length];
+        getVehicles().entrySet().stream().forEach(
+            item -> {
+                for (int i = 0; i < points.length; i++) {
+                    Point2D point = points[i];
+                    if (point.subtract(item.getValue().getPoint()).magnitude() < minLenght[i]) {
+                        minLenght[i] = point.subtract(item.getValue().getPoint()).magnitude();
+                        vehicles[i] = item.getValue();
+                    }
+                }
+            }
+        );
+
+        return vehicles;
+    }
+
+    public void setLastModificateTick(Integer tick) {
+        lastModificateTick = tick;
+    }
+
+    public Integer getLastModificateTick() {
+        return lastModificateTick;
+    }
 }

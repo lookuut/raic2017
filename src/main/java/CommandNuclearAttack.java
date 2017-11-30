@@ -1,4 +1,4 @@
-import javafx.geometry.Point2D;
+import geom.Point2D;
 import model.ActionType;
 
 import java.util.function.Consumer;
@@ -17,9 +17,9 @@ public class CommandNuclearAttack extends  Command {
     protected int attackIndex;
 
 
-    public Command prepare(AllyArmy army) throws Exception {
+    public Command prepare(ArmyAllyOrdering army) throws Exception {
         try {
-            army.recalculationMaxMin();
+            army.getForm().recalc(army.getVehicles());
             targetPoint = army.getNuclearAttackTarget();
             gunner = army.getNearestVehicle(targetPoint);
             targetSafetyPos = army.getNearestSafetyPointForVehicle(gunner, targetPoint);
@@ -33,7 +33,7 @@ public class CommandNuclearAttack extends  Command {
                 targetSafetyPos = targetSafetyPos.subtract( targetVector.multiply((gunner.getVisionRange() - targetVector.magnitude()) / gunner.getVisionRange())).subtract(new Point2D(1,1) );
             }
 
-            Point2D armySize = army.getArmySize();
+            Point2D armySize = army.getForm().getArmySize();
 
             Point2D armyMaxPoint = targetSafetyPos.add(new Point2D(armySize.getX() / 2.0, armySize.getY() / 2.0));
             if (armyMaxPoint.getX() > MyStrategy.world.getWidth() || armyMaxPoint.getY() > MyStrategy.world.getHeight()) {
@@ -61,7 +61,7 @@ public class CommandNuclearAttack extends  Command {
                 return this;
             }
 
-            Point2D newPoint = targetSafetyPos.subtract(gunner.getPoint()).add(army.getAvgPoint());
+            Point2D newPoint = targetSafetyPos.subtract(gunner.getPoint()).add(army.getForm().getAvgPoint());
             armyMaxPoint = newPoint.add(new Point2D(armySize.getX() / 2.0, armySize.getY() / 2.0));
 
             if (armyMaxPoint.getX() > MyStrategy.world.getWidth() || armyMaxPoint.getY() > MyStrategy.world.getHeight()) {
@@ -73,7 +73,7 @@ public class CommandNuclearAttack extends  Command {
 
             army.addCommandToHead(this);
 
-            if (army.getAvgPoint().subtract(newPoint).magnitude() < 150) {
+            if (army.getForm().getAvgPoint().subtract(newPoint).magnitude() < 150) {
                 return new CommandMove(new Point2D(Math.ceil(newPoint.getX()),Math.ceil(newPoint.getY())));
             }
 
@@ -81,16 +81,14 @@ public class CommandNuclearAttack extends  Command {
 
         } catch (Exception e) {
             e.printStackTrace();
-            army.printEnemyField();
         }
         setState(CommandStates.Failed);
         return new CommandAttack();
     }
 
-    public void run(AllyArmy army) throws Exception {
+    public void run(ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
-            army.selectCommand();
-            double visionRange = army.getVehicleVisionRange(gunner);
+            double visionRange = gunner.getVisionRange();
 
             double length = targetPoint.subtract(gunner.getPoint()).magnitude();
             Point2D point;
@@ -108,12 +106,12 @@ public class CommandNuclearAttack extends  Command {
                 MyStrategy.move.setVehicleId(gunner.getId());
             };
 
-            queue.add(new CommandWrapper(nuclearAttack, this, -1));
+            addCommand(new CommandWrapper(nuclearAttack, this, CustomParams.runImmediatelyTick, army.getGroupId()));
             super.run(army);
         }
     }
 
-    public boolean check(AllyArmy army) {
+    public boolean check(ArmyAllyOrdering army) {
 
         if (attackIndex > 0 && attackIndex + MyStrategy.game.getTacticalNuclearStrikeDelay() + 1 < MyStrategy.world.getTickIndex()) {
             setState(CommandStates.Complete);
@@ -123,7 +121,7 @@ public class CommandNuclearAttack extends  Command {
     }
 
     @Override
-    public void runned() {
+    public void pinned() {
         attackIndex = MyStrategy.world.getTickIndex();
     }
 

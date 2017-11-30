@@ -3,13 +3,13 @@ public class CommandEmpty extends Command {
         super();
     }
 
-    public boolean check (AllyArmy army) {
+    public boolean check (ArmyAllyOrdering army) {
         setState(CommandStates.Complete);
         return true;
     }
 
     @Override
-    public void runned(){
+    public void pinned(){
 
     }
 

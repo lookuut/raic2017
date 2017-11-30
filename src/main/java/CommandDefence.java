@@ -1,4 +1,4 @@
-import javafx.geometry.Point2D;
+import geom.Point2D;
 
 public class CommandDefence extends Command {
     public CommandDefence () {
@@ -6,11 +6,11 @@ public class CommandDefence extends Command {
     }
 
 
-    public Command prepare(AllyArmy army) throws Exception {
+    public Command prepare(ArmyAllyOrdering army) throws Exception {
         try {
 
-            army.recalculationMaxMin();
-            Point2D armyPoint = army.getAvgPoint();
+            army.getForm().recalc(army.getVehicles());
+            Point2D armyPoint = army.getForm().getAvgPoint();
             Point2D[] points = army.getNearestEnemyPointAndSafetyPoint(CustomParams.safetyDistance);
 
             if (points[0].distance(armyPoint) < CustomParams.safetyDistance) {
@@ -19,7 +19,6 @@ public class CommandDefence extends Command {
 
             return this;
         } catch (Exception e) {
-            army.printEnemyField();
             e.printStackTrace();
         }
         setState(CommandStates.Failed);
@@ -27,16 +26,16 @@ public class CommandDefence extends Command {
     }
 
 
-    public void run(AllyArmy army) throws Exception {
+    public void run(ArmyAllyOrdering army) throws Exception {
         setState(CommandStates.Complete);
     }
 
-    public boolean check(AllyArmy army) {
+    public boolean check(ArmyAllyOrdering army) {
         setState(CommandStates.Complete);
         return true;
     }
 
-    public void runned() {
+    public void pinned() {
         return;
     }
 

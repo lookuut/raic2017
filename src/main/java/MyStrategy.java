@@ -1,5 +1,4 @@
 import model.*;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,46 +12,47 @@ public final class MyStrategy implements Strategy {
     public static Game game;
     public static Move move;
 
-    public static WeatherType[][] weatherMap;
-    public static TerrainType[][] terrainMap;
+    private static WeatherType[][] weatherMap;
+    private static TerrainType[][] terrainMap;
 
     public static BattleField battleField;
+    public static EnemyField enemyField;
 
     protected HashMap<Long, SmartVehicle> previousVehiclesStates;
     protected HashMap<Long, SmartVehicle> vehicles;
 
-    protected Long myPlayerId;
     protected ArmyDamageField armyDamageField;
-
-    public static Integer max_player_index = 2;
-    protected Commander commander;
+    public static  Commander commander;
 
     public MyStrategy() {
         this.previousVehiclesStates = new HashMap();
         this.vehicles = new HashMap<>();
-        //this.commander = new Commander(this);
+
+        //set armies start priorities
+        CommandQueue.getInstance().addPriority(CustomParams.fighterArmyId);
+        CommandQueue.getInstance().addPriority(CustomParams.helicopterArmyId);
+        CommandQueue.getInstance().addPriority(CustomParams.tankArmyId);
+        CommandQueue.getInstance().addPriority(CustomParams.ifvArmyId);
+        CommandQueue.getInstance().addPriority(CustomParams.arrvArmyId);
+        CommandQueue.getInstance().addPriority(CustomParams.allArmyId);
+        CommandQueue.getInstance().addPriority(CustomParams.noAssignGroupId);
     }
 
-    public double x;
-    public double y;
-
-    protected void init(Player me, World world, Game game, Move move){
+    protected void init(Player me, World world, Game game, Move move) throws Exception {
         this.player = me;
         this.world = world;
         this.game = game;
         this.move = move;
-        this.myPlayerId = this.player.getId();
 
         if (this.battleField == null) {
-            this.battleField = new BattleField();
-            this.commander = new Commander(this);
+            commander = new Commander(this);
+            battleField = new BattleField(CustomParams.tileCellSize);
+            enemyField = new EnemyField(battleField);
+            commander.initStaticPPField();
 
-            this.commander.initStaticPPField();
-            System.out.println("Seed : " + MyStrategy.game.getRandomSeed());
+            //what is this shit ?
             armyDamageField = new ArmyDamageField(this);
-
-            weatherMap = world.getWeatherByCellXY();
-            terrainMap = world.getTerrainByCellXY();
+            System.out.println("Seed : " + MyStrategy.game.getRandomSeed());
         }
 
     }
@@ -79,9 +79,6 @@ public final class MyStrategy implements Strategy {
             this.init(me, world, game, move);
 
             this.armyFieldAnalisys(world);
-            this.battleField.formArmies();
-            //this.armyDamageField.defineArmyForm();
-            //this.battleField.print();
 
             this.commander.logic(battleField);
             this.commander.check();
@@ -90,16 +87,12 @@ public final class MyStrategy implements Strategy {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            //if (world.getTickIndex() % 200 == 0) {
             System.out.println("Out of tick " + world.getTickIndex() + " commands count " + player.getRemainingActionCooldownTicks());
-            //}
-
         }
-
     }
 
     public void armyFieldAnalisys(World world) {
-        List<AllyArmy> activeArmy = commander.getArmyRunningCommands();
+        List<ArmyAllyOrdering> activeArmy = commander.getArmyRunningCommands();
         Arrays.stream(
             world.getNewVehicles()).
             forEach(vehicle -> {
@@ -115,7 +108,7 @@ public final class MyStrategy implements Strategy {
 
                 battleField.addVehicle(smartVehicle);
 
-                for (AllyArmy army : activeArmy) {
+                for (ArmyAllyOrdering army : activeArmy) {
                     army.result(smartVehicle);
                 }
             });
@@ -132,7 +125,7 @@ public final class MyStrategy implements Strategy {
                     smartVehicle.vehicleUpdate(vehicleUpdate);
                     battleField.addVehicle(smartVehicle);
 
-                    for (AllyArmy army : activeArmy) {
+                    for (ArmyAllyOrdering army : activeArmy) {
                         army.result(smartVehicle);
                     }
 
@@ -140,10 +133,6 @@ public final class MyStrategy implements Strategy {
                     e.printStackTrace();
                 }
         });
-    }
-
-    public Long getMyPlayerId() {
-        return myPlayerId;
     }
 
     public Player getPlayer() {
@@ -186,5 +175,39 @@ public final class MyStrategy implements Strategy {
 
     public static Long getEnemyPlayerId() {
         return MyStrategy.world.getOpponentPlayer().getId();
+    }
+
+    /**
+     * weather and terrain static data
+     */
+    private static Integer weatherTerrainWidthPropose;
+    private static Integer weatherTerrainHeightPropose;
+
+    public static int getWeatherTerrainWidthPropose() {
+        if (weatherTerrainWidthPropose == null) {
+            weatherTerrainWidthPropose = (int)MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount();
+        }
+        return weatherTerrainWidthPropose;
+    }
+
+    public static int getWeatherTerrainHeightPropose() {
+        if (weatherTerrainHeightPropose == null) {
+            weatherTerrainHeightPropose = (int)MyStrategy.world.getHeight() / MyStrategy.game.getTerrainWeatherMapRowCount();
+        }
+        return weatherTerrainHeightPropose;
+    }
+
+    public static TerrainType[][] getTerrainMap() {
+        if (terrainMap == null) {
+            terrainMap = world.getTerrainByCellXY();
+        }
+        return terrainMap;
+    }
+
+    public static WeatherType[][] getWeatherMap() {
+        if (weatherMap == null) {
+            weatherMap = world.getWeatherByCellXY();
+        }
+        return weatherMap;
     }
 }

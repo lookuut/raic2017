@@ -1,5 +1,3 @@
-import javafx.geometry.Point2D;
-import jdk.nashorn.internal.runtime.ECMAException;
 import model.VehicleType;
 
 import java.util.*;
@@ -8,15 +6,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 class Commander {
-    protected Map<Integer, AllyArmy> divisions;
+    protected Map<Integer, ArmyAllyOrdering> divisions;
     protected MyStrategy strategy;
-    protected BehaviourTree<AllyArmy> behaviourTree;
+    protected BehaviourTree<ArmyAlly> behaviourTree;
     protected Queue<BTreeAction> activeActions;
 
-    protected BattleField battleField;
-
-
-    public static Integer fighterArmyId = 2;
     /**
      * @desc all armies must be init in constructor
      * @param strategy
@@ -27,26 +21,19 @@ class Commander {
         activeActions = new LinkedList<>();
         behaviourTree = new BehaviourTree<>();
 
-        AllyArmy arrvArmy = new ARRVArmy();
-        AllyArmy fighterArmy = new FighterArmy();
-        AllyArmy helicopterArmy = new AllyArmy();
-        AllyArmy tankArmy = new AllyArmy();
-        AllyArmy ifvArmy = new AllyArmy();
-        AllyArmy allArmy = new AllyArmy();
+        ArmyAllyOrderingArrv arrvArmy = new ArmyAllyOrderingArrv(CustomParams.arrvArmyId);
+        ArmyAllyOrderingFighter fighterArmy = new ArmyAllyOrderingFighter(CustomParams.fighterArmyId);
+        ArmyAllyOrdering helicopterArmy = new ArmyAllyOrdering(CustomParams.helicopterArmyId);
+        ArmyAllyOrdering tankArmy = new ArmyAllyOrdering(CustomParams.tankArmyId);
+        ArmyAllyOrdering ifvArmy = new ArmyAllyOrdering(CustomParams.ifvArmyId);
+        ArmyAllyOrdering allArmy = new ArmyAllyOrdering(CustomParams.allArmyId);
 
-        arrvArmy.setGroupId(1);
-        fighterArmy.setGroupId(fighterArmyId);
-        helicopterArmy.setGroupId(3);
-        tankArmy.setGroupId(4);
-        ifvArmy.setGroupId(5);
-        allArmy.setGroupId(6);
-
-        divisions.put(1, arrvArmy);
-        divisions.put(fighterArmyId, fighterArmy);
-        divisions.put(3, helicopterArmy);
-        divisions.put(4, tankArmy);
-        divisions.put(5, ifvArmy);
-        divisions.put(6, allArmy);
+        divisions.put(CustomParams.arrvArmyId, arrvArmy);
+        divisions.put(CustomParams.fighterArmyId, fighterArmy);
+        divisions.put(CustomParams.helicopterArmyId, helicopterArmy);
+        divisions.put(CustomParams.tankArmyId, tankArmy);
+        divisions.put(CustomParams.ifvArmyId, ifvArmy);
+        //divisions.put(CustomParams.allArmyId, allArmy);
 
         arrvArmy.addCommand(new CommandCreateArmy(VehicleType.ARRV));
         fighterArmy.addCommand(new CommandCreateArmy(VehicleType.FIGHTER));
@@ -58,13 +45,13 @@ class Commander {
         //fighter behaviour tree
         BehaviourTree fighterBehaviourTree = new BehaviourTree<>();
 
-        BTreeNodeCondition<AllyArmy> nuckAttackCond = new BTreeNodeCondition(
-                (Predicate<AllyArmy>)((army) -> MyStrategy.canNuclearAttack()),
+        BTreeNodeCondition<ArmyAlly> nuckAttackCond = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((army) -> MyStrategy.canNuclearAttack()),
                 fighterArmy);
 
 
-        BTreeNodeCondition<AllyArmy> defenceCond = new BTreeNodeCondition(
-                (Predicate<AllyArmy>)((army) -> army.percentOfDeathVehicles() > 0.75),
+        BTreeNodeCondition<ArmyAlly> defenceCond = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((army) -> army.percentOfDeathVehicles() > 0.75),
                 fighterArmy);
 
         nuckAttackCond.addChildNode(new BTreeAction(() -> new CommandNuclearAttack()));
@@ -80,45 +67,13 @@ class Commander {
         this.setEmptyBehaviourTree(tankArmy);
         this.setEmptyBehaviourTree(ifvArmy);
         this.setDefenceBehaviourTree(arrvArmy);
-
         this.setAllArmyBehaviourTree(allArmy);
-
-
-        /*
-        BTreeNode isNuclearAtttack = new BTreeNodeCondition((Predicate<Commander>)((commander) -> MyStrategy.player.getNextNuclearStrikeTickIndex() > 0), this);
-
-
-        isNuclearAtttack.addChildNode(new BTreeAction(() -> new CommandNuclearDefence(this)));
-        isNuclearAtttack.addChildNode(new BTreeAction(() -> new CommandEmpty()));
-
-
-        rootNode.addChildNode(new BTreeAction(() -> new CommandCreateArmy(VehicleType.FIGHTER)));
-        rootNode.addChildNode(nuclearAttackCond);
-        */
-
-
-
-        //nuclearAttackCond.addChildNode(nucAttack);
-        //nuclearAttackCond.addChildNode(isNuclearAtttack);
-
-
-
-        /*
-        fighterArmy.addCommand(new CommandCreateArmy(VehicleType.HELICOPTER));
-        fighterArmy.addCommand(new CommandMove(100, 400));
-        fighterArmy.addCommand(new CommandMove( 400, 400));
-        */
-
-        //divisions.put(2, helicopterArmy);
-
-        //helicopterArmy.setBehaviourTree(fighterBehaviourTree);
-
     }
 
-    public void setAllArmyBehaviourTree(AllyArmy army) {
-        BehaviourTree<AllyArmy> bTree = new BehaviourTree<>();
+    public void setAllArmyBehaviourTree(ArmyAllyOrdering army) {
+        BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
         BTreeNode root = new BTreeNodeCondition(
-                (Predicate<AllyArmy>)((armyLocal) -> MyStrategy.isNuclearAttack()),
+                (Predicate<ArmyAlly>)((armyLocal) -> MyStrategy.isNuclearAttack()),
                 army
         );
 
@@ -129,10 +84,10 @@ class Commander {
         army.setBehaviourTree(bTree);
     }
 
-    public void setDefenceBehaviourTree(AllyArmy army) {
-        BehaviourTree<AllyArmy> bTree = new BehaviourTree<>();
+    public void setDefenceBehaviourTree(ArmyAllyOrdering army) {
+        BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
         BTreeNode root = new BTreeNodeCondition(
-                (Predicate<AllyArmy>)((armyLocal) -> true),
+                (Predicate<ArmyAlly>)((armyLocal) -> true),
                 army
         );
         root.addChildNode(new BTreeAction(() -> new CommandDefence()));
@@ -141,10 +96,10 @@ class Commander {
         army.setBehaviourTree(bTree);
     }
 
-    public void setEmptyBehaviourTree(AllyArmy army) {
-        BehaviourTree<AllyArmy> bTree = new BehaviourTree<>();
+    public void setEmptyBehaviourTree(ArmyAllyOrdering army) {
+        BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
         BTreeNode root = new BTreeNodeCondition(
-                (Predicate<AllyArmy>)((armyLocal) -> true),
+                (Predicate<ArmyAlly>)((armyLocal) -> true),
                 army
         );
         root.addChildNode(new BTreeAction(() -> new CommandAttack()));
@@ -154,24 +109,24 @@ class Commander {
     }
 
 
-    public void initStaticPPField () {
+    public void initStaticPPField () throws Exception {
 
         int ppFieldX = (int)(strategy.getWorld().getWidth() / strategy.getGame().getTerrainWeatherMapColumnCount());
         int ppFieldY = (int)(strategy.getWorld().getHeight() / strategy.getGame().getTerrainWeatherMapRowCount());
-        PPField terrainPPField = new PPField(ppFieldX, ppFieldY);
+        TerrainPPField terrainPPField = new TerrainPPField(ppFieldX, ppFieldY);
         terrainPPField.addTerrainMap(strategy.getWorld().getTerrainByCellXY());
 
-        PPField weatherPPField = new PPField(ppFieldX, ppFieldY);
-        weatherPPField.addWeatherMap(strategy.getWorld().getWeatherByCellXY());
+        WeatherPPField weatherPPField = new WeatherPPField(ppFieldX, ppFieldY);
+        weatherPPField.addWeatherMap(MyStrategy.getWeatherMap());
 
-        for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
+        for (Map.Entry<Integer, ArmyAllyOrdering> entry : divisions.entrySet()) {
             entry.getValue().init(terrainPPField, weatherPPField);
         }
     }
 
     public void logic (BattleField battleField) throws Exception {
         //run divisions logic
-        for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
+        for (Map.Entry<Integer, ArmyAllyOrdering> entry : divisions.entrySet()) {
             if (entry.getValue().isArmyAlive()) {
                 entry.getValue().run(battleField);
                 entry.getValue().check();
@@ -180,19 +135,17 @@ class Commander {
     }
 
 
-    public List<AllyArmy> getArmyRunningCommands() {
+    public List<ArmyAllyOrdering> getArmyRunningCommands() {
         return divisions.values().stream().filter(army -> army.isRun()).collect(Collectors.toList());
     }
 
     public void check () {
-        for (Map.Entry<Integer, AllyArmy> entry : divisions.entrySet()) {
+        for (Map.Entry<Integer, ArmyAllyOrdering> entry : divisions.entrySet()) {
             entry.getValue().check();
         }
     }
 
-    public Map<Integer, AllyArmy> getDivisions() {
+    public Map<Integer, ArmyAllyOrdering> getDivisions() {
         return divisions;
     }
-
-    public static int selectGroupId = -1;
 }

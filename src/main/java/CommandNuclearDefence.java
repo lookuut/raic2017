@@ -12,9 +12,8 @@ public class CommandNuclearDefence extends Command {
         super();
     }
 
-    public void run (AllyArmy army) throws Exception {
+    public void run (ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
-            army.selected();
             Consumer<Command> commandSelect = (command) -> {
                 Player player = MyStrategy.nuclearAttack();
                 attackTick = player.getNextNuclearStrikeTickIndex();
@@ -36,13 +35,13 @@ public class CommandNuclearDefence extends Command {
             };
 
 
-            queue.add(new CommandWrapper(commandSelect, this, -1));
-            queue.add(new CommandWrapper(commandDefence, this, -1));
+            addCommand(new CommandWrapper(commandSelect, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
+            addCommand(new CommandWrapper(commandDefence, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
             super.run(army);
         }
     }
 
-    public boolean check (AllyArmy army) {
+    public boolean check (ArmyAllyOrdering army) {
         if (getState() == CommandStates.Run && MyStrategy.world.getTickIndex() >= this.attackTick + MyStrategy.game.getTacticalNuclearStrikeDelay() + 50) {
             setState(CommandStates.Complete);
             return true;
@@ -52,7 +51,7 @@ public class CommandNuclearDefence extends Command {
     }
 
     @Override
-    public void runned(){
+    public void pinned(){
 
     }
 

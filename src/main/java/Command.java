@@ -1,9 +1,6 @@
-import model.ActionType;
-
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.function.Consumer;
 
 enum CommandStates {
     New, Run, Canceled, Failed, Complete, Hold
@@ -11,8 +8,8 @@ enum CommandStates {
 
 abstract public class Command {
 
-    protected CommandStates state;
-    protected Queue<CommandWrapper> queue;
+    private CommandStates state;
+    private Queue<CommandWrapper> queue;
     protected Integer runTickIndex = -1;
 
     public Command() {
@@ -27,10 +24,23 @@ abstract public class Command {
     public void setState(CommandStates state) {
         this.state = state;
     }
+    public boolean isRun () {
+        return getState() == CommandStates.Run;
+    }
+    public boolean isNew() {
+        return getState() == CommandStates.New;
+    }
+    public boolean isFinished() { return getState() == CommandStates.Complete || getState() == CommandStates.Failed || getState() == CommandStates.Canceled; }
+    public Command prepare(ArmyAllyOrdering army)  throws Exception { return this; }
+    public Integer getRunTickIndex() {
+        return runTickIndex;
+    }
 
-    abstract public boolean check(AllyArmy army);
+    abstract public void pinned();
+    abstract public boolean check(ArmyAllyOrdering army);
+    abstract public void processing(SmartVehicle vehicle);
 
-    public void run(AllyArmy army) throws Exception {
+    public void run(ArmyAllyOrdering army) throws Exception {
 
         if (this.getState() != CommandStates.New) {
             return;
@@ -42,46 +52,18 @@ abstract public class Command {
             CommandQueue.getInstance().addCommand(iter.next());
         }
 
-        this.setState(CommandStates.Hold);
+        setState(CommandStates.Hold);
     }
 
-    public void result(AllyArmy army, SmartVehicle vehicle) {
+    public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {
         if (runTickIndex < 0) {
             runTickIndex = MyStrategy.world.getTickIndex();
         }
     }
 
-    public Integer getRunTickIndex() {
-        return runTickIndex;
+
+    public void addCommand(CommandWrapper command) {
+        queue.add(command);
     }
 
-    public boolean isRun () {
-        return getState() == CommandStates.Run;
-    }
-
-    public boolean isNew() {
-        return getState() == CommandStates.New;
-    }
-
-    /**
-     * @canceled, complete or failed
-     * @return
-     */
-
-    public boolean isFinished() {
-        return getState() == CommandStates.Complete || getState() == CommandStates.Failed || getState() == CommandStates.Canceled;
-    }
-
-    public Command prepare(AllyArmy army)  throws Exception {
-        return this;
-    }
-
-    abstract public void runned();
-
-
-    public void addCommand(CommandWrapper cw) {
-        queue.add(cw);
-    }
-
-    abstract public void processing(SmartVehicle vehicle);
 }

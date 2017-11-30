@@ -9,31 +9,32 @@ public class CommandScale extends Command {
 
 
     @Override
-    public Command prepare(AllyArmy army) throws Exception {
+    public Command prepare(ArmyAllyOrdering army) throws Exception {
         return this;
     }
 
-    public void run (AllyArmy army) throws Exception {
+    public void run (ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
             Consumer<Command> commandScale = (command) -> {
                 MyStrategy.move.setAction(ActionType.SCALE);
-                MyStrategy.move.setX(army.getAvgX());
-                MyStrategy.move.setY(army.getAvgY());
+
+                MyStrategy.move.setX(army.getForm().getAvgPoint().getX());
+                MyStrategy.move.setY(army.getForm().getAvgPoint().getY());
                 MyStrategy.move.setFactor(CustomParams.armyScaleFactor);
             };
 
-            queue.add(new CommandWrapper(commandScale, this, -1));
-            army.selectCommand();
+            addCommand(new CommandWrapper(commandScale, this, CustomParams.runImmediatelyTick, army.getGroupId()));
+
             super.run(army);
         }
     }
 
 
-    public boolean check (AllyArmy army) {
+    public boolean check (ArmyAllyOrdering army) {
         if (getState() == CommandStates.Run) {
             if (MyStrategy.world.getTickIndex() - scaleStartedIndex > CustomParams.armyScaleMaxTime) {
                 setState(CommandStates.Complete);
-                army.recalculationMaxMin();
+                army.getForm().recalc(army.getVehicles());
                 return true;
             }
         }
@@ -43,7 +44,7 @@ public class CommandScale extends Command {
 
 
     @Override
-    public void runned(){
+    public void pinned(){
         this.scaleStartedIndex = MyStrategy.world.getTickIndex();
     }
 

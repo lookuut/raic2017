@@ -1,5 +1,4 @@
 import model.ActionType;
-import model.Vehicle;
 import model.VehicleType;
 
 import java.util.function.Consumer;
@@ -12,14 +11,15 @@ public class CommandCreateArmy extends Command {
     }
 
 
-    public void result(AllyArmy army, SmartVehicle vehicle) {
-        if (vehicle.getSelected()) {
+    public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {
+        if (vehicle.getSelected() && !vehicle.isHaveArmy(army)) {
             vehicle.addArmy(army);
             army.addVehicle(vehicle);
+            army.getTrack().addStep(MyStrategy.world.getTickIndex(), new Step(army.getBattleField().pointTransform(vehicle.getPoint()), CustomParams.allyUnitPPFactor), vehicle.getType());
         }
     }
 
-    public void run(AllyArmy army) throws Exception {
+    public void run(ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
             Consumer<Command> selectVehicleType = (command) -> {
                 MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
@@ -37,15 +37,15 @@ public class CommandCreateArmy extends Command {
                 MyStrategy.move.setGroup(army.getGroupId());
             };
 
-            queue.add(new CommandWrapper(selectVehicleType, this, -1));
-            queue.add(new CommandWrapper(assign, this, -1));
+            addCommand(new CommandWrapper(selectVehicleType, this, -1, CustomParams.noAssignGroupId));
+            addCommand(new CommandWrapper(assign, this, -1, CustomParams.noAssignGroupId));
 
             super.run(army);
         }
     }
 
     @Override
-    public boolean check (AllyArmy army) {
+    public boolean check (ArmyAllyOrdering army) {
         if (army.getVehicles().size() > 0) {
             setState(CommandStates.Complete);
             return true;
@@ -55,12 +55,10 @@ public class CommandCreateArmy extends Command {
     }
 
     @Override
-    public void runned(){
-
+    public void pinned(){
     }
 
     @Override
     public void processing(SmartVehicle vehicle) {
-
     }
 }
