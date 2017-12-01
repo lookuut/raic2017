@@ -47,6 +47,7 @@ public class CommandCreateArmy extends Command {
     @Override
     public boolean check (ArmyAllyOrdering army) {
         if (army.getVehicles().size() > 0) {
+            army.addCommand(new CommandScale());
             setState(CommandStates.Complete);
             return true;
         } else {

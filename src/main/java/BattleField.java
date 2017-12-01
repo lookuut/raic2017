@@ -1,6 +1,4 @@
 
-import geom.Point2D;
-
 import java.util.List;
 
 public class BattleField {
@@ -64,11 +62,6 @@ public class BattleField {
 
             Integer lastVehicleX = vehicleBattleFieldCell.getX();
             Integer lastVehicleY = vehicleBattleFieldCell.getY();
-
-            if (vehicle.getDurability() == 0) {
-                lastVehicleX = battleFieldX;
-                lastVehicleY = battleFieldY;
-            }
 
             aerialPPField.addFactor(lastVehicleX, lastVehicleY,-vehicle.getAerialPPFactor());
             terrainPPField.addFactor(lastVehicleX, lastVehicleY,-vehicle.getTerrainPPFactor());

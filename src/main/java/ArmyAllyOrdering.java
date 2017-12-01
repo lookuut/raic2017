@@ -1,4 +1,3 @@
-import geom.Point2D;
 import model.VehicleType;
 
 import java.util.*;

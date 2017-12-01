@@ -1,4 +1,3 @@
-import geom.Point2D;
 
 public class CommandAttack extends Command {
 
@@ -29,7 +28,8 @@ public class CommandAttack extends Command {
     public Command prepare(ArmyAllyOrdering army) throws Exception {
         army.getForm().recalc(army.getVehicles());
         Point2D nearestEnemyPoint = army.searchNearestEnemy();
-        if (army.getForm().isOnCoordinates(nearestEnemyPoint)) {
+
+        if (nearestEnemyPoint == null || army.getForm().isOnCoordinates(nearestEnemyPoint)) {
             return this;
         }
 

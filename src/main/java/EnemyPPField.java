@@ -1,6 +1,3 @@
-import geom.LineSegment;
-import geom.Point2D;
-
 import java.util.HashSet;
 
 public class EnemyPPField extends PPField {
@@ -103,6 +100,30 @@ public class EnemyPPField extends PPField {
         }
 
         return getWorldPoint(new Point2D(maxX, maxY));
+    }
+
+    /**
+     *
+     * @param point
+     * @param radious
+     * @return avg factor sum
+     */
+    public double getPointRadiousFactorSum(Point2D point, int radious) {
+        double factor = 0;
+        int count = 0;
+        for (int y = point.getIntY() - radious; y <= radious && y < getHeight(); y++) {
+            if (y < 0) {
+                continue;
+            }
+            for (int x = point.getIntX() - radious; x <= radious && x < getWidth(); x++) {
+                if (x >= 0) {
+                    factor += getFactor(x, y);
+                    count++;
+                }
+            }
+        }
+
+        return factor/ (double)count;
     }
 }
 

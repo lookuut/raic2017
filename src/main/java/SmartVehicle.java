@@ -1,5 +1,4 @@
 
-import geom.Point2D;
 import model.*;
 
 import java.util.HashSet;
@@ -84,7 +83,8 @@ public class SmartVehicle  {
         this.remainingAttackCooldownTicks = vehicleUpdate.getRemainingAttackCooldownTicks();
         this.groups = vehicleUpdate.getGroups();
         this.selected = vehicleUpdate.isSelected();
-        this.point = new Point2D(vehicleUpdate.getX(), vehicleUpdate.getY());
+        this.point.setX(vehicleUpdate.getX());
+        this.point.setY(vehicleUpdate.getY());
     }
 
     public void vehicleUpdate(Vehicle vehicle) {
@@ -95,7 +95,8 @@ public class SmartVehicle  {
         this.remainingAttackCooldownTicks = vehicle.getRemainingAttackCooldownTicks();
         this.groups = vehicle.getGroups();
         this.selected = vehicle.isSelected();
-        this.point = new Point2D(vehicle.getX(), vehicle.getY());
+        this.point.setX(vehicle.getX());
+        this.point.setY(vehicle.getY());
     }
 
 

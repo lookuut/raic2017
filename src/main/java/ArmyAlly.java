@@ -1,5 +1,3 @@
-import geom.LineSegment;
-import geom.Point2D;
 import model.VehicleType;
 
 import java.util.*;
@@ -104,4 +102,13 @@ public class ArmyAlly extends Army {
     public BattleField getBattleField() {
         return battleField;
     }
+
+    public boolean onDanger() {
+        return MyStrategy.enemyField.onDanger(getVehiclesType(), getForm().getAvgPoint(), CustomParams.dangerRadious) != null;
+    }
+
+    public Point2D dangerPoint() {
+        return MyStrategy.enemyField.onDanger(getVehiclesType(), getForm().getAvgPoint(), CustomParams.dangerRadious);
+    }
+
 }

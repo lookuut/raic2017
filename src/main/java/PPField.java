@@ -1,5 +1,3 @@
-import geom.LineSegment;
-import geom.Point2D;
 import model.VehicleType;
 
 import java.util.*;
@@ -115,14 +113,12 @@ public class PPField {
 
     public void print() {
         System.out.println(Arrays.deepToString(field).replaceAll("],", "]," + System.getProperty("line.separator")));
+        System.out.println("==========================================>");
     }
 
     public Point2D[] getMaxMinValueCell() {
-        int maxX = 0;
-        int maxY = 0;
-
-        int minX = 0;
-        int minY = 0;
+        Point2D maxPoint = null;
+        Point2D minPoint = null;
 
         float max = field[0][0];
         float min = field[0][0];
@@ -131,24 +127,22 @@ public class PPField {
             for (int i = 0; i < getWidth(); i++) {
                 if (field[j][i] > max) {
                     max = field[j][i];
-                    maxX = i;
-                    maxY = j;
+                    maxPoint = new Point2D(i, j);
                 }
 
                 if (field[j][i] < min) {
                     min = field[j][i];
-                    minX = i;
-                    minY = j;
+                    minPoint = new Point2D(i, j);
                 }
             }
         }
 
-        Point2D[] result = {getWorldPoint(new Point2D(maxX, maxY)), getWorldPoint(new Point2D(minX, minY))};
+        Point2D[] result = {getWorldPoint(maxPoint), getWorldPoint(minPoint)};
         return result;
     }
 
     public Point2D getWorldPoint(Point2D point) {
-        return point.multiply(MyStrategy.world.getWidth()/(float)getWidth());
+        return point != null ? point.multiply(MyStrategy.world.getWidth()/(float)getWidth()) : null;
     }
 
     public Point2D deepSearch (HashSet<Integer> visitedCells, Point2D point, LineSegment line) {
@@ -236,6 +230,7 @@ public class PPField {
                     }
                 }
             }
+            Debuger.debug(2712);
 
             for (int i = 0; i < vehicles.length; i++) {
                 Point2D vehiclePoint = vehicles[i].getPoint();
@@ -249,6 +244,7 @@ public class PPField {
                 minPathJourneyTick = pathJourneyTick;
             }
         }
+
         addPathTrack(army, minPathVector, minPathJourneyTick);
         return minPathVector.add(startPoint);
     }
@@ -328,7 +324,7 @@ public class PPField {
         double maxWidth = MyStrategy.world.getWidth();
         double maxHeight = MyStrategy.world.getHeight();
         double factorSum = getFactor((int)Math.floor(tStartX / propose), (int)Math.floor(tStartY / propose));
-        Integer intersectCellsCount = 0;
+        Integer intersectCellsCount = 1;
 
         while (
                 (

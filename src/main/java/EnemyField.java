@@ -1,9 +1,8 @@
-import geom.Point2D;
-import model.Vehicle;
 import model.VehicleType;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
+
 
 public class EnemyField {
 
@@ -11,6 +10,8 @@ public class EnemyField {
     private EnemyPPField fighterDamageField;
     private EnemyPPField helicopterDamageField;
     private EnemyPPField ifvDamageField;
+    private EnemyPPField arrvDamageField;
+
     private EnemyPPField enemyField;
 
     private Integer width;
@@ -24,9 +25,18 @@ public class EnemyField {
         fighterDamageField = new EnemyPPField(width, height);
         helicopterDamageField = new EnemyPPField(width, height);
         ifvDamageField = new EnemyPPField(width, height);
+        arrvDamageField = new EnemyPPField(width, height);
         enemyField = new EnemyPPField(width, height);
     }
 
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
 
     /**
      * @desc bad style, rewrite it
@@ -43,6 +53,8 @@ public class EnemyField {
                 return fighterDamageField;
             case IFV:
                 return ifvDamageField;
+            case ARRV:
+                return arrvDamageField;
         }
 
         throw new Exception("Unknown vehicle type " + type.toString());
@@ -94,6 +106,7 @@ public class EnemyField {
         fighterDamageField.addFactor(x, y, vehicle.getDamagePPFactor(VehicleType.FIGHTER, true) * operator);
         ifvDamageField.addFactor(x, y, vehicle.getDamagePPFactor(VehicleType.IFV, false) * operator);
         helicopterDamageField.addFactor(x, y, vehicle.getDamagePPFactor(VehicleType.HELICOPTER, true) * operator);
+        arrvDamageField.addFactor(x, y, vehicle.getDamagePPFactor(VehicleType.ARRV, true) * operator);
         enemyField.addFactor(x, y, operator);
     }
 
@@ -113,5 +126,81 @@ public class EnemyField {
         }
 
         return sum;
+    }
+
+    public Point2D onDanger(Set<VehicleType> types, Point2D armyCenter, double dangerRadious) {
+
+        int propose = (int)(MyStrategy.world.getWidth() / getWidth());
+        int intDangerRadoius = (int)Math.floor(dangerRadious / propose);
+        Point2D armyTransformedCentre = new Point2D(Math.round(armyCenter.getX() / propose), Math.round(armyCenter.getY() / propose));
+
+        Function<Integer, Point2D> xAxisFunction = (y) -> {
+            try {
+                for (int x = 1; x <= intDangerRadoius; x++) {
+                    for (VehicleType type : types) {
+                        EnemyPPField damageField = getDamageField(type);
+                        if (armyTransformedCentre.getIntX() + x < getWidth() && damageField.getFactor(armyTransformedCentre.getIntX() + x, y) > 0) {
+                            return damageField.getWorldPoint(new Point2D(armyTransformedCentre.getIntX() + x, y));
+                        }
+
+                        if (armyTransformedCentre.getIntX() - x >= 0 && damageField.getFactor(armyTransformedCentre.getIntX() - x, y) > 0) {
+                            return damageField.getWorldPoint(new Point2D(armyTransformedCentre.getIntX() - x, y));
+                        }
+                    }
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        };
+
+        for (int y = 0; y <= intDangerRadoius; y++) {
+            if (armyTransformedCentre.getIntY() + y < getHeight()) {
+                Point2D point = xAxisFunction.apply(armyTransformedCentre.getIntY() + y);
+                if (point != null) {
+                    return point;
+                }
+            }
+
+            if (armyTransformedCentre.getIntY() - y >= 0) {
+                Point2D point = xAxisFunction.apply(armyTransformedCentre.getIntY() - y);
+                if (point != null) {
+                    return point;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public Point2D searchNearestSafetyPoint(Set<VehicleType> vehicleTypes, Point2D fromPoint, Point2D escapePoint) throws Exception {
+        Point2D direction = fromPoint.subtract(escapePoint).normalize();
+
+        double minFactor = Double.MAX_VALUE;
+        Point2D minFactorVec = null;
+        for (int angleSector = 0; angleSector < CustomParams.searchSafetyZoneSectorCount; angleSector++) {
+            double angle = (angleSector % 2 == 1 ? -1 : 1) * angleSector * (2 * Math.PI) / CustomParams.searchSafetyZoneSectorCount;
+            Point2D safetyPointVector = direction.turn(angle).multiply(CustomParams.safetyDistance);
+            Point2D destPoint = escapePoint.add(safetyPointVector);
+
+            if (destPoint.getX() >= MyStrategy.world.getWidth() || destPoint.getY() >= MyStrategy.world.getHeight() || destPoint.getX() < 0 || destPoint.getY() < 0) {
+                continue;
+            }
+
+            double factor = 0;
+            for (VehicleType vehicleType : vehicleTypes) {
+                EnemyPPField field = getDamageField(vehicleType);
+                factor += field.getPointRadiousFactorSum( field.getTransformedPoint(escapePoint.add(safetyPointVector)), CustomParams.safetyDistance);
+            }
+
+            if (factor < minFactor) {
+                minFactorVec = destPoint;
+                minFactor = factor;
+            }
+        }
+
+        return minFactorVec;
     }
 }

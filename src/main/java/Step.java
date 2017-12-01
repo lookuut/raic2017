@@ -1,4 +1,3 @@
-import geom.Point2D;
 
 public class Step {
 

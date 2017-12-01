@@ -17,7 +17,7 @@ public class CommandScale extends Command {
         if (isNew()) {
             Consumer<Command> commandScale = (command) -> {
                 MyStrategy.move.setAction(ActionType.SCALE);
-
+                army.getForm().recalc(army.getVehicles());
                 MyStrategy.move.setX(army.getForm().getAvgPoint().getX());
                 MyStrategy.move.setY(army.getForm().getAvgPoint().getY());
                 MyStrategy.move.setFactor(CustomParams.armyScaleFactor);

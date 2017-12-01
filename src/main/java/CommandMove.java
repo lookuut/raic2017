@@ -1,8 +1,5 @@
 import model.ActionType;
 
-
-import geom.Point2D;
-
 import java.util.HashMap;
 
 import java.util.HashSet;
@@ -14,6 +11,7 @@ public class CommandMove extends Command {
     protected Point2D targetVector;
 
     protected int startTick;
+    protected int maxRunnableTick = 0;
 
     protected Map<Long, Point2D> vehiclesTargetPositions;
     protected HashSet<Long> readyVehicles;
@@ -27,6 +25,10 @@ public class CommandMove extends Command {
 
         vehiclesTargetPositions = new HashMap<>();
         readyVehicles = new HashSet<>();
+
+        if (Math.ceil(targetPosition.getX()) == 0 || Math.ceil(targetPosition.getY()) == 0 ) {
+            System.out.println("dawdawda");
+        }
     }
 
     public Point2D getTargetPosition() {
@@ -44,7 +46,11 @@ public class CommandMove extends Command {
         }
 
         if (readyVehicles.size() > 0) {
-            army.addCommand(new CommandScale());
+            setState(CommandStates.Complete);
+            return true;
+        }
+
+        if (maxRunnableTick + startTick < MyStrategy.world.getTickIndex()) {
             setState(CommandStates.Complete);
             return true;
         }
@@ -62,6 +68,8 @@ public class CommandMove extends Command {
             Point2D avgPoint = new Point2D(army.getForm().getAvgPoint().getX(), army.getForm().getAvgPoint().getY());
 
             targetVector = targetPosition.subtract(avgPoint);
+            SmartVehicle nearVehicle = army.getNearestVehicle(avgPoint);
+            maxRunnableTick = nearVehicle.getVehiclePointAtTick(targetVector);
 
             if (targetVector.magnitude() == 0) {
                 setState(CommandStates.Failed);
@@ -78,7 +86,6 @@ public class CommandMove extends Command {
                 MyStrategy.move.setAction(ActionType.MOVE);
                 MyStrategy.move.setX(targetVector.getX());
                 MyStrategy.move.setY(targetVector.getY());
-
             };
 
             addCommand(new CommandWrapper(funcMove, this, CustomParams.runImmediatelyTick, army.getGroupId()));
@@ -87,8 +94,6 @@ public class CommandMove extends Command {
     }
 
     public Command prepare(ArmyAllyOrdering army) throws Exception {
-
-
         CommandMove move = army.pathFinder(this);
         if (move == this) {
             return this;
@@ -106,6 +111,7 @@ public class CommandMove extends Command {
 
     @Override
     public void pinned() {
+        startTick = MyStrategy.world.getTickIndex();
     }
 
     @Override

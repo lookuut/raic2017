@@ -1,4 +1,3 @@
-package geom;
 
 public class Point2D {
 

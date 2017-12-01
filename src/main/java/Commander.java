@@ -29,10 +29,10 @@ class Commander {
         ArmyAllyOrdering allArmy = new ArmyAllyOrdering(CustomParams.allArmyId);
 
         divisions.put(CustomParams.arrvArmyId, arrvArmy);
-        divisions.put(CustomParams.fighterArmyId, fighterArmy);
-        divisions.put(CustomParams.helicopterArmyId, helicopterArmy);
+        //divisions.put(CustomParams.fighterArmyId, fighterArmy);
+        //divisions.put(CustomParams.helicopterArmyId, helicopterArmy);
         divisions.put(CustomParams.tankArmyId, tankArmy);
-        divisions.put(CustomParams.ifvArmyId, ifvArmy);
+        //divisions.put(CustomParams.ifvArmyId, ifvArmy);
         //divisions.put(CustomParams.allArmyId, allArmy);
 
         arrvArmy.addCommand(new CommandCreateArmy(VehicleType.ARRV));
@@ -54,10 +54,17 @@ class Commander {
                 (Predicate<ArmyAlly>)((army) -> army.percentOfDeathVehicles() > 0.75),
                 fighterArmy);
 
+        BTreeNodeCondition<ArmyAlly> isDefenceCond = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((army) -> army.onDanger()),
+                fighterArmy);
+
         nuckAttackCond.addChildNode(new BTreeAction(() -> new CommandNuclearAttack()));
         nuckAttackCond.addChildNode(defenceCond);
-        defenceCond.addChildNode(new BTreeAction(() -> new CommandDefence()));
+        defenceCond.addChildNode(isDefenceCond);
         defenceCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
+
+        isDefenceCond.addChildNode(new BTreeAction(()-> new CommandDefence()));
+        isDefenceCond.addChildNode(new BTreeAction(()-> new CommandEmpty()));//on idea command siege base
 
         fighterBehaviourTree.addRoot(nuckAttackCond);
 
@@ -87,11 +94,11 @@ class Commander {
     public void setDefenceBehaviourTree(ArmyAllyOrdering army) {
         BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
         BTreeNode root = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> true),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.onDanger()),
                 army
         );
         root.addChildNode(new BTreeAction(() -> new CommandDefence()));
-        root.addChildNode(new BTreeAction(() -> new CommandEmpty()));
+        root.addChildNode(new BTreeAction(() -> new CommandEmpty()));//on idea go to siege base
         bTree.addRoot(root);
         army.setBehaviourTree(bTree);
     }
