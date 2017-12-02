@@ -20,8 +20,10 @@ public class Track {
 
         if (trackMap.get(tick).containsKey(step.getIndex())) {
             step.addPower(trackMap.get(tick).get(step.getIndex()).getPower());
+        } else {
+            trackMap.get(tick).put(step.getIndex(), step);
         }
-        trackMap.get(tick).put(step.getIndex(), step);
+
     }
 
     public SortedMap<Integer, Map<Integer, Step>> getVehicleTypeTrack(VehicleType type) {
@@ -49,23 +51,27 @@ public class Track {
         return terrainTrackMap.size() == 0 ? 0 : terrainTrackMap.lastKey();
     }
 
-    public void minusTrack(Track fromTrack, Track minusTrack, Integer tick) {
-        aerialTrackMap = sumTrackMap(fromTrack.aerialTrackMap, minusTrack.aerialTrackMap, tick, -1);
-        terrainTrackMap = sumTrackMap(fromTrack.terrainTrackMap, minusTrack.terrainTrackMap, tick, -1);
-    }
-
     public SortedMap<Integer, Map<Integer, Step>> sumTrackMap(
             SortedMap<Integer, Map<Integer, Step>> fromTrackMap,
             SortedMap<Integer, Map<Integer, Step>> usageTrackMap,
             Integer tick,
             int operator)
     {
+
+        if (fromTrackMap.size() == 0) {
+            return new TreeMap<>(usageTrackMap);
+        }
+
         SortedMap<Integer, Map<Integer, Step>> newTrackMap = new TreeMap<>();
         HashSet<Integer> keys = new HashSet<>();
         keys.addAll(fromTrackMap.keySet());
         keys.addAll(usageTrackMap.keySet());
 
         for (Integer tickItem : keys) {
+
+            if (usageTrackMap.containsKey(tickItem) && tickItem < tick ) {
+                newTrackMap.put(tickItem, new HashMap<>(usageTrackMap.get(tickItem)));
+            }
 
             if (tickItem < tick ) {//cut nose
                 continue;
@@ -88,8 +94,6 @@ public class Track {
                 }
             } else if (fromTrackMap.containsKey(tickItem)) {
                 newTrackMap.put(tickItem, new HashMap<>(fromTrackMap.get(tickItem)));
-            } else if (usageTrackMap.containsKey(tickItem)) {
-                newTrackMap.put(tickItem, new HashMap<>(usageTrackMap.get(tickItem)));
             }
         }
 

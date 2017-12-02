@@ -8,6 +8,8 @@ public class Army {
     private ArmyForm form;
     private Integer lastModificateTick = -1;
     private HashMap<VehicleType, Integer> vehicleTypes;
+    private double maxVisionRange;
+    private double avgDurability;
 
     protected HashMap<Integer, BattleFieldCell> battleFieldCellMap;
 
@@ -33,17 +35,24 @@ public class Army {
         }
 
         vehicleTypes.put(vehicle.getType(), count);
+        getForm().updateEdgesVehicles(vehicle);
+        maxVisionRange = Math.max(maxVisionRange, vehicle.getMinVisionRange());
     }
 
     public void putVehicle(SmartVehicle vehicle) {
         vehicles.put(vehicle.getId(), vehicle);
-        form.addPoint(vehicle.getPoint());
+        getForm().addPoint(vehicle.getPoint());
+        getForm().updateEdgesVehicles(vehicle);
+        maxVisionRange = Math.max(maxVisionRange, vehicle.getMinVisionRange());
     }
 
     public void removeVehicle(SmartVehicle vehicle) {
         vehicles.remove(vehicle);
         vehicleTypes.put(vehicle.getType(), vehicleTypes.get(vehicle.getType()) - 1);
+        getForm().removeVehicle(vehicles, vehicle);
     }
+
+
 
     public boolean containVehicle(Long vehicleId) {
         return vehicles.containsKey(vehicleId);
@@ -63,6 +72,10 @@ public class Army {
 
     public ArmyForm getForm() {
         return form;
+    }
+
+    public double getMaxVisionRange() {
+        return maxVisionRange;
     }
 
     public boolean isArmyAlive () {
@@ -103,5 +116,13 @@ public class Army {
 
     public Integer getLastModificateTick() {
         return lastModificateTick;
+    }
+
+    public double getAvgDurability() {
+        return getVehicles().values().stream().filter(vehicle -> vehicle.getDurability() > 0).mapToDouble(SmartVehicle::getDurability).average().getAsDouble();
+    }
+
+    public boolean isAerial () {
+        return getVehiclesType().contains(VehicleType.HELICOPTER) || getVehiclesType().contains(VehicleType.FIGHTER);
     }
 }

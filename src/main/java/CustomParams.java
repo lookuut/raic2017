@@ -1,7 +1,7 @@
 public class CustomParams {
     public static int allyUnitPPFactor = 10000;
     public static int pathFinderSectorCount = 24;
-    public static int pathSegmentLenght = 60;
+    public static int pathSegmentLenght = 30;
 
     //search safety point sector count
     public static int searchSafetyZoneSectorCount = 12;
@@ -24,7 +24,7 @@ public class CustomParams {
     public static int ifvArmyId = 5;
     public static int allArmyId = 6;
 
-    public static int equalTypeAttackFactor = 5;
+    public static int equalTypeAttackFactor = -1;
     //commands config
     public static int runImmediatelyTick = -1;
 
@@ -41,5 +41,10 @@ public class CustomParams {
 
     public static int trackMinTickInhistory = 60;
 
+    //nuclear attack
+    public static int nuclearAttackRatingRecalcTickInterval = 10;
+    public static int nuclearAttackRatingItemCount = 15;
 
+    public static int borderPointsCount = 12;
+    public static double minAvgDurability = 60;
 }

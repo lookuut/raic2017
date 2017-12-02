@@ -22,7 +22,7 @@ public class CommandDefence extends Command {
                 throw new Exception("Mistake call defence");
             }
 
-            moveToSafePointCommand = new CommandMove(point);
+            moveToSafePointCommand = new CommandMove(point.subtract(army.getForm().getAvgPoint()));
             moveToSafePointCommand.run(army);
             setState(CommandStates.Run);
         }

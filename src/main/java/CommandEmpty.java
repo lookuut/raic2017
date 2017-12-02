@@ -1,6 +1,7 @@
+
 public class CommandEmpty extends Command {
+
     public CommandEmpty() {
-        super();
     }
 
     public boolean check (ArmyAllyOrdering army) {
@@ -8,6 +9,12 @@ public class CommandEmpty extends Command {
         return true;
     }
 
+
+    public void run(ArmyAllyOrdering army) throws Exception {
+        if (isNew()) {
+            super.run(army);
+        }
+    }
     @Override
     public void pinned(){
 

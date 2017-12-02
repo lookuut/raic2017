@@ -64,8 +64,46 @@ public class ArmyAlly extends Army {
                 sum.sumField(MyStrategy.enemyField.getDamageField(type));
             }
 
-            Point2D[] result = sum.getMaxMinValueCell();
-            return result[1];
+
+            Point2D minValueCell = sum.getMinValueCell();
+            BattleFieldCell cell = battleField.getBattleFieldCell(minValueCell.getIntX(), minValueCell.getIntY());
+            Point2D enemyCellPoint = battleField.getWorldPoint(cell.getPoint());
+
+            if (enemyCellPoint.subtract(getForm().getAvgPoint()).magnitude() >  CustomParams.safetyDistance) {
+                return enemyCellPoint.subtract(getForm().getAvgPoint());
+            }
+            Map<Long,SmartVehicle> enemyVehicles = cell.getVehicles((int)MyStrategy.world.getOpponentPlayer().getId() - 1);
+
+            Map<Point2D, SmartVehicle> allyVehicles = getForm().getEdgesVehicles();
+            double minDistance = Double.MAX_VALUE;
+            SmartVehicle minDistanceEnemyVehicle = null;
+            SmartVehicle minDistanceAllyVehicle = null;
+            for (SmartVehicle enemyVehicle : enemyVehicles.values()) {
+                for (SmartVehicle allyVehicle : allyVehicles.values()) {
+                    double distance = allyVehicle.getPoint().distance(enemyVehicle.getPoint());
+                    if (distance < minDistance) {
+                        minDistanceEnemyVehicle = enemyVehicle;
+                        minDistanceAllyVehicle = allyVehicle;
+                        minDistance = distance;
+                    }
+                }
+            }
+            if (minDistanceEnemyVehicle == null || minDistanceAllyVehicle == null) {
+                throw new Exception("cant find enemy with min distance");
+            }
+
+            double attackRange = minDistanceAllyVehicle.getAttackRange(minDistanceEnemyVehicle.isAerial());
+            Point2D fromPoint = minDistanceAllyVehicle.getPoint();
+            Point2D targetPoint = minDistanceEnemyVehicle.getPoint();
+
+            Point2D targetVector = targetPoint.subtract(fromPoint);
+            double targetVectorMagnitude = targetVector.magnitude();
+            if (targetVectorMagnitude > attackRange) {
+                targetVector = targetVector.multiply((targetVectorMagnitude - attackRange) / targetVectorMagnitude);
+            }
+
+            return targetVector;
+
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -355,13 +355,13 @@ public class SmartVehicle  {
         }
 
         if (isAerial() && isAerial) {
-            return  enemyAerialAttack + enemyAerialDefence - allyAerialAttack - allyAerialDefence;
+            return  enemyAerialAttack + enemyAerialDefence;// - allyAerialAttack - allyAerialDefence;
         } else if (isAerial() && !isAerial) {
-            return  enemyGroundAttack + enemyGroundDefence - allyAerialAttack - allyAerialDefence;
+            return  enemyGroundAttack + enemyGroundDefence;// - allyAerialAttack - allyAerialDefence;
         } else if (!isAerial() && isAerial) {
-            return enemyAerialAttack + enemyAerialDefence - allyGroundAttack - allyGroundDefence;
+            return enemyAerialAttack + enemyAerialDefence;// - allyGroundAttack - allyGroundDefence;
         } else {
-            return enemyGroundAttack + enemyGroundDefence - allyGroundAttack - allyGroundDefence;
+            return enemyGroundAttack + enemyGroundDefence;// - allyGroundAttack - allyGroundDefence;
         }
     }
 
@@ -430,7 +430,7 @@ public class SmartVehicle  {
             if (horIntersectPoint == null && verIntersectPoint == null) {
                 throw new Exception("Cant intersect lines found");
             }
-
+            double speed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
             if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.magnitude() < horIntersectPoint.magnitude())) {
                 tStartX += stepX;
                 intersectPoint = verIntersectPoint;
@@ -439,13 +439,77 @@ public class SmartVehicle  {
                 intersectPoint = horIntersectPoint;
             }
 
-            tickSum += previousPoint.subtract(intersectPoint).magnitude() / (getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose));
+            tickSum += previousPoint.subtract(intersectPoint).magnitude() / speed;
             previousPoint = intersectPoint;
         }
 
         tickSum += previousPoint.subtract(targetPoint).magnitude() / (getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose));
 
         return (int)Math.round(tickSum);
+    }
+
+    /**
+     * @desc calculate dest point in tick to  direction
+     * @return
+     */
+    public Point2D getVehiclePointAtTick(Point2D direction, Integer tick)  throws  Exception {
+        Point2D targetPoint = direction.multiply(MyStrategy.world.getWidth()).add(getPoint());
+        int propose = (int)MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount();
+
+        Point2D voxelStartPoint = getPoint().multiply(1/(double)propose);
+
+        Point2D voxelEndPoint = targetPoint.multiply(1/(double)propose);
+
+        Integer tStartX = (int)Math.floor(voxelStartPoint.getX()) * propose;
+        Integer tStartY = (int)Math.floor(voxelStartPoint.getY()) * propose;
+
+        Integer stepX = propose * (direction.getX() < 0  ? -1 : 1);
+        Integer stepY = propose * (direction.getY() < 0  ? -1 : 1);
+
+        Point2D previousPoint = getPoint();
+
+        double maxWidth = MyStrategy.world.getWidth();
+        double maxHeight = MyStrategy.world.getHeight();
+        double tickSum = 0;
+
+        while (
+                (
+                        Math.floor(tStartX / propose) < Math.floor(voxelEndPoint.getX())
+                                ||
+                                Math.floor(tStartY / propose) < Math.floor(voxelEndPoint.getY())
+                )
+                        &&
+                        (tStartX + stepX >= 0 && tStartY + stepY >= 0
+                                &&
+                                tStartX + stepX < maxWidth && tStartY + stepY < maxHeight)
+                ) {
+
+            Point2D horIntersectPoint = Point2D.lineIntersect(getPoint(), targetPoint, new Point2D(0, tStartY + stepY) , new Point2D(maxWidth, tStartY + stepY ));
+            Point2D verIntersectPoint = Point2D.lineIntersect(getPoint(), targetPoint, new Point2D(tStartX + stepX, 0) , new Point2D(tStartX + stepX, maxHeight));
+            Point2D intersectPoint = targetPoint;
+
+            if (horIntersectPoint == null && verIntersectPoint == null) {
+                throw new Exception("Cant intersect lines found");
+            }
+            double cellSpeed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
+            if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.magnitude() < horIntersectPoint.magnitude())) {
+                tStartX += stepX;
+                intersectPoint = verIntersectPoint;
+            } else if (verIntersectPoint == null || (horIntersectPoint != null && horIntersectPoint.magnitude() <= verIntersectPoint.magnitude())) {
+                tStartY += stepY;
+                intersectPoint = horIntersectPoint;
+            }
+
+            double lastSegmentLenght = previousPoint.subtract(intersectPoint).magnitude();
+            double tickInCell = lastSegmentLenght / (cellSpeed);
+            if (tickSum + tickInCell >= tick) {
+                return direction.normalize().multiply(cellSpeed * (tick - tickSum)).add( previousPoint );
+            }
+            tickSum += tickInCell;
+            previousPoint = intersectPoint;
+        }
+
+        return new Point2D(tStartX, tStartY);
     }
 
     public double getEnviromentSpeedFactor(int x, int y) {
@@ -475,12 +539,12 @@ public class SmartVehicle  {
         return speedFactor;
     }
 
-    public double getVisionRange(SmartVehicle vehicle) {
+    public double getActualVisionRange() {
         double factor = 1.0;
-        int x = (int)Math.floor(vehicle.getX() / MyStrategy.getWeatherTerrainWidthPropose());
-        int y = (int)Math.floor(vehicle.getY() / MyStrategy.getWeatherTerrainHeightPropose());
+        int x = (int)Math.floor(getX() / MyStrategy.getWeatherTerrainWidthPropose());
+        int y = (int)Math.floor(getY() / MyStrategy.getWeatherTerrainHeightPropose());
 
-        if (vehicle.isAerial()) {
+        if (isAerial()) {
             WeatherType[][] weather = MyStrategy.getWeatherMap();
 
             if (weather[y][x] == WeatherType.CLOUD ) {
@@ -495,9 +559,23 @@ public class SmartVehicle  {
             } else if (terrain[y][x] == TerrainType.SWAMP) {
                 factor = MyStrategy.game.getSwampTerrainVisionFactor();
             }
-            return vehicle.getVisionRange() * factor;
+            return getVisionRange() * factor;
         }
 
-        return vehicle.getVisionRange() * factor;
+        return getVisionRange() * factor;
+    }
+
+    public double getMinVisionRange() {
+        if (isTerrain()) {
+            return MyStrategy.game.getForestTerrainVisionFactor() * getVisionRange();
+        }
+        return MyStrategy.game.getRainWeatherVisionFactor() * getVisionRange();
+    }
+
+    public double getAttackRange(boolean enemyIsAerial) {
+        if (enemyIsAerial) {
+            return getAerialAttackRange();
+        }
+        return getGroundAttackRange();
     }
 }

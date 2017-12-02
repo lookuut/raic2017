@@ -2,6 +2,7 @@ import model.VehicleType;
 
 import java.util.*;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * @TODO programming mirror map save logic
@@ -82,16 +83,6 @@ public class PPField {
         return point.multiply(getWidth() /MyStrategy.world.getWidth());
     }
 
-    public float getPathAvgFactor(LineSegment leftLineSegment, LineSegment rightLineSegment) {
-        HashSet<Integer> visitedCells = new HashSet<>();
-        HashSet<Integer> intersectCells = new HashSet<>();
-
-        float factor = recursive(visitedCells, intersectCells, leftLineSegment.getStartX(), leftLineSegment.getStartY(), leftLineSegment);
-        factor += recursive(visitedCells, intersectCells, rightLineSegment.getStartX(), rightLineSegment.getStartY(), leftLineSegment);
-
-        return (factor / intersectCells.size());
-    }
-
     public float recursive(HashSet<Integer> visitedCells, HashSet<Integer> intersectCells, int x, int y, LineSegment line) {
         float factor = 0;
         for (int j = -1; j <= 1 && j + y >= 0 && j + y < getHeight(); j++) {
@@ -116,29 +107,30 @@ public class PPField {
         System.out.println("==========================================>");
     }
 
-    public Point2D[] getMaxMinValueCell() {
+    public Point2D getMinValueCell() {
         Point2D maxPoint = null;
         Point2D minPoint = null;
 
         float max = field[0][0];
-        float min = field[0][0];
+        float min = Float.MAX_VALUE;
 
         for (int j = 0; j < getHeight(); j++) {
             for (int i = 0; i < getWidth(); i++) {
-                if (field[j][i] > max) {
-                    max = field[j][i];
-                    maxPoint = new Point2D(i, j);
-                }
+                if (field[j][i] > 0) {
+                    if (field[j][i] > max) {
+                        max = field[j][i];
+                        maxPoint = new Point2D(i, j);
+                    }
 
-                if (field[j][i] < min) {
-                    min = field[j][i];
-                    minPoint = new Point2D(i, j);
+                    if (field[j][i] < min) {
+                        min = field[j][i];
+                        minPoint = new Point2D(i, j);
+                    }
                 }
             }
         }
 
-        Point2D[] result = {getWorldPoint(maxPoint), getWorldPoint(minPoint)};
-        return result;
+        return minPoint;
     }
 
     public Point2D getWorldPoint(Point2D point) {
@@ -188,7 +180,6 @@ public class PPField {
     public Point2D searchPath(ArmyAlly army, Point2D targetPoint, SortedMap<Integer, Map<Integer, Step>> trackMap) throws Exception {
         Point2D startPoint = army.getForm().getAvgPoint();
 
-
         Point2D pathVector = targetPoint.subtract(startPoint);
         if (pathVector.magnitude() > CustomParams.pathSegmentLenght) {
             pathVector = pathVector.multiply(CustomParams.pathSegmentLenght / pathVector.magnitude());
@@ -230,7 +221,6 @@ public class PPField {
                     }
                 }
             }
-            Debuger.debug(2712);
 
             for (int i = 0; i < vehicles.length; i++) {
                 Point2D vehiclePoint = vehicles[i].getPoint();
@@ -250,6 +240,7 @@ public class PPField {
     }
 
     public void addPathTrack (ArmyAlly army, Point2D pathVector, Integer pathTime) {
+
         double lenght = pathVector.magnitude();
         double pathInterval = lenght / (double)pathTime;
 
@@ -274,7 +265,7 @@ public class PPField {
                     Point2D cellAvgPoint = stepPoint.add(new Point2D(proposeX / 2, proposeY / 2));
                     Point2D sumPoint = cellAvgPoint.add(intervalVec);
 
-                    sumPoint = sumPoint.multiply(1 / proposeX);
+                    sumPoint = sumPoint.multiply(1 / (double)proposeX);
 
                     int x = (int)sumPoint.getX();
                     int y = (int)sumPoint.getY();
@@ -363,4 +354,43 @@ public class PPField {
         return factorSum / intersectCellsCount;
     }
 
+
+    public Float sumXAxis (Point2D point, int yCentre, int y, int radius) {
+        try {
+            for (int x = 0; x <= radius; x++) {
+                if (y * y + x * x <= radius) {
+                    if (point.getIntX() + x < getWidth() && getFactor(point.getIntX() + x, yCentre + y ) > 0) {
+                        return getFactor(point.getIntX() + x, yCentre + y );
+                    }
+
+                    if (x != 0 && point.getIntX() - x >= 0 && getFactor(point.getIntX() - x, yCentre + y ) > 0) {
+                        return getFactor(point.getIntX() - x, yCentre + y );
+                    }
+                }
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return 0f;
+    }
+
+    public float sumFactorInPointRadious(Point2D point, int radius) {
+
+
+        float factorSum = 0;
+        for (int y = 0; y <= radius; y++) {
+            if (point.getIntY() + y < getHeight()) {
+                factorSum += sumXAxis(point, point.getIntY(), y , radius);
+            }
+
+            if (point.getIntY() - y >= 0) {
+                factorSum += sumXAxis(point, point.getIntY(), -y , radius);
+            }
+        }
+
+        return factorSum;
+    }
 }

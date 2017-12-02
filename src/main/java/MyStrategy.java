@@ -1,5 +1,6 @@
 import model.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.List;
 
 public final class MyStrategy implements Strategy {
 
+    private static List<Point2D> borderPointList;
     public static Player player;
     public static World world;
     public static Game game;
@@ -135,9 +137,7 @@ public final class MyStrategy implements Strategy {
         });
     }
 
-    public Player getPlayer() {
-        return player;
-    }
+    public Player getPlayer() { return player; }
 
     public World getWorld() {
         return world;
@@ -160,7 +160,8 @@ public final class MyStrategy implements Strategy {
     }
 
     public static boolean canNuclearAttack() {
-        return MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0;
+        return MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0 &&
+                MyStrategy.world.getTickIndex() - Commander.getNavigateNuclearTick() > MyStrategy.game.getTacticalNuclearStrikeDelay();
     }
 
     public static boolean isNuclearAttack() {
@@ -209,5 +210,36 @@ public final class MyStrategy implements Strategy {
             weatherMap = world.getWeatherByCellXY();
         }
         return weatherMap;
+    }
+
+    public static List<Point2D> getBorderPointList () {
+        if (borderPointList == null) {
+            borderPointList = new ArrayList<>();
+            Point2D direction = new Point2D(MyStrategy.world.getWidth(),0);
+            for (int i = 0; i  < CustomParams.borderPointsCount; i++) {
+                double angle = i * 2 * Math.PI / CustomParams.borderPointsCount;
+                direction = direction.turn(angle);
+                Point2D borderPoint1 = new Point2D(0,0);
+                Point2D borderPoint2 = new Point2D(0,0);
+                if (direction.getX() >= 0 && Math.abs(direction.getX()) > Math.abs(direction.getY())) {
+                    borderPoint1.setX(MyStrategy.world.getWidth());
+                    borderPoint2 = new Point2D(MyStrategy.world.getWidth(), MyStrategy.world.getHeight());
+                } else if (direction.getX() < 0 && Math.abs(direction.getX()) > Math.abs(direction.getY())) {
+                    borderPoint2.setY(MyStrategy.world.getHeight());
+                } else if (direction.getY() >=0 && Math.abs(direction.getX()) <= Math.abs(direction.getY()) ) {
+                    borderPoint1.setY(MyStrategy.world.getHeight());
+                    borderPoint2 = new Point2D(MyStrategy.world.getWidth(), MyStrategy.world.getHeight());
+                } else {
+                    borderPoint2.setX(MyStrategy.world.getWidth());
+                }
+
+                Point2D center = new Point2D(MyStrategy.world.getWidth() / 2, MyStrategy.world.getHeight() / 2);
+                Point2D turnedVectorPoint = center.add(direction);
+
+                borderPointList.add(Point2D.lineIntersect(center, turnedVectorPoint, borderPoint1 ,borderPoint2));
+            }
+        }
+
+        return borderPointList;
     }
 }

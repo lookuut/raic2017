@@ -10,7 +10,7 @@ class Commander {
     protected MyStrategy strategy;
     protected BehaviourTree<ArmyAlly> behaviourTree;
     protected Queue<BTreeAction> activeActions;
-
+    static private Integer navigateNuclearTick = -1;
     /**
      * @desc all armies must be init in constructor
      * @param strategy
@@ -29,10 +29,10 @@ class Commander {
         ArmyAllyOrdering allArmy = new ArmyAllyOrdering(CustomParams.allArmyId);
 
         divisions.put(CustomParams.arrvArmyId, arrvArmy);
-        //divisions.put(CustomParams.fighterArmyId, fighterArmy);
-        //divisions.put(CustomParams.helicopterArmyId, helicopterArmy);
+        divisions.put(CustomParams.fighterArmyId, fighterArmy);
+        divisions.put(CustomParams.helicopterArmyId, helicopterArmy);
         divisions.put(CustomParams.tankArmyId, tankArmy);
-        //divisions.put(CustomParams.ifvArmyId, ifvArmy);
+        divisions.put(CustomParams.ifvArmyId, ifvArmy);
         //divisions.put(CustomParams.allArmyId, allArmy);
 
         arrvArmy.addCommand(new CommandCreateArmy(VehicleType.ARRV));
@@ -45,31 +45,9 @@ class Commander {
         //fighter behaviour tree
         BehaviourTree fighterBehaviourTree = new BehaviourTree<>();
 
-        BTreeNodeCondition<ArmyAlly> nuckAttackCond = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((army) -> MyStrategy.canNuclearAttack()),
-                fighterArmy);
-
-
-        BTreeNodeCondition<ArmyAlly> defenceCond = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((army) -> army.percentOfDeathVehicles() > 0.75),
-                fighterArmy);
-
-        BTreeNodeCondition<ArmyAlly> isDefenceCond = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((army) -> army.onDanger()),
-                fighterArmy);
-
-        nuckAttackCond.addChildNode(new BTreeAction(() -> new CommandNuclearAttack()));
-        nuckAttackCond.addChildNode(defenceCond);
-        defenceCond.addChildNode(isDefenceCond);
-        defenceCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
-
-        isDefenceCond.addChildNode(new BTreeAction(()-> new CommandDefence()));
-        isDefenceCond.addChildNode(new BTreeAction(()-> new CommandEmpty()));//on idea command siege base
-
-        fighterBehaviourTree.addRoot(nuckAttackCond);
-
         fighterArmy.setBehaviourTree(fighterBehaviourTree);
 
+        this.setEmptyBehaviourTree(fighterArmy);
         this.setEmptyBehaviourTree(helicopterArmy);
         this.setEmptyBehaviourTree(tankArmy);
         this.setEmptyBehaviourTree(ifvArmy);
@@ -106,11 +84,11 @@ class Commander {
     public void setEmptyBehaviourTree(ArmyAllyOrdering army) {
         BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
         BTreeNode root = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> true),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isArmyAlive() && armyLocal.isAerial() && armyLocal.getAvgDurability() < CustomParams.minAvgDurability),
                 army
         );
+        root.addChildNode(new BTreeAction(() -> new CommandHeal(divisions.get(CustomParams.arrvArmyId))));
         root.addChildNode(new BTreeAction(() -> new CommandAttack()));
-        root.addChildNode(new BTreeAction(() -> new CommandEmpty()));
         bTree.addRoot(root);
         army.setBehaviourTree(bTree);
     }
@@ -135,6 +113,10 @@ class Commander {
         //run divisions logic
         for (Map.Entry<Integer, ArmyAllyOrdering> entry : divisions.entrySet()) {
             if (entry.getValue().isArmyAlive()) {
+                if (MyStrategy.canNuclearAttack()) {
+                    nuclearAttack(entry.getValue());
+                }
+
                 entry.getValue().run(battleField);
                 entry.getValue().check();
             }
@@ -154,5 +136,45 @@ class Commander {
 
     public Map<Integer, ArmyAllyOrdering> getDivisions() {
         return divisions;
+    }
+
+    public void nuclearAttack (ArmyAllyOrdering army) {
+        try {
+            for (NuclearAttackPoint attackPoint : MyStrategy.enemyField.getNuclearAttackPointsRating()) {
+
+                if (army.getForm().isPointInDistance(attackPoint.getPoint(), MyStrategy.game.getTacticalNuclearStrikeRadius())) {//point in allow distance need cabum
+                    SmartVehicle vehicle = army.getNearestVehicle(attackPoint.getPoint());
+                    Point2D fromPoint = vehicle.getPoint();
+                    Point2D targetVector = attackPoint.getPoint().subtract(fromPoint);
+                    double visionRange = vehicle.getMinVisionRange();
+
+                    if (army.getRunningCommand() instanceof  CommandMove) {
+                        CommandMove command = ((CommandMove) army.getRunningCommand());
+                        Point2D moveTargetVector = command.getTargetVector();
+                        double angle = moveTargetVector.angle(targetVector);
+                        if (angle >= 90 && angle < 270) {
+                            fromPoint = vehicle.getVehiclePointAtTick(moveTargetVector.normalize(), Math.min(MyStrategy.game.getTacticalNuclearStrikeDelay(),command.getMaxRunnableTick()));
+                        }
+                    }
+
+                    Point2D targetPoint = attackPoint.getPoint();
+                    Point2D targetPointDirection = attackPoint.getPoint().subtract(fromPoint);
+
+                    if (targetPointDirection.magnitude() > visionRange) {
+                        targetPoint = targetPointDirection.multiply(visionRange / targetPointDirection.magnitude()).add(fromPoint);
+                    }
+
+                    navigateNuclearTick = MyStrategy.world.getTickIndex();
+                    new CommandNuclearAttack(vehicle, targetPoint).run(army);
+                    break;
+                }
+            }
+        } catch (Exception e)  {
+            e.printStackTrace();
+        }
+    }
+
+    static public Integer getNavigateNuclearTick() {
+        return navigateNuclearTick;
     }
 }

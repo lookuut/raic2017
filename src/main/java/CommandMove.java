@@ -1,38 +1,17 @@
 import model.ActionType;
 
-import java.util.HashMap;
-
-import java.util.HashSet;
-import java.util.Map;
 import java.util.function.Consumer;
 
 public class CommandMove extends Command {
-    protected Point2D targetPosition;
     protected Point2D targetVector;
 
-    protected int startTick;
-    protected int maxRunnableTick = 0;
+    private int startTick;
+    private int maxRunnableTick = 0;
 
-    protected Map<Long, Point2D> vehiclesTargetPositions;
-    protected HashSet<Long> readyVehicles;
 
-    public CommandMove(Point2D targetPosition) throws Exception {
+    public CommandMove(Point2D targetVector) throws Exception {
         super();
-        this.targetPosition = targetPosition;
-        if (targetPosition.getX() > MyStrategy.world.getWidth() || targetPosition.getX() < 0 || targetPosition.getY() > MyStrategy.world.getHeight() || targetPosition.getY() < 0 ) {
-            throw new Exception("Wrong params" + targetPosition.toString());
-        }
-
-        vehiclesTargetPositions = new HashMap<>();
-        readyVehicles = new HashSet<>();
-
-        if (Math.ceil(targetPosition.getX()) == 0 || Math.ceil(targetPosition.getY()) == 0 ) {
-            System.out.println("dawdawda");
-        }
-    }
-
-    public Point2D getTargetPosition() {
-        return targetPosition;
+        this.targetVector = targetVector;
     }
 
     public boolean check (ArmyAllyOrdering army) {
@@ -45,12 +24,7 @@ public class CommandMove extends Command {
             return false;
         }
 
-        if (readyVehicles.size() > 0) {
-            setState(CommandStates.Complete);
-            return true;
-        }
-
-        if (maxRunnableTick + startTick < MyStrategy.world.getTickIndex()) {
+        if (maxRunnableTick + startTick <= MyStrategy.world.getTickIndex()) {
             setState(CommandStates.Complete);
             return true;
         }
@@ -66,19 +40,12 @@ public class CommandMove extends Command {
             army.getForm().recalc(army.getVehicles());
             //be carefull with double values
             Point2D avgPoint = new Point2D(army.getForm().getAvgPoint().getX(), army.getForm().getAvgPoint().getY());
-
-            targetVector = targetPosition.subtract(avgPoint);
             SmartVehicle nearVehicle = army.getNearestVehicle(avgPoint);
             maxRunnableTick = nearVehicle.getVehiclePointAtTick(targetVector);
 
             if (targetVector.magnitude() == 0) {
                 setState(CommandStates.Failed);
-                throw new Exception("Something goes wrong with move position " + targetPosition.toString());
-            }
-
-            for (SmartVehicle vehicle : army.getVehicles().values()) {
-                Point2D point = vehicle.getPoint().add(targetVector);
-                vehiclesTargetPositions.put(vehicle.getId(), point);
+                throw new Exception("Something goes wrong with move position " + targetVector.toString());
             }
 
             startTick = MyStrategy.world.getTickIndex();
@@ -114,12 +81,14 @@ public class CommandMove extends Command {
         startTick = MyStrategy.world.getTickIndex();
     }
 
-    @Override
+    public Point2D getTargetVector() {
+        return targetVector;
+    }
+
+    public Integer getMaxRunnableTick () {
+        return maxRunnableTick;
+    }
+
     public void processing(SmartVehicle vehicle) {
-        if (vehicle.getDurability() == 0) {
-            vehiclesTargetPositions.remove(vehicle.getId());
-        } else if (vehiclesTargetPositions.get(vehicle.getId()).equals(vehicle.getPoint())) {
-            readyVehicles.add(vehicle.getId());
-        }
     }
 }

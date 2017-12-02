@@ -66,7 +66,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
             runningCommand.check(this);
         }
 
-        getTrack().clearPast(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory);
+        getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastModificateTick() - 1 ));
     }
 
 
@@ -79,13 +79,16 @@ public class ArmyAllyOrdering extends ArmyAlly {
             runningCommand.result(this, vehicle);
         }
 
+
         if (containVehicle(vehicle.getId()) && (vehicle.isVehicleMoved() ||  vehicle.getDurability() == 0)) {
+            putVehicle(vehicle);
             setLastModificateTick(MyStrategy.world.getTickIndex());
             getTrack().addStep(MyStrategy.world.getTickIndex(), new Step(battleField.pointTransform(vehicle.getPoint()), CustomParams.allyUnitPPFactor), vehicle.getType());
 
             if (vehicle.getDurability() == 0) {
                 removeVehicle(vehicle);
             }
+
         }
     }
 
@@ -116,7 +119,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
 
         if (types.contains(VehicleType.FIGHTER) || types.contains(VehicleType.HELICOPTER)) {
             sumPPFields.sumField(staticAerialPPField);
-            trackMap = resultTrack.getVehicleTypeTrack(VehicleType.FIGHTER);
+            trackMap = new TreeMap<>(resultTrack.getVehicleTypeTrack(VehicleType.FIGHTER));
             sumPPFields.addAerialTrack(endResultTrack);
         }
 
@@ -127,16 +130,16 @@ public class ArmyAllyOrdering extends ArmyAlly {
             if (trackMap != null) {
                 trackMap = resultTrack.sumTrackMap(trackMap, resultTrack.getVehicleTypeTrack(VehicleType.IFV), getLastModificateTick(), 1);
             } else {
-                trackMap = resultTrack.getVehicleTypeTrack(VehicleType.IFV);
+                trackMap = new TreeMap<>(resultTrack.getVehicleTypeTrack(VehicleType.IFV));
             }
         }
 
-        Point2D newDestPos = sumPPFields.searchPath(this, command.getTargetPosition(), trackMap);
+        Point2D newDestPos = sumPPFields.searchPath(this, command.getTargetVector().add(getForm().getAvgPoint()), trackMap);
 
         //check limits
         newDestPos = new Point2D(Math.max((getForm().getMaxPoint().getX() - getForm().getMinPoint().getX())/2.0, newDestPos.getX()) , Math.max((getForm().getMinPoint().getY() - getForm().getMinPoint().getY())/2.0, newDestPos.getY()) );
         newDestPos = new Point2D(Math.min(MyStrategy.world.getWidth() - (getForm().getMaxPoint().getX() - getForm().getMinPoint().getX())/2.0, newDestPos.getX()) , Math.min(MyStrategy.world.getHeight() - (getForm().getMaxPoint().getY() - getForm().getMinPoint().getY())/2.0, newDestPos.getY()));
 
-        return new CommandMove(newDestPos);
+        return new CommandMove(newDestPos.subtract(getForm().getAvgPoint()));
     }
 }

@@ -102,9 +102,12 @@ public class BattleField {
         return terrainPPField;
     }
 
-
     public BattleFieldCell getBattleFieldCell(int x, int y) {
         return battleField[y][x];
+    }
+
+    public Point2D getWorldPoint(Point2D point) {
+        return aerialPPField.getWorldPoint(point);
     }
 
     public void print() {

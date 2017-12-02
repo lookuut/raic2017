@@ -27,13 +27,17 @@ public class CommandAttack extends Command {
 
     public Command prepare(ArmyAllyOrdering army) throws Exception {
         army.getForm().recalc(army.getVehicles());
-        Point2D nearestEnemyPoint = army.searchNearestEnemy();
+        Point2D nearestEnemyVector = army.searchNearestEnemy();
 
-        if (nearestEnemyPoint == null || army.getForm().isOnCoordinates(nearestEnemyPoint)) {
+        if (nearestEnemyVector == null) {//no enemy for vehicle
             return this;
         }
 
-        CommandMove move = new CommandMove(nearestEnemyPoint);
+        if (nearestEnemyVector.magnitude() <= 1) {
+            return this;
+        }
+
+        CommandMove move = new CommandMove(nearestEnemyVector);
         return army.pathFinder(move);
     }
 

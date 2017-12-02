@@ -119,4 +119,8 @@ public class BattleFieldCell {
 
         return nearestVehicle;
     }
+
+    public Point2D getPoint() {
+        return new Point2D(x,y);
+    }
 }
