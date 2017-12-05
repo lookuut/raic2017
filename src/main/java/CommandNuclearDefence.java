@@ -3,7 +3,7 @@ import model.Player;
 
 import java.util.function.Consumer;
 
-public class    CommandNuclearDefence extends Command {
+public class CommandNuclearDefence extends Command {
     protected Integer attackTick;
     protected double attackX;
     protected double attackY;
@@ -31,18 +31,26 @@ public class    CommandNuclearDefence extends Command {
                 MyStrategy.move.setAction(ActionType.SCALE);
                 MyStrategy.move.setX(attackX);
                 MyStrategy.move.setY(attackY);
-                MyStrategy.move.setFactor(5);
+                MyStrategy.move.setFactor(10);
+            };
+
+            Consumer<Command> commandCompact = (command) -> {
+                MyStrategy.move.setAction(ActionType.SCALE);
+                MyStrategy.move.setX(attackX);
+                MyStrategy.move.setY(attackY);
+                MyStrategy.move.setFactor(0.1);
             };
 
 
             addCommand(new CommandWrapper(commandSelect, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
             addCommand(new CommandWrapper(commandDefence, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
+            addCommand(new CommandWrapper(commandCompact, this, MyStrategy.world.getTickIndex() + MyStrategy.game.getTacticalNuclearStrikeDelay(), CustomParams.noAssignGroupId));
             super.run(army);
         }
     }
 
     public boolean check (ArmyAllyOrdering army) {
-        if (getState() == CommandStates.Run && MyStrategy.world.getTickIndex() >= this.attackTick + MyStrategy.game.getTacticalNuclearStrikeDelay() + 50) {
+        if (getState() == CommandStates.Run && MyStrategy.world.getTickIndex() >= this.attackTick + MyStrategy.game.getTacticalNuclearStrikeDelay() + 30) {
             setState(CommandStates.Complete);
             return true;
         }

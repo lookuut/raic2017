@@ -1,3 +1,4 @@
+import model.Player;
 import model.VehicleType;
 
 
@@ -14,9 +15,9 @@ class Commander {
 
     private Map<VehicleType, List<SmartVehicle>> noArmyVehicles;
     private Map<VehicleType, Square> noArmySquaereMap;
+    private CommandNuclearDefence nuclearAttackDefence;
 
     /**
-     * @desc all armies must be init in constructor
      * @param strategy
      */
     public Commander(MyStrategy strategy) {
@@ -26,12 +27,19 @@ class Commander {
         behaviourTree = new BehaviourTree<>();
         noArmyVehicles = new HashMap<>();
         noArmySquaereMap = new HashMap<>();
+        nuclearAttackDefence = new CommandNuclearDefence();
     }
 
+    private void checkAttackNuclear() throws Exception {
+        if (MyStrategy.isNuclearAttack() && !(nuclearAttackDefence.isRun() || nuclearAttackDefence.isHold())) {
+            nuclearAttackDefence.run(null);
+        }
+    }
 
     public void logic (BattleField battleField) throws Exception {
         constructArmies();
 
+        checkAttackNuclear();
         nuclearAttack();
         MyStrategy.commanderFacility.orderCreateVehicle();
 

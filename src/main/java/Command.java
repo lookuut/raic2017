@@ -1,3 +1,5 @@
+import sun.awt.geom.AreaOp;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -27,6 +29,11 @@ abstract public class Command {
     public boolean isRun () {
         return getState() == CommandStates.Run;
     }
+
+    public boolean isHold () {
+        return getState() == CommandStates.Hold;
+    }
+
     public boolean isNew() {
         return getState() == CommandStates.New;
     }
