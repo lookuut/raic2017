@@ -9,7 +9,7 @@ public class CommandMove extends Command {
     private int maxRunnableTick = 0;
 
 
-    public CommandMove(Point2D targetVector) throws Exception {
+    public CommandMove(Point2D targetVector){
         super();
         this.targetVector = targetVector;
     }
@@ -26,6 +26,10 @@ public class CommandMove extends Command {
 
         if (maxRunnableTick + startTick <= MyStrategy.world.getTickIndex()) {
             setState(CommandStates.Complete);
+            if (army.isNeedToCompact()) {
+                army.addCommand(new CommandScale());
+            }
+
             return true;
         }
 
@@ -41,11 +45,11 @@ public class CommandMove extends Command {
             //be carefull with double values
             Point2D avgPoint = new Point2D(army.getForm().getAvgPoint().getX(), army.getForm().getAvgPoint().getY());
             SmartVehicle nearVehicle = army.getNearestVehicle(avgPoint);
-            maxRunnableTick = nearVehicle.getVehiclePointAtTick(targetVector);
+            maxRunnableTick = Math.max(nearVehicle.getVehiclePointAtTick(targetVector), 1);
 
-            if (targetVector.magnitude() == 0) {
-                setState(CommandStates.Failed);
-                throw new Exception("Something goes wrong with move position " + targetVector.toString());
+            if (targetVector.magnitude() == 0) {//already at point
+                setState(CommandStates.Complete);
+                return;
             }
 
             startTick = MyStrategy.world.getTickIndex();
@@ -53,6 +57,7 @@ public class CommandMove extends Command {
                 MyStrategy.move.setAction(ActionType.MOVE);
                 MyStrategy.move.setX(targetVector.getX());
                 MyStrategy.move.setY(targetVector.getY());
+                MyStrategy.move.setMaxSpeed(army.getMinSpeed());
             };
 
             addCommand(new CommandWrapper(funcMove, this, CustomParams.runImmediatelyTick, army.getGroupId()));
@@ -61,12 +66,16 @@ public class CommandMove extends Command {
     }
 
     public Command prepare(ArmyAllyOrdering army) throws Exception {
-        CommandMove move = army.pathFinder(this);
+        TargetPoint target = new TargetPoint();
+
+        target.vector = this.targetVector;
+        target.maxDamageValue = 0;
+
+        CommandMove move = army.pathFinder(this, target);
         if (move == this) {
             return this;
         }
-
-        army.addCommandToHead(this);
+        this.targetVector = this.getTargetVector().subtract(move.targetVector);
         return move;
     }
 

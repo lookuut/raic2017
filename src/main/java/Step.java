@@ -3,9 +3,9 @@ public class Step {
 
     private Short x;
     private Short y;
-    private Integer power;
+    private Float power;
 
-    public Step(Point2D point, Integer power) {
+    public Step(Point2D point, Float power) {
         x = (short)point.getX();
         y = (short)point.getY();
         this.power = power;
@@ -15,11 +15,11 @@ public class Step {
         return (int)(y * (Math.ceil(MyStrategy.game.getWorldWidth() / CustomParams.tileCellSize)) + x);
     }
 
-    public void addPower(Integer power) {
+    public void addPower(Float power) {
         this.power += power;
     }
 
-    public Integer getPower() {
+    public Float getPower() {
         return power;
     }
 

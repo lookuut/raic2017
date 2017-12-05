@@ -34,13 +34,13 @@ public class Track {
     }
 
     public void addTrack(Track sourceTrack, Integer tick) {
-        aerialTrackMap = sumTrackMap(sourceTrack.aerialTrackMap, this.aerialTrackMap, tick, 1);
-        terrainTrackMap = sumTrackMap(sourceTrack.terrainTrackMap, this.terrainTrackMap, tick, 1);
+        aerialTrackMap = sumTrackMap(sourceTrack.aerialTrackMap, this.aerialTrackMap, 1);
+        terrainTrackMap = sumTrackMap(sourceTrack.terrainTrackMap, this.terrainTrackMap, 1);
     }
 
     public void addLastTick(Track sourceTrack) {
-        aerialTrackMap = sumTrackMap(sourceTrack.aerialTrackMap, this.aerialTrackMap, sourceTrack.getLastAerialTick() - 1, 1);
-        terrainTrackMap = sumTrackMap(sourceTrack.terrainTrackMap, this.terrainTrackMap, sourceTrack.getLastTerrainTick() - 1, 1);
+        aerialTrackMap = sumTrackMap(sourceTrack.aerialTrackMap, this.aerialTrackMap, 1);
+        terrainTrackMap = sumTrackMap(sourceTrack.terrainTrackMap, this.terrainTrackMap , 1);
     }
 
     public Integer getLastAerialTick () {
@@ -51,10 +51,18 @@ public class Track {
         return terrainTrackMap.size() == 0 ? 0 : terrainTrackMap.lastKey();
     }
 
+    public Map<Integer, Step> getLastTickAerialSteps() {
+        return aerialTrackMap.get(getLastAerialTick());
+    }
+
+    public Map<Integer, Step> getLastTickTerrainSteps() {
+        return terrainTrackMap.get(getLastTerrainTick());
+    }
+
+
     public SortedMap<Integer, Map<Integer, Step>> sumTrackMap(
             SortedMap<Integer, Map<Integer, Step>> fromTrackMap,
             SortedMap<Integer, Map<Integer, Step>> usageTrackMap,
-            Integer tick,
             int operator)
     {
 
@@ -69,13 +77,10 @@ public class Track {
 
         for (Integer tickItem : keys) {
 
-            if (usageTrackMap.containsKey(tickItem) && tickItem < tick ) {
+            if (usageTrackMap.containsKey(tickItem)) {
                 newTrackMap.put(tickItem, new HashMap<>(usageTrackMap.get(tickItem)));
             }
 
-            if (tickItem < tick ) {//cut nose
-                continue;
-            }
             Map<Integer, Step> newStepTrackMap;
             if (!newTrackMap.containsKey(tickItem)) {
                 newStepTrackMap = new TreeMap<>();
@@ -86,7 +91,7 @@ public class Track {
 
             if (fromTrackMap.containsKey(tickItem) && usageTrackMap.containsKey(tickItem)) {
                 for (Map.Entry<Integer, Step> stepEntry : fromTrackMap.get(tickItem).entrySet()){
-                    Integer power = operator * stepEntry.getValue().getPower();
+                    Float power = operator * stepEntry.getValue().getPower();
                     if (usageTrackMap.containsKey(tickItem) && usageTrackMap.get(tickItem).containsKey(stepEntry.getKey())) {
                         power += usageTrackMap.get(tickItem).get(stepEntry.getKey()).getPower() ;
                     }
@@ -109,7 +114,7 @@ public class Track {
 
         if (types.contains(VehicleType.HELICOPTER) || types.contains(VehicleType.FIGHTER)) {
             if (newTrackMap != null) {//sum
-                sumTrackMap(this.aerialTrackMap, newTrackMap, tick, 1);
+                sumTrackMap(this.aerialTrackMap, newTrackMap,  1);
             }
         }
 
@@ -124,6 +129,20 @@ public class Track {
     public void clearFuture(Integer tick) {
         this.terrainTrackMap.tailMap(tick).clear();
         this.aerialTrackMap.tailMap(tick).clear();
+    }
+
+    public static void sumSteps(Map<Integer, Step> stepsResult, Map<Integer, Step> steps) {
+        if (steps != null && steps.size() > 0) {
+            for (Integer stepIndex : steps.keySet()) {
+                Float power = 0f;
+                if (stepsResult.containsKey(stepIndex)) {
+                    power = stepsResult.get(stepIndex).getPower();
+                }
+                steps.get(stepIndex).addPower(power);
+
+                stepsResult.put(stepIndex, steps.get(stepIndex));
+            }
+        }
     }
 
 

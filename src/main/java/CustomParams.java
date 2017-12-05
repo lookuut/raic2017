@@ -1,28 +1,32 @@
 public class CustomParams {
-    public static int allyUnitPPFactor = 10000;
+    //path search
+    public static float allyUnitPPFactor = 10000;
     public static int pathFinderSectorCount = 24;
-    public static int pathSegmentLenght = 30;
-
+    public static int pathSegmentLenght = 60;
+    public static float minPathFactor = 5000;
+    public static float borderFactor = 1000;
     //search safety point sector count
     public static int searchSafetyZoneSectorCount = 12;
     public static int safetyDistance = 160;
     public static int dangerRadious = 80;
 
-    public static float armyScaleFactor = 0.1F;
+    public static float armyScaleFactor = 0.3F;
     public static int armyScaleMaxTime = 10;
+    public static int armyAfterCreateTimeWait = 20;
 
     public static int maxLinearPPRange = 3;
     public static int noAssignGroupId = 0;
 
-    public static double compareDobuleEps = 1.0;
+    public static double positionAtMapEps = 0.5;
+    public static double onFacilityEps = 2.0;
+    public static double onHealerEps = 2.0;
+
+    public static double nearestEnemyEps = 0.1;
 
     //armies config
-    public static int arrvArmyId = 1;
-    public static int fighterArmyId = 2;
-    public static int helicopterArmyId = 3;
-    public static int tankArmyId = 4;
-    public static int ifvArmyId = 5;
-    public static int allArmyId = 6;
+    public static int minVehiclesCountInArmy = 10;
+    public static int maxVehiclesCountInArmy = 25;
+    public static double maxSizeVehicleInArmy = 2.8;//for scale
 
     public static int equalTypeAttackFactor = -1;
     //commands config
@@ -42,9 +46,14 @@ public class CustomParams {
     public static int trackMinTickInhistory = 60;
 
     //nuclear attack
-    public static int nuclearAttackRatingRecalcTickInterval = 10;
+    public static int nuclearAttackRatingRecalcTickInterval = 1;
     public static int nuclearAttackRatingItemCount = 15;
+    public static int gunnerMinDurability = 100;
 
     public static int borderPointsCount = 12;
-    public static double minAvgDurability = 60;
+    public static double minVehicleDurabilityToHeal = 70;
+    public static double minVehicleToHealCount = 20;
+    //facilities
+    public static int maxGotoSiegeArmyCount = 2;
+
 }

@@ -1,5 +1,6 @@
 
 import java.util.List;
+import java.util.Map;
 
 public class BattleField {
 
@@ -10,9 +11,6 @@ public class BattleField {
     protected int pFieldHeight;
 
     //temporary code remove it before upload
-    protected PPField typesPPfield;
-    protected PPField aerialPPField;
-    protected PPField terrainPPField;
     private Integer cellSize;
 
     public BattleField (Integer cellSize) {
@@ -22,12 +20,6 @@ public class BattleField {
         pFieldHeight = (int)(Math.ceil(MyStrategy.game.getWorldHeight() / cellSize));
 
         battleField = new BattleFieldCell[pFieldHeight][pFieldWidth];
-
-        aerialPPField = new WeatherPPField(pFieldWidth, pFieldHeight);
-        terrainPPField = new TerrainPPField(pFieldWidth, pFieldHeight);
-
-
-        typesPPfield = new PPField(pFieldWidth, pFieldHeight);
 
         for (int y = 0; y < pFieldHeight; y++) {
             for (int x = 0; x < pFieldWidth; x++) {
@@ -63,22 +55,11 @@ public class BattleField {
             Integer lastVehicleX = vehicleBattleFieldCell.getX();
             Integer lastVehicleY = vehicleBattleFieldCell.getY();
 
-            aerialPPField.addFactor(lastVehicleX, lastVehicleY,-vehicle.getAerialPPFactor());
-            terrainPPField.addFactor(lastVehicleX, lastVehicleY,-vehicle.getTerrainPPFactor());
-            typesPPfield.setFactor(lastVehicleX, lastVehicleY, 0);
-
-            if (!vehicle.isAlly()) {
-                MyStrategy.enemyField.removeFromCellVehicle(lastVehicleX, lastVehicleY, vehicle);
-            }
+            MyStrategy.enemyField.removeFromCellVehicle(lastVehicleX, lastVehicleY, vehicle);
         }
 
         if (vehicle.getDurability() > 0 && (vehicleBattleFieldCell == null || (vehicleBattleFieldCell != null && vehicleBattleFieldCell != battleFieldCell))) {
             battleFieldCell.addVehicle(vehicle);
-
-            aerialPPField.addFactor(battleFieldX, battleFieldY, vehicle.getAerialPPFactor());
-            terrainPPField.addFactor(battleFieldX, battleFieldY, vehicle.getTerrainPPFactor());
-            typesPPfield.setFactor(battleFieldX, battleFieldY, vehicle.getTypeInt());
-
             MyStrategy.enemyField.addVehicleToCell(battleFieldX, battleFieldY, vehicle);
         }
 
@@ -86,31 +67,35 @@ public class BattleField {
      }
 
 
-    public int getPFieldWidth() {
+    public int getWidth() {
         return pFieldWidth;
     }
 
-    public int getPFieldHeight() {
+    public PPField calcEnemyFieldAvgValues(PPField field, float damage) {
+        PPField avgField = new PPField(field.getWidth(), field.getHeight());
+        for (int y = 0; y < field.getHeight(); y++) {
+            for (int x = 0; x < field.getWidth(); x++) {
+                if (field.getFactor(x, y) > 0) {
+                    BattleFieldCell cell = getBattleFieldCell(x,y);
+                    Map<Long, SmartVehicle> vehicles = cell.getVehicles(MyStrategy.getEnemyPlayerId());
+                    Long count = vehicles.values().stream().filter(vehicle -> vehicle.getDurability() > 0).count();
+                    avgField.setFactor(x, y,   field.getFactor(x,y) / count.intValue() - damage);
+                }
+            }
+        }
+        return avgField;
+    }
+
+    public int getHeight() {
         return pFieldHeight;
-    }
-
-    public PPField getAerialPPField() {
-        return aerialPPField;
-    }
-
-    public PPField getTerrainPPField() {
-        return terrainPPField;
     }
 
     public BattleFieldCell getBattleFieldCell(int x, int y) {
         return battleField[y][x];
     }
 
-    public Point2D getWorldPoint(Point2D point) {
-        return aerialPPField.getWorldPoint(point);
+    public BattleFieldCell getBattleFieldCell(Point2D point) {
+        return battleField[point.getIntY()][point.getIntX()];
     }
 
-    public void print() {
-        typesPPfield.print();
-    }
 }

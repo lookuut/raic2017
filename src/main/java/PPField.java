@@ -2,13 +2,14 @@ import model.VehicleType;
 
 import java.util.*;
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * @TODO programming mirror map save logic
  */
 public class PPField {
     private float field[][];
+    //dirty init here
+    private float minValue;
 
     private int width;
     private int height;
@@ -17,23 +18,34 @@ public class PPField {
         field = new float[height][width];
         this.width = width;
         this.height = height;
+        minValue = Float.MAX_VALUE;
     }
 
-    public void addLinearPPValue(int x, int y, int factor) {
+    public void addLinearPPValue(int x, int y, float factor) {
 
         for (int j = -CustomParams.maxLinearPPRange; j <= CustomParams.maxLinearPPRange; j++) {
             for (int i = -CustomParams.maxLinearPPRange; i <= CustomParams.maxLinearPPRange; i++) {
-                if (x + i >= 0 && x + i < getWidth() && y + j >= 0 && y + j < getHeight()) {
-                    addFactor(x + i, y + j, (float)Math.ceil(factor / (1 + Math.abs(j) + Math.abs(i))));
+                if (x + i >= 0 &&
+                        x + i < getWidth() &&
+                        y + j >= 0 &&
+                        y + j < getHeight() &&
+                        i * i + j * j <= CustomParams.maxLinearPPRange * CustomParams.maxLinearPPRange
+                        )
+                {
+                    float divide = (float)(1 + Math.abs(j) + Math.abs(i));
+                    double value = factor > 0 ? Math.ceil(factor / divide) : Math.floor(factor / divide);
+                    addFactor(x + i, y + j, (float)value);
                 }
             }
         }
     }
 
     public void setFactor(int x, int y, float factor) {
-        if (this.field[y][x] == 0) {
-            this.field[y][x] = factor;
+        if (minValue > factor) {
+            minValue = factor;
         }
+
+        this.field[y][x] = factor;
     }
 
     public void addFactor(Point2D point, float factor) {
@@ -41,31 +53,43 @@ public class PPField {
     }
     public void addFactor (int x, int y, float factor) {
         this.field[y][x] += factor;
+
+        if (minValue > this.field[y][x]) {
+            minValue = this.field[y][x];
+        }
     }
     public float getFactor (int x, int y) {
         return field[y][x];
     }
 
-    public void sumFields(List<PPField> fields) {
-        for (PPField localField : fields) {
-            sumField(localField);
-        }
-    }
     public void sumField(PPField localField) {
         operateField(localField, 1);
+    }
+
+    public static PPField sumField(PPField field1, PPField field2) {
+        PPField sum = new PPField(field1.getWidth(), field1.getHeight());
+
+        for (int y = 0; y < sum.getHeight(); y++) {
+            for (int x = 0; x < sum.getWidth(); x++) {
+                if (field1.getFactor(x, y) > 0 || field2.getFactor(x, y) > 0) {
+                    sum.addFactor(x, y, field1.getFactor(x, y) + field2.getFactor(x, y));
+                }
+            }
+        }
+        return sum;
     }
     public void minusField(PPField localField) {
         operateField(localField, -1);
     }
 
     public void operateField(PPField localField, int operate) {
-        int xFactor = (localField.getWidth() / getWidth());
-        int yFactor = (localField.getHeight() / getHeight());
+        int xFactor = (getWidth() / localField.getWidth());
+        int yFactor = (getHeight() / localField.getHeight());
 
         for (int y = 0; y < getHeight(); y++) {
-            int transformedY = yFactor * y;
+            int transformedY = y / yFactor;
             for (int x = 0; x < getWidth(); x++) {
-                int transformedX = xFactor * x;
+                int transformedX = x / xFactor;
                 addFactor( x, y, operate * localField.getFactor(transformedX, transformedY));
             }
         }
@@ -107,6 +131,33 @@ public class PPField {
         System.out.println("==========================================>");
     }
 
+    public List<Point2D> getMinValueCells() {
+        List<Point2D> minValueList = new ArrayList<>();
+
+        for (int j = 0; j < getHeight(); j++) {
+            for (int i = 0; i < getWidth(); i++) {
+                if (getFactor(i, j) == minValue) {
+                    minValueList.add(new Point2D((double)i, (double)j));
+                }
+            }
+        }
+        return minValueList;
+    }
+
+    public Point2D getMinValueCell(List<Point2D> searchPoints) {
+
+        float minValue = Float.MAX_VALUE;
+        Point2D minValuePoint = null;
+        for (Point2D point : searchPoints) {
+            if (getFactor(point.getIntX(), point.getIntY()) < minValue) {
+                minValue = getFactor(point.getIntX(), point.getIntY());
+                minValuePoint = point;
+            }
+        }
+
+        return minValuePoint;
+    }
+
     public Point2D getMinValueCell() {
         Point2D maxPoint = null;
         Point2D minPoint = null;
@@ -116,7 +167,7 @@ public class PPField {
 
         for (int j = 0; j < getHeight(); j++) {
             for (int i = 0; i < getWidth(); i++) {
-                if (field[j][i] > 0) {
+                if (field[j][i] != 0) {
                     if (field[j][i] > max) {
                         max = field[j][i];
                         maxPoint = new Point2D(i, j);
@@ -161,26 +212,17 @@ public class PPField {
         return null;
     }
 
-    public void addTerrainTrack(Track track) {
-        addTrack(track.getVehicleTypeTrack(VehicleType.TANK));
-    }
-
-    public void addAerialTrack(Track track) {
-        addTrack(track.getVehicleTypeTrack(VehicleType.FIGHTER));
-    }
-
-    protected void addTrack(SortedMap<Integer, Map<Integer, Step>> trackMap) {
-        trackMap.entrySet().stream().forEach(entry -> {
-            entry.getValue().entrySet().forEach(mapEntry -> {
-                addFactor(mapEntry.getValue().getPoint(), mapEntry.getValue().getPower());
-            });
+    public void addSteps(Map<Integer, Step> steps) {
+        steps.entrySet().forEach(mapEntry -> {
+            addFactor(mapEntry.getValue().getPoint(), mapEntry.getValue().getPower());
         });
     }
 
-    public Point2D searchPath(ArmyAlly army, Point2D targetPoint, SortedMap<Integer, Map<Integer, Step>> trackMap) throws Exception {
+    public Point2D searchPath(ArmyAlly army, Point2D targetPoint, SortedMap<Integer, Map<Integer, Step>> trackMap, TargetPoint target) throws Exception {
         Point2D startPoint = army.getForm().getAvgPoint();
 
         Point2D pathVector = targetPoint.subtract(startPoint);
+
         if (pathVector.magnitude() > CustomParams.pathSegmentLenght) {
             pathVector = pathVector.multiply(CustomParams.pathSegmentLenght / pathVector.magnitude());
         }
@@ -194,6 +236,7 @@ public class PPField {
             //@TODO optimize it!!!
 
             double pathSegmentLenght = turnedPathVector.magnitude() / CustomParams.calculationPathInterval;
+
             double factor = 0.0;
             Integer pathJourneyTick = 0;
             Point2D[] edgesPoints = army.getForm().getEdgePoints(startPoint.add(turnedPathVector));
@@ -212,8 +255,8 @@ public class PPField {
                     tick += MyStrategy.world.getTickIndex();
                     Point2D transformedPoint = getTransformedPoint(vehiclePoint.add(pathSegmentVector));
 
-                    Map<Integer, Step> tickTrackMap = trackMap.get(tick);
                     if (trackMap.containsKey(tick)) {
+                        Map<Integer, Step> tickTrackMap = trackMap.get(tick);
                         int trackMapIndex = transformedPoint.getIntX() + transformedPoint.getIntY() * getWidth();
                         if (tickTrackMap.containsKey(trackMapIndex)) {
                             factor += tickTrackMap.get(trackMapIndex).getPower();
@@ -227,12 +270,22 @@ public class PPField {
                 factor += getPathFactor(vehiclePoint, vehiclePoint.add(turnedPathVector));
             }
 
-
-            if (minPathFactor > factor) {
+            if (minPathFactor > factor && factor < CustomParams.minPathFactor) {
                 minPathFactor = factor;
                 minPathVector = turnedPathVector;
                 minPathJourneyTick = pathJourneyTick;
             }
+
+            if (factor < target.maxDamageValue) {//@TODO workaround boolshit
+                minPathFactor = factor;
+                minPathVector = turnedPathVector;
+                minPathJourneyTick = pathJourneyTick;
+                break;
+            }
+        }
+
+        if (minPathVector == null) {//do nothing
+            return startPoint;
         }
 
         addPathTrack(army, minPathVector, minPathJourneyTick);
@@ -339,7 +392,7 @@ public class PPField {
                 throw new Exception("Cant intersect lines found");
             }
 
-            if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.magnitude() < horIntersectPoint.magnitude())) {
+            if (horIntersectPoint == null || (verIntersectPoint != null && startPoint.distance(verIntersectPoint) < startPoint.distance(horIntersectPoint))) {
                 tStartX += stepX;
             } else {
                 tStartY += stepY;
@@ -355,16 +408,20 @@ public class PPField {
     }
 
 
-    public Float sumXAxis (Point2D point, int yCentre, int y, int radius) {
+    public Float sumXAxis (Point2D point, int yCentre, int y, int radius, List<Integer> visitedCells) {
+        float factor = 0;
         try {
+
             for (int x = 0; x <= radius; x++) {
                 if (y * y + x * x <= radius) {
                     if (point.getIntX() + x < getWidth() && getFactor(point.getIntX() + x, yCentre + y ) > 0) {
-                        return getFactor(point.getIntX() + x, yCentre + y );
+                        factor += getFactor(point.getIntX() + x, yCentre + y );
+                        visitedCells.add(point.getIntX() + x  + (yCentre + y) * getWidth() );
                     }
 
                     if (x != 0 && point.getIntX() - x >= 0 && getFactor(point.getIntX() - x, yCentre + y ) > 0) {
-                        return getFactor(point.getIntX() - x, yCentre + y );
+                        factor += getFactor(point.getIntX() - x, yCentre + y );
+                        visitedCells.add(point.getIntX() - x  + (yCentre + y) * getWidth());
                     }
                 }
             }
@@ -374,23 +431,25 @@ public class PPField {
             e.printStackTrace();
         }
 
-        return 0f;
+        return factor;
     }
 
-    public float sumFactorInPointRadious(Point2D point, int radius) {
-
-
+    public float sumFactorInPointRadious(Point2D point, int radius, List<Integer> visitedCells) {
         float factorSum = 0;
         for (int y = 0; y <= radius; y++) {
             if (point.getIntY() + y < getHeight()) {
-                factorSum += sumXAxis(point, point.getIntY(), y , radius);
+                factorSum += sumXAxis(point, point.getIntY(), y , radius, visitedCells);
             }
 
             if (point.getIntY() - y >= 0) {
-                factorSum += sumXAxis(point, point.getIntY(), -y , radius);
+                factorSum += sumXAxis(point, point.getIntY(), -y , radius, visitedCells);
             }
         }
 
         return factorSum;
+    }
+
+    public void setAvg(int x, int y, int count) {
+        setFactor(x, y, getFactor(x, y) / (float)count);
     }
 }

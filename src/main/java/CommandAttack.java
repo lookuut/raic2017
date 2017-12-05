@@ -27,18 +27,22 @@ public class CommandAttack extends Command {
 
     public Command prepare(ArmyAllyOrdering army) throws Exception {
         army.getForm().recalc(army.getVehicles());
-        Point2D nearestEnemyVector = army.searchNearestEnemy();
+        TargetPoint target = army.searchNearestEnemy();
 
-        if (nearestEnemyVector == null) {//no enemy for vehicle
+        if (target == null) {//no enemy for vehicle
             return this;
         }
 
-        if (nearestEnemyVector.magnitude() <= 1) {
+        if (target.vector.magnitude() == 0) {
             return this;
         }
 
-        CommandMove move = new CommandMove(nearestEnemyVector);
-        return army.pathFinder(move);
+        CommandMove move = new CommandMove(target.vector);
+        if (target.vector.magnitude() < CustomParams.pathSegmentLenght) {
+            return move;
+        }
+
+        return army.pathFinder(move, target);
     }
 
 

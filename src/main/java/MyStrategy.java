@@ -1,9 +1,7 @@
 import model.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
 
 
 public final class MyStrategy implements Strategy {
@@ -14,6 +12,8 @@ public final class MyStrategy implements Strategy {
     public static Game game;
     public static Move move;
 
+    public static CommanderFacility commanderFacility;
+
     private static WeatherType[][] weatherMap;
     private static TerrainType[][] terrainMap;
 
@@ -21,7 +21,8 @@ public final class MyStrategy implements Strategy {
     public static EnemyField enemyField;
 
     protected HashMap<Long, SmartVehicle> previousVehiclesStates;
-    protected HashMap<Long, SmartVehicle> vehicles;
+    private static  HashMap<Long, SmartVehicle> vehicles;
+
 
     protected ArmyDamageField armyDamageField;
     public static  Commander commander;
@@ -29,14 +30,8 @@ public final class MyStrategy implements Strategy {
     public MyStrategy() {
         this.previousVehiclesStates = new HashMap();
         this.vehicles = new HashMap<>();
+        this.commanderFacility = new CommanderFacility();
 
-        //set armies start priorities
-        CommandQueue.getInstance().addPriority(CustomParams.fighterArmyId);
-        CommandQueue.getInstance().addPriority(CustomParams.helicopterArmyId);
-        CommandQueue.getInstance().addPriority(CustomParams.tankArmyId);
-        CommandQueue.getInstance().addPriority(CustomParams.ifvArmyId);
-        CommandQueue.getInstance().addPriority(CustomParams.arrvArmyId);
-        CommandQueue.getInstance().addPriority(CustomParams.allArmyId);
         CommandQueue.getInstance().addPriority(CustomParams.noAssignGroupId);
     }
 
@@ -50,7 +45,6 @@ public final class MyStrategy implements Strategy {
             commander = new Commander(this);
             battleField = new BattleField(CustomParams.tileCellSize);
             enemyField = new EnemyField(battleField);
-            commander.initStaticPPField();
 
             //what is this shit ?
             armyDamageField = new ArmyDamageField(this);
@@ -79,8 +73,7 @@ public final class MyStrategy implements Strategy {
     public void move(Player me, World world, Game game, Move move) {
         try {
             this.init(me, world, game, move);
-
-            this.armyFieldAnalisys(world);
+            this.updateWorld(world);
 
             this.commander.logic(battleField);
             this.commander.check();
@@ -93,8 +86,33 @@ public final class MyStrategy implements Strategy {
         }
     }
 
-    public void armyFieldAnalisys(World world) {
-        List<ArmyAllyOrdering> activeArmy = commander.getArmyRunningCommands();
+    public void updateWorld(World world) {
+        updateVehicles(world);
+        updateFacilities(world);
+    }
+
+    private void updateFacilities(World world) {
+        for (Facility facility : world.getFacilities()) {
+            commanderFacility.updateFacility(facility);
+        }
+    }
+
+    private void updateVehicles(World world) {
+
+        Collection<ArmyAllyOrdering> armies = commander.getDivisions().getArmyList();
+
+        Consumer<SmartVehicle> updateVehiclesInArmies = (vehicle) -> {
+            for (ArmyAllyOrdering army : armies) {
+                Collection<SmartVehicle> edgesVehicles = army.getForm().getEdgesVehicles().values();
+                if (army.isArmyAlive() && !vehicle.isAlly()) {
+                    army.setEnemy(vehicle);
+                }
+
+                if (army.isArmyAlive() && army.isRun()) {
+                    army.result(vehicle);
+                }
+            }
+        };
         Arrays.stream(
             world.getNewVehicles()).
             forEach(vehicle -> {
@@ -108,11 +126,9 @@ public final class MyStrategy implements Strategy {
                     smartVehicle.vehicleUpdate(vehicle);
                 }
 
+                commander.addNoArmyVehicle(smartVehicle);
                 battleField.addVehicle(smartVehicle);
-
-                for (ArmyAllyOrdering army : activeArmy) {
-                    army.result(smartVehicle);
-                }
+                updateVehiclesInArmies.accept(smartVehicle);
             });
 
         Arrays.stream(
@@ -126,11 +142,7 @@ public final class MyStrategy implements Strategy {
                     }
                     smartVehicle.vehicleUpdate(vehicleUpdate);
                     battleField.addVehicle(smartVehicle);
-
-                    for (ArmyAllyOrdering army : activeArmy) {
-                        army.result(smartVehicle);
-                    }
-
+                    updateVehiclesInArmies.accept(smartVehicle);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -157,11 +169,6 @@ public final class MyStrategy implements Strategy {
 
     public SmartVehicle getVehiclePrevState(Long vehicleId) {
         return previousVehiclesStates.get(vehicleId);
-    }
-
-    public static boolean canNuclearAttack() {
-        return MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0 &&
-                MyStrategy.world.getTickIndex() - Commander.getNavigateNuclearTick() > MyStrategy.game.getTacticalNuclearStrikeDelay();
     }
 
     public static boolean isNuclearAttack() {
@@ -218,15 +225,15 @@ public final class MyStrategy implements Strategy {
             Point2D direction = new Point2D(MyStrategy.world.getWidth(),0);
             for (int i = 0; i  < CustomParams.borderPointsCount; i++) {
                 double angle = i * 2 * Math.PI / CustomParams.borderPointsCount;
-                direction = direction.turn(angle);
+                Point2D turnedDirection = direction.turn(angle);
                 Point2D borderPoint1 = new Point2D(0,0);
                 Point2D borderPoint2 = new Point2D(0,0);
-                if (direction.getX() >= 0 && Math.abs(direction.getX()) > Math.abs(direction.getY())) {
+                if (turnedDirection.getX() >= 0 && Math.abs(turnedDirection.getX()) > Math.abs(turnedDirection.getY())) {
                     borderPoint1.setX(MyStrategy.world.getWidth());
                     borderPoint2 = new Point2D(MyStrategy.world.getWidth(), MyStrategy.world.getHeight());
-                } else if (direction.getX() < 0 && Math.abs(direction.getX()) > Math.abs(direction.getY())) {
+                } else if (turnedDirection.getX() < 0 && Math.abs(turnedDirection.getX()) > Math.abs(turnedDirection.getY())) {
                     borderPoint2.setY(MyStrategy.world.getHeight());
-                } else if (direction.getY() >=0 && Math.abs(direction.getX()) <= Math.abs(direction.getY()) ) {
+                } else if (turnedDirection.getY() >=0 && Math.abs(turnedDirection.getX()) <= Math.abs(turnedDirection.getY()) ) {
                     borderPoint1.setY(MyStrategy.world.getHeight());
                     borderPoint2 = new Point2D(MyStrategy.world.getWidth(), MyStrategy.world.getHeight());
                 } else {
@@ -234,12 +241,16 @@ public final class MyStrategy implements Strategy {
                 }
 
                 Point2D center = new Point2D(MyStrategy.world.getWidth() / 2, MyStrategy.world.getHeight() / 2);
-                Point2D turnedVectorPoint = center.add(direction);
+                Point2D turnedVectorPoint = center.add(turnedDirection);
 
                 borderPointList.add(Point2D.lineIntersect(center, turnedVectorPoint, borderPoint1 ,borderPoint2));
             }
         }
 
         return borderPointList;
+    }
+
+    public static Map<Long, SmartVehicle> getVehicles() {
+        return vehicles;
     }
 }

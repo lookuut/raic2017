@@ -10,29 +10,39 @@ public class EnemyField {
     private Integer lastUpdateNuclearAttackRatingTick = -1;
     private SortedSet<NuclearAttackPoint> nuclearAttackPointsRating;
 
-    private EnemyPPField tankDamageField;
-    private EnemyPPField fighterDamageField;
-    private EnemyPPField helicopterDamageField;
-    private EnemyPPField ifvDamageField;
-    private EnemyPPField arrvDamageField;
-    private EnemyPPField enemyField;
+    private PPFieldEnemy aerialDamageField;
+    private PPFieldEnemy terrainDamageField;
+
+    //be attention with calc avg values
+    private PPFieldEnemy aerialToTerrainEnemyField;
+    private PPFieldEnemy aerialToAerialEnemyField;
+    private PPFieldEnemy terrainToAerialEnemyField;
+    private PPFieldEnemy terrainToTerrainEnemyField;
+
+
+    private PPFieldEnemy enemyField;
 
     private Integer width;
     private Integer height;
+    private BattleField battleField;
 
     public EnemyField(BattleField battleField) {
-        width = battleField.getPFieldWidth();
-        height = battleField.getPFieldHeight();
+        this.battleField = battleField;
+        width = battleField.getWidth();
+        height = battleField.getHeight();
 
-        tankDamageField = new EnemyPPField(width, height);
-        fighterDamageField = new EnemyPPField(width, height);
-        helicopterDamageField = new EnemyPPField(width, height);
-        ifvDamageField = new EnemyPPField(width, height);
-        arrvDamageField = new EnemyPPField(width, height);
-        enemyField = new EnemyPPField(width, height);
+        enemyField = new PPFieldEnemy(width, height);
+
+        aerialDamageField = new PPFieldEnemy(width, height);
+        terrainDamageField = new PPFieldEnemy(width, height);
+
+        aerialToTerrainEnemyField = new PPFieldEnemy(width, height);
+        aerialToAerialEnemyField = new PPFieldEnemy(width, height);
+        terrainToAerialEnemyField = new PPFieldEnemy(width, height);
+        terrainToTerrainEnemyField = new PPFieldEnemy(width, height);
+
         nuclearAttackPointsRating = new TreeSet<>();
     }
-
 
     public int getWidth() {
         return width;
@@ -43,25 +53,40 @@ public class EnemyField {
     }
 
     /**
-     * @desc bad style, rewrite it
+     * @param allyVehicle
+     * @return
+     */
+    public PPField getEnemyField(SmartVehicle allyVehicle) throws Exception {
+        if (allyVehicle.getType() == VehicleType.FIGHTER) {
+            return battleField.calcEnemyFieldAvgValues(aerialToAerialEnemyField, allyVehicle.getAerialDamage());
+        }
+        if (allyVehicle.getType() == VehicleType.HELICOPTER) {
+
+            PPField aeToAeAvgEnemyField = battleField.calcEnemyFieldAvgValues(aerialToAerialEnemyField, allyVehicle.getAerialDamage());
+            PPField aeToTerAvgEnemyField = battleField.calcEnemyFieldAvgValues(aerialToTerrainEnemyField, allyVehicle.getGroundDamage());
+            aeToAeAvgEnemyField.sumField(aeToTerAvgEnemyField);
+            return aeToAeAvgEnemyField;
+        }
+
+        if (allyVehicle.getType() == VehicleType.TANK || allyVehicle.getType() == VehicleType.IFV) {
+            PPField aeToAeAvgEnemyField = battleField.calcEnemyFieldAvgValues(terrainToAerialEnemyField, allyVehicle.getAerialDamage());
+            PPField aeToTerAvgEnemyField = battleField.calcEnemyFieldAvgValues(terrainToTerrainEnemyField, allyVehicle.getGroundDamage());
+            aeToAeAvgEnemyField.sumField(aeToTerAvgEnemyField);
+            return aeToAeAvgEnemyField;
+        }
+
+        throw new Exception("Cant attack type search enemy " + allyVehicle.getType().toString());
+    }
+
+    /**
      * @param type
      * @return
      */
-    public EnemyPPField getDamageField(VehicleType type) throws Exception{
-        switch (type) {
-            case HELICOPTER:
-                return helicopterDamageField;
-            case TANK:
-                return tankDamageField;
-            case FIGHTER:
-                return fighterDamageField;
-            case IFV:
-                return ifvDamageField;
-            case ARRV:
-                return arrvDamageField;
+    public PPFieldEnemy getDamageField(VehicleType type) throws Exception {
+        if (SmartVehicle.isTerrain(type)) {
+            return terrainDamageField;
         }
-
-        throw new Exception("Unknown vehicle type " + type.toString());
+        return aerialDamageField;
     }
 
     /**
@@ -106,11 +131,15 @@ public class EnemyField {
     }
 
     protected void updateCell(int x, int y, SmartVehicle vehicle, int operator) {
-        tankDamageField.addFactor(x, y, vehicle.getDamagePPFactor(VehicleType.TANK, false) * operator);
-        fighterDamageField.addFactor(x, y, vehicle.getDamagePPFactor(VehicleType.FIGHTER, true) * operator);
-        ifvDamageField.addFactor(x, y, vehicle.getDamagePPFactor(VehicleType.IFV, false) * operator);
-        helicopterDamageField.addFactor(x, y, vehicle.getDamagePPFactor(VehicleType.HELICOPTER, true) * operator);
-        arrvDamageField.addFactor(x, y, vehicle.getDamagePPFactor(VehicleType.ARRV, true) * operator);
+        terrainDamageField.addLinearPPValue(x, y, vehicle.getDamagePPFactor(false) * operator);
+        aerialDamageField.addLinearPPValue(x, y, vehicle.getDamagePPFactor( true) * operator);
+
+        aerialToAerialEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(true, true) * operator);
+        aerialToTerrainEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(true, false) * operator);
+
+        terrainToAerialEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(false, true) * operator);
+        terrainToTerrainEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(false, false) * operator);
+
         enemyField.addFactor(x, y, operator);
     }
 
@@ -142,7 +171,7 @@ public class EnemyField {
             try {
                 for (int x = 1; x <= intDangerRadoius; x++) {
                     for (VehicleType type : types) {
-                        EnemyPPField damageField = getDamageField(type);
+                        PPFieldEnemy damageField = getDamageField(type);
                         if (armyTransformedCentre.getIntX() + x < getWidth() && damageField.getFactor(armyTransformedCentre.getIntX() + x, y) > 0) {
                             return damageField.getWorldPoint(new Point2D(armyTransformedCentre.getIntX() + x, y));
                         }
@@ -195,7 +224,7 @@ public class EnemyField {
 
             double factor = 0;
             for (VehicleType vehicleType : vehicleTypes) {
-                EnemyPPField field = getDamageField(vehicleType);
+                PPFieldEnemy field = getDamageField(vehicleType);
                 factor += field.getPointRadiousFactorSum( field.getTransformedPoint(escapePoint.add(safetyPointVector)), CustomParams.safetyDistance);
             }
 
@@ -215,7 +244,7 @@ public class EnemyField {
             recalcRating = true;
         }
 
-        if (MyStrategy.world.getTickIndex() - lastUpdateNuclearAttackRatingTick > CustomParams.nuclearAttackRatingRecalcTickInterval) {
+        if (MyStrategy.world.getTickIndex() - lastUpdateNuclearAttackRatingTick >= CustomParams.nuclearAttackRatingRecalcTickInterval) {
             recalcRating = true;
         }
 
@@ -231,40 +260,40 @@ public class EnemyField {
         nuclearAttackPointsRating.clear();
         float prevValue = 0;
         HashSet<Integer> visitedCells = new HashSet<>();
-
         int radius = (int)Math.ceil(MyStrategy.game.getTacticalNuclearStrikeRadius() * getWidth() / MyStrategy.world.getWidth());
         for (int y = 0; y < enemyField.getHeight(); y++) {
             for (int x = 0; x < enemyField.getWidth(); x++) {
 
                 if (!visitedCells.contains(y * enemyField.getWidth() + x)) {
 
-                    if (enemyField.getFactor(x, y) < prevValue) {
+                    if ((enemyField.getFactor(x, y) < prevValue || (enemyField.getFactor(x, y) > 0 && x == (getWidth() - 1)))) {
                         float maxValueInCircle = 0;
                         int maxValueX = 0;
                         int maxValueY = 0;
+                        List<Integer> maxValueVisitedCells = null;
                         for (int j = -radius; j <= radius && y + j < enemyField.getHeight(); j++) {
                             for (int i = -radius; i <= radius && x + i < enemyField.getWidth(); i++) {
                                 int localX = x + i;
                                 int localY = y + j;
 
-                                if (i * i + j * j <= radius * radius && localX >= 0 && localY >= 0) {
-                                    float maxValueInCircleLocal = enemyField.sumFactorInPointRadious(new Point2D(localX, localY), radius);
+                                if (i * i + j * j <= radius * radius && localX >= 0 && localY >= 0 && !visitedCells.contains(localY * enemyField.getWidth() + localX)) {
+                                    List<Integer> localVisitedCells = new ArrayList<>();
+                                    float maxValueInCircleLocal = enemyField.sumFactorInPointRadious(new Point2D(localX, localY), radius, localVisitedCells);
                                     if (maxValueInCircleLocal > maxValueInCircle) {
                                         maxValueInCircle = maxValueInCircleLocal;
                                         maxValueX = localX;
                                         maxValueY = localY;
+                                        maxValueVisitedCells = localVisitedCells;
                                     }
-
-                                    visitedCells.add(localX + localY * enemyField.getWidth());
                                 }
                             }
                         }
                         if (maxValueInCircle > 0) {
+                            visitedCells.addAll(maxValueVisitedCells);
                             nuclearAttackPointsRating.add(new NuclearAttackPoint(enemyField.getWorldPoint(new Point2D(maxValueX, maxValueY)), maxValueInCircle, enemyField.getWidth()));
                         }
-                    } else {
-                        visitedCells.add(x + y * enemyField.getWidth());
                     }
+
                     prevValue = enemyField.getFactor(x, y);
                 }
             }
@@ -282,5 +311,9 @@ public class EnemyField {
 
             nuclearAttackPointsRating.tailSet(point).clear();
         }
+    }
+
+    public void print() {
+        aerialDamageField.print();
     }
 }

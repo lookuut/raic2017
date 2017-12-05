@@ -1,39 +1,65 @@
+import model.VehicleType;
+
+import java.util.Collection;
 
 public class CommandHeal extends Command {
-    private Army arrv;
-    private CommandMove move;
+    private ArmyDivisions divisions;
 
-    public CommandHeal(Army arrv) {
+    public CommandHeal(ArmyDivisions divisions) {
         super();
-        this.arrv = arrv;
+        this.divisions = divisions;
+    }
+
+
+    public Command prepare(ArmyAllyOrdering army) throws Exception {
+        army.getForm().recalc(army.getVehicles());
+
+        Collection<ArmyAllyOrdering> armies = divisions.getArmyList(VehicleType.ARRV);
+
+        if (armies == null) {//no arrv :(
+            setState(CommandStates.Complete);
+            return null;
+        }
+
+        double minDistance = Double.MAX_VALUE;
+        ArmyAllyOrdering minDistArmy = null;
+        for (ArmyAllyOrdering arrvArmy : armies) {
+            arrvArmy.getForm().recalc(arrvArmy.getVehicles());
+            double distance = arrvArmy.getForm().getAvgPoint().distance(army.getForm().getAvgPoint());
+            if (distance < minDistance) {
+                minDistArmy = arrvArmy;
+                minDistance = distance;
+            }
+
+        }
+        TargetPoint target = new TargetPoint();
+        target.vector = minDistArmy.getForm().getAvgPoint().subtract(army.getForm().getAvgPoint());
+        target.maxDamageValue = 0.0f;
+
+        if (target.vector.magnitude() < CustomParams.onHealerEps) {
+            return null;
+        }
+
+        CommandMove move = new CommandMove(target.vector);
+
+        return army.pathFinder(move, target);
     }
 
     public boolean check (ArmyAllyOrdering army) {
-        boolean check = move.check(army);
-        if (check) {
-            setState(CommandStates.Complete);
-        }
-
-        return check;
+        setState(CommandStates.Complete);
+        return true;
     }
 
 
     public void run(ArmyAllyOrdering army) throws Exception {
-        if (isNew()) {
-            Point2D moveVector = arrv.getForm().getAvgPoint().subtract(army.getForm().getAvgPoint());
-            move = new CommandMove(moveVector);
-            move.run(army);
-            super.run(army);
-        }
+        setState(CommandStates.Complete);
     }
 
     @Override
     public void pinned(){
-        move.pinned();
     }
 
     @Override
     public void processing(SmartVehicle vehicle) {
-        move.processing(vehicle);
     }
 }

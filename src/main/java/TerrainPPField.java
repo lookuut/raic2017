@@ -10,6 +10,9 @@ public class TerrainPPField extends PPField {
     public void addTerrainMap (TerrainType[][] map) throws Exception {
         for (int i = 0; i < getHeight(); i++) {
             for (int j = 0; j < getWidth(); j++) {
+                if (i == 0 || j == 0 || i == (getHeight() - 1) || j == (getWidth() - 1)) {
+                    addFactor(j, i, CustomParams.borderFactor);
+                }
                 addFactor(j, i , terrainToPP(map[i][j]));
             }
         }

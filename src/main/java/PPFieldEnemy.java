@@ -1,8 +1,8 @@
 import java.util.HashSet;
 
-public class EnemyPPField extends PPField {
+public class PPFieldEnemy extends PPField {
 
-    public EnemyPPField(int x, int y) {
+    public PPFieldEnemy(int x, int y) {
         super(x, y);
     }
 

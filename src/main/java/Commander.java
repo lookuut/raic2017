@@ -1,172 +1,148 @@
 import model.VehicleType;
 
+
 import java.util.*;
 
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 class Commander {
-    protected Map<Integer, ArmyAllyOrdering> divisions;
+
+    private ArmyDivisions divisions;
     protected MyStrategy strategy;
     protected BehaviourTree<ArmyAlly> behaviourTree;
     protected Queue<BTreeAction> activeActions;
-    static private Integer navigateNuclearTick = -1;
+
+    private static CommandNuclearAttack nuclearAttack;
+
+    private Map<VehicleType, List<SmartVehicle>> noArmyVehicles;
+    private Map<VehicleType, Square> noArmySquaereMap;
+
     /**
      * @desc all armies must be init in constructor
      * @param strategy
      */
     public Commander(MyStrategy strategy) {
         this.strategy = strategy;
-        divisions = new HashMap();
+        divisions = new ArmyDivisions();
         activeActions = new LinkedList<>();
         behaviourTree = new BehaviourTree<>();
-
-        ArmyAllyOrderingArrv arrvArmy = new ArmyAllyOrderingArrv(CustomParams.arrvArmyId);
-        ArmyAllyOrderingFighter fighterArmy = new ArmyAllyOrderingFighter(CustomParams.fighterArmyId);
-        ArmyAllyOrdering helicopterArmy = new ArmyAllyOrdering(CustomParams.helicopterArmyId);
-        ArmyAllyOrdering tankArmy = new ArmyAllyOrdering(CustomParams.tankArmyId);
-        ArmyAllyOrdering ifvArmy = new ArmyAllyOrdering(CustomParams.ifvArmyId);
-        ArmyAllyOrdering allArmy = new ArmyAllyOrdering(CustomParams.allArmyId);
-
-        divisions.put(CustomParams.arrvArmyId, arrvArmy);
-        divisions.put(CustomParams.fighterArmyId, fighterArmy);
-        divisions.put(CustomParams.helicopterArmyId, helicopterArmy);
-        divisions.put(CustomParams.tankArmyId, tankArmy);
-        divisions.put(CustomParams.ifvArmyId, ifvArmy);
-        //divisions.put(CustomParams.allArmyId, allArmy);
-
-        arrvArmy.addCommand(new CommandCreateArmy(VehicleType.ARRV));
-        fighterArmy.addCommand(new CommandCreateArmy(VehicleType.FIGHTER));
-        helicopterArmy.addCommand(new CommandCreateArmy(VehicleType.HELICOPTER));
-        tankArmy.addCommand(new CommandCreateArmy(VehicleType.TANK));
-        ifvArmy.addCommand(new CommandCreateArmy(VehicleType.IFV));
-        allArmy.addCommand(new CommandCreateArmy(null));
-
-        //fighter behaviour tree
-        BehaviourTree fighterBehaviourTree = new BehaviourTree<>();
-
-        fighterArmy.setBehaviourTree(fighterBehaviourTree);
-
-        this.setEmptyBehaviourTree(fighterArmy);
-        this.setEmptyBehaviourTree(helicopterArmy);
-        this.setEmptyBehaviourTree(tankArmy);
-        this.setEmptyBehaviourTree(ifvArmy);
-        this.setDefenceBehaviourTree(arrvArmy);
-        this.setAllArmyBehaviourTree(allArmy);
+        noArmyVehicles = new HashMap<>();
+        noArmySquaereMap = new HashMap<>();
     }
 
-    public void setAllArmyBehaviourTree(ArmyAllyOrdering army) {
-        BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
-        BTreeNode root = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> MyStrategy.isNuclearAttack()),
-                army
-        );
-
-        root.addChildNode(new BTreeAction(() -> new CommandNuclearDefence()));
-        root.addChildNode(new BTreeAction(() -> new CommandEmpty()));
-
-        bTree.addRoot(root);
-        army.setBehaviourTree(bTree);
-    }
-
-    public void setDefenceBehaviourTree(ArmyAllyOrdering army) {
-        BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
-        BTreeNode root = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.onDanger()),
-                army
-        );
-        root.addChildNode(new BTreeAction(() -> new CommandDefence()));
-        root.addChildNode(new BTreeAction(() -> new CommandEmpty()));//on idea go to siege base
-        bTree.addRoot(root);
-        army.setBehaviourTree(bTree);
-    }
-
-    public void setEmptyBehaviourTree(ArmyAllyOrdering army) {
-        BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
-        BTreeNode root = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isArmyAlive() && armyLocal.isAerial() && armyLocal.getAvgDurability() < CustomParams.minAvgDurability),
-                army
-        );
-        root.addChildNode(new BTreeAction(() -> new CommandHeal(divisions.get(CustomParams.arrvArmyId))));
-        root.addChildNode(new BTreeAction(() -> new CommandAttack()));
-        bTree.addRoot(root);
-        army.setBehaviourTree(bTree);
-    }
-
-
-    public void initStaticPPField () throws Exception {
-
-        int ppFieldX = (int)(strategy.getWorld().getWidth() / strategy.getGame().getTerrainWeatherMapColumnCount());
-        int ppFieldY = (int)(strategy.getWorld().getHeight() / strategy.getGame().getTerrainWeatherMapRowCount());
-        TerrainPPField terrainPPField = new TerrainPPField(ppFieldX, ppFieldY);
-        terrainPPField.addTerrainMap(strategy.getWorld().getTerrainByCellXY());
-
-        WeatherPPField weatherPPField = new WeatherPPField(ppFieldX, ppFieldY);
-        weatherPPField.addWeatherMap(MyStrategy.getWeatherMap());
-
-        for (Map.Entry<Integer, ArmyAllyOrdering> entry : divisions.entrySet()) {
-            entry.getValue().init(terrainPPField, weatherPPField);
-        }
-    }
 
     public void logic (BattleField battleField) throws Exception {
-        //run divisions logic
-        for (Map.Entry<Integer, ArmyAllyOrdering> entry : divisions.entrySet()) {
-            if (entry.getValue().isArmyAlive()) {
-                if (MyStrategy.canNuclearAttack()) {
-                    nuclearAttack(entry.getValue());
-                }
+        constructArmies();
 
-                entry.getValue().run(battleField);
-                entry.getValue().check();
+        nuclearAttack();
+        //run divisions logic
+        for (ArmyAllyOrdering army : divisions.getArmyList()) {
+            if (army.isArmyAlive()) {
+                army.run(battleField);
+                army.check();
             }
         }
     }
 
+    public void constructArmies() {
+        for (Map.Entry<VehicleType, List<SmartVehicle>> entry : noArmyVehicles.entrySet()) {
+            try {
+                if (entry.getValue().size() > CustomParams.minVehiclesCountInArmy) {
+                    Square vehicleTypeSquare = noArmySquaereMap.get(entry.getKey());
 
-    public List<ArmyAllyOrdering> getArmyRunningCommands() {
-        return divisions.values().stream().filter(army -> army.isRun()).collect(Collectors.toList());
+                    if (entry.getKey() == VehicleType.ARRV && entry.getKey() != VehicleType.HELICOPTER && entry.getValue().size() > CustomParams.maxVehiclesCountInArmy) {
+                        double centreX = (vehicleTypeSquare.getRightTopAngle().getX() - vehicleTypeSquare.getLeftBottomAngle().getX()) / 2;
+                        double centreY = (vehicleTypeSquare.getRightTopAngle().getY() - vehicleTypeSquare.getLeftBottomAngle().getY()) / 2;
+                        Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY );
+
+                        Square armySquare = new Square(vehicleTypeSquare.getLeftBottomAngle(), centrePoint);
+                        divisions.addArmy(armySquare, entry.getKey());
+
+                        armySquare = new Square(centrePoint, vehicleTypeSquare.getRightTopAngle());
+                        divisions.addArmy(armySquare, entry.getKey());
+
+                        armySquare = new Square(new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX(), centrePoint.getY()), new Point2D(centrePoint.getX(), vehicleTypeSquare.getRightTopAngle().getY()));
+                        divisions.addArmy(armySquare, entry.getKey());
+
+                        armySquare = new Square(new Point2D(centrePoint.getX(), vehicleTypeSquare.getLeftBottomAngle().getY()), new Point2D(vehicleTypeSquare.getRightTopAngle().getX(), centrePoint.getY()));
+                        divisions.addArmy(armySquare, entry.getKey());
+                    } else if (entry.getKey() == VehicleType.FIGHTER ||
+                            entry.getKey() == VehicleType.HELICOPTER ||
+                            entry.getKey() == VehicleType.TANK ||
+                            entry.getKey() == VehicleType.IFV) {
+                        divisions.addArmy(vehicleTypeSquare, entry.getKey());
+                    }
+
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        noArmyVehicles.clear();
     }
 
     public void check () {
-        for (Map.Entry<Integer, ArmyAllyOrdering> entry : divisions.entrySet()) {
-            entry.getValue().check();
+        for (ArmyAllyOrdering army : divisions.getArmyList()) {
+            army.check();
         }
     }
 
-    public Map<Integer, ArmyAllyOrdering> getDivisions() {
+    public ArmyDivisions getDivisions() {
         return divisions;
     }
 
-    public void nuclearAttack (ArmyAllyOrdering army) {
+    public void nuclearAttack () {
         try {
+
+            if (isDelayNuclearAttack() || MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() > 0) {
+                return;
+            }
+
             for (NuclearAttackPoint attackPoint : MyStrategy.enemyField.getNuclearAttackPointsRating()) {
+                for (ArmyAllyOrdering army : divisions.getArmyList()) {
+                    if (army.getForm().isPointInDistance(attackPoint.getPoint(), MyStrategy.game.getTacticalNuclearStrikeRadius())) {//point in allow distance need cabum
+                        SmartVehicle vehicle = army.getGunnerVehicle(attackPoint.getPoint());
+                        Point2D fromPoint = vehicle.getPoint();
 
-                if (army.getForm().isPointInDistance(attackPoint.getPoint(), MyStrategy.game.getTacticalNuclearStrikeRadius())) {//point in allow distance need cabum
-                    SmartVehicle vehicle = army.getNearestVehicle(attackPoint.getPoint());
-                    Point2D fromPoint = vehicle.getPoint();
-                    Point2D targetVector = attackPoint.getPoint().subtract(fromPoint);
-                    double visionRange = vehicle.getMinVisionRange();
+                        BattleFieldCell battleFieldCell = MyStrategy.battleField.getBattleFieldCell(MyStrategy.battleField.pointTransform(attackPoint.getPoint()));
+                        Map<Long, SmartVehicle> vehicles = battleFieldCell.getVehicles(MyStrategy.getEnemyPlayerId());
 
-                    if (army.getRunningCommand() instanceof  CommandMove) {
-                        CommandMove command = ((CommandMove) army.getRunningCommand());
-                        Point2D moveTargetVector = command.getTargetVector();
-                        double angle = moveTargetVector.angle(targetVector);
-                        if (angle >= 90 && angle < 270) {
-                            fromPoint = vehicle.getVehiclePointAtTick(moveTargetVector.normalize(), Math.min(MyStrategy.game.getTacticalNuclearStrikeDelay(),command.getMaxRunnableTick()));
+                        double vehicleSpeed = 0;
+                        if (vehicles != null && vehicles.size() > 0) {
+                            SmartVehicle firstVehicle = vehicles.values().stream().findFirst().orElse(null);
+                            if (firstVehicle != null) {
+                                vehicleSpeed = firstVehicle.getVehicleOnTickSpeed();
+                            }
                         }
+
+                        Point2D targetVector = attackPoint.getPoint().subtract(fromPoint);
+
+                        if (vehicleSpeed > 0) {
+                            targetVector.multiply(vehicleSpeed * MyStrategy.game.getTacticalNuclearStrikeDelay());
+                        }
+
+                        double visionRange = vehicle.getMinVisionRange();
+
+                        if (army.getRunningCommand() instanceof  CommandMove) {
+                            CommandMove command = ((CommandMove) army.getRunningCommand());
+                            Point2D moveTargetVector = command.getTargetVector();
+                            double angle = moveTargetVector.angle(targetVector);
+                            if (angle >= 90 && angle < 270) {
+                                fromPoint = vehicle.getVehiclePointAtTick(moveTargetVector.normalize(), Math.min(MyStrategy.game.getTacticalNuclearStrikeDelay(),command.getMaxRunnableTick()));
+                            }
+                        }
+
+                        Point2D targetPoint = attackPoint.getPoint();
+                        Point2D targetPointDirection = attackPoint.getPoint().subtract(fromPoint);
+
+                        if (targetPointDirection.magnitude() > visionRange) {
+                            targetPoint = targetPointDirection.multiply(visionRange / targetPointDirection.magnitude()).add(fromPoint);
+                        }
+
+                        nuclearAttack = new CommandNuclearAttack(vehicle, targetPoint);
+                        nuclearAttack.run(army);
+                        break;
                     }
-
-                    Point2D targetPoint = attackPoint.getPoint();
-                    Point2D targetPointDirection = attackPoint.getPoint().subtract(fromPoint);
-
-                    if (targetPointDirection.magnitude() > visionRange) {
-                        targetPoint = targetPointDirection.multiply(visionRange / targetPointDirection.magnitude()).add(fromPoint);
-                    }
-
-                    navigateNuclearTick = MyStrategy.world.getTickIndex();
-                    new CommandNuclearAttack(vehicle, targetPoint).run(army);
-                    break;
                 }
             }
         } catch (Exception e)  {
@@ -174,7 +150,27 @@ class Commander {
         }
     }
 
-    static public Integer getNavigateNuclearTick() {
-        return navigateNuclearTick;
+    public void addNoArmyVehicle(SmartVehicle vehicle){
+        if (vehicle.isAlly()) {
+            if (!noArmyVehicles.containsKey(vehicle.getType())){
+                noArmyVehicles.put(vehicle.getType(), new ArrayList<>());
+                noArmySquaereMap.put(vehicle.getType(), new Square(vehicle.getLeftBottomAngle(), vehicle.getRightTopAngle()));
+            } else {
+                Square square = noArmySquaereMap.get(vehicle.getType());
+                square.addPoint(vehicle.getLeftBottomAngle());
+                square.addPoint(vehicle.getRightTopAngle());
+            }
+
+            List<SmartVehicle> vehicleList = noArmyVehicles.get(vehicle.getType());
+            vehicleList.add(vehicle);
+        }
+    }
+
+    static public boolean isDelayNuclearAttack () {
+        if (Commander.nuclearAttack == null || Commander.nuclearAttack.isFinished()) {
+            return false;
+        }
+
+        return Commander.nuclearAttack.check(null);
     }
 }

@@ -89,6 +89,27 @@ public class Army {
         return vehicles[0];
     }
 
+    public SmartVehicle getGunnerVehicle(Point2D target) {
+        double minDistance = Double.MAX_VALUE;
+        double afterMinDistance = Double.MAX_VALUE;
+        SmartVehicle afterMinDistanceVehicle = getVehicles().values().stream().findFirst().get();
+
+        for (SmartVehicle vehicle : getVehicles().values()) {
+            if (vehicle.getDurability() >= CustomParams.gunnerMinDurability) {
+                double distance = target.subtract(vehicle.getPoint()).magnitude();
+                if (distance < minDistance) {
+                    minDistance = distance;
+                } else {
+                    if (distance < afterMinDistance) {
+                        afterMinDistanceVehicle = vehicle;
+                        afterMinDistance = distance;
+                    }
+                }
+            }
+        }
+        return afterMinDistanceVehicle;
+    }
+
     public SmartVehicle[] getNearestVehicle(Point2D[] points) {
 
         Double[] minLenght = new Double[points.length];
@@ -119,7 +140,18 @@ public class Army {
     }
 
     public double getAvgDurability() {
-        return getVehicles().values().stream().filter(vehicle -> vehicle.getDurability() > 0).mapToDouble(SmartVehicle::getDurability).average().getAsDouble();
+        double value = getVehicles().values().stream().filter(vehicle -> vehicle.getDurability() > 0).mapToDouble(SmartVehicle::getDurability).average().getAsDouble();
+        return value;
+    }
+
+    public boolean timeToGoHeal() {
+        if (!isArmyAlive() || !isAerial()) {
+            return false;
+        }
+
+        return getVehicles().values().stream().
+                filter(vehicle -> vehicle.getDurability() > 0 && vehicle.getDurability() < CustomParams.minVehicleDurabilityToHeal).
+                count() > CustomParams.minVehicleToHealCount;
     }
 
     public boolean isAerial () {

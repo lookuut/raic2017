@@ -8,7 +8,7 @@ public class ArmyForm {
      * @desc edges vehicles by angles
      */
     private Map<Point2D, SmartVehicle> edgesVehicles;
-    private Point2D avgGeomPoint;
+
     private Point2D maxPoint;
     private Point2D minPoint;
     private Point2D avgPoint;
@@ -26,7 +26,6 @@ public class ArmyForm {
 
         minPoint.setX(Math.min(point.getX(), minPoint.getX()));
         minPoint.setY(Math.min(point.getY(), minPoint.getY()));
-        avgGeomPoint = maxPoint.subtract(minPoint).multiply(0.5).add(minPoint);
     }
 
     public void recalc(Map<Long,SmartVehicle> vehicles) {
@@ -51,7 +50,6 @@ public class ArmyForm {
 
         if (count > 0)  {
             avgPoint = sumVector.multiply((double)1/count);
-            avgGeomPoint = avgPoint.clone();
         }
 
         recalculationIndex = MyStrategy.world.getTickIndex();
@@ -60,20 +58,9 @@ public class ArmyForm {
     public Point2D getAvgPoint() { return avgPoint; }
     public Point2D getMaxPoint() { return maxPoint; }
     public Point2D getMinPoint() { return minPoint; }
-    public Point2D getAvgGeomPoint() { return avgGeomPoint; }
 
     public Point2D getArmySize () {
         return getMaxPoint().subtract(getMinPoint());
-    }
-
-    public boolean isOnCoordinates(Point2D point) {
-        return point.getX() >= (int)Math.floor(getMinPoint().getX())
-                &&
-                point.getX() <= (int)Math.ceil(getMaxPoint().getX())
-                &&
-                point.getY() >= (int)Math.floor(getMinPoint().getY())
-                &&
-                point.getY() <= (int)Math.ceil(getMaxPoint().getY());
     }
 
 
@@ -133,4 +120,6 @@ public class ArmyForm {
     public Map<Point2D, SmartVehicle> getEdgesVehicles () {
         return edgesVehicles;
     }
+
+
 }

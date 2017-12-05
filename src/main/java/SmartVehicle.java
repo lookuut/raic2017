@@ -35,9 +35,11 @@ public class SmartVehicle  {
 
     protected BattleFieldCell battleFieldCell;
     protected HashSet<ArmyAllyOrdering> armySet;
-
     // null if vehicle is not in any army;
     protected Army army;
+
+    protected Point2D leftBottomAngle;
+    protected Point2D rightTopAngle;
 
     public SmartVehicle (Vehicle vehicle, MyStrategy strategy) {
 
@@ -70,6 +72,9 @@ public class SmartVehicle  {
         this.battleFieldCell = null;
         this.strategy = strategy;
         this.point = new Point2D(vehicle.getX(), vehicle.getY());
+        this.leftBottomAngle = new Point2D(vehicle.getX() - vehicle.getRadius(),  vehicle.getY() - vehicle.getRadius());
+        this.rightTopAngle = new Point2D(vehicle.getX() + vehicle.getRadius(),  vehicle.getY() + vehicle.getRadius());
+
         armySet = new HashSet();
     }
 
@@ -262,107 +267,52 @@ public class SmartVehicle  {
         return factor;
     }
 
-
-    public float getDamagePPFactor (VehicleType type, boolean isAerial) {
-
-        int allyGroundAttack = 0;
-        int allyAerialAttack = 0;
-
-        int enemyGroundAttack = 0;
-        int enemyAerialAttack = 0;
-
-        int enemyGroundDefence = 0;
-        int enemyAerialDefence = 0;
-
-        int allyGroundDefence = 0;
-        int allyAerialDefence = 0;
-
-        if (type == VehicleType.TANK) {
-            allyGroundAttack = MyStrategy.game.getTankGroundDamage();
-            allyAerialAttack = MyStrategy.game.getTankAerialDamage();
-
-            allyGroundDefence = MyStrategy.game.getTankGroundDefence();
-            allyAerialDefence = MyStrategy.game.getTankAerialDefence();
-        } else if (type == VehicleType.FIGHTER) {
-            allyGroundAttack = MyStrategy.game.getFighterGroundDamage();
-            allyAerialAttack = MyStrategy.game.getFighterAerialDamage();
-            allyGroundDefence = MyStrategy.game.getFighterGroundDefence();
-            allyAerialDefence = MyStrategy.game.getFighterAerialDefence();
-        } else if (type == VehicleType.HELICOPTER) {
-            allyGroundAttack = MyStrategy.game.getHelicopterGroundDamage();
-            allyAerialAttack = MyStrategy.game.getHelicopterAerialDamage();
-            allyGroundDefence = MyStrategy.game.getHelicopterGroundDefence();
-            allyAerialDefence = MyStrategy.game.getHelicopterAerialDefence();
-        } else if (type == VehicleType.IFV) {
-            allyGroundAttack += MyStrategy.game.getIfvGroundDamage();
-            allyAerialAttack += MyStrategy.game.getIfvAerialDamage();
-            allyGroundDefence  = MyStrategy.game.getIfvGroundDefence();
-            allyAerialDefence = MyStrategy.game.getIfvAerialDefence();
-        } else if (type == VehicleType.ARRV) {
-            allyGroundAttack = 0;
-            allyAerialAttack = 0;
-            allyGroundDefence = MyStrategy.game.getArrvGroundDefence();
-            allyAerialDefence = MyStrategy.game.getArrvAerialDefence();
-        }
-
-        if (getType() == VehicleType.TANK) {
-            enemyGroundAttack = MyStrategy.game.getTankGroundDamage();
-            enemyAerialAttack = MyStrategy.game.getTankAerialDamage();
-            enemyGroundDefence = MyStrategy.game.getTankGroundDefence();
-            enemyAerialDefence = MyStrategy.game.getTankAerialDefence();
-        } else if (getType() == VehicleType.HELICOPTER) {
-            enemyGroundAttack = MyStrategy.game.getHelicopterGroundDamage();
-            enemyAerialAttack = MyStrategy.game.getHelicopterAerialDamage();
-            enemyGroundDefence = MyStrategy.game.getHelicopterGroundDefence();
-            enemyAerialDefence = MyStrategy.game.getHelicopterAerialDefence();
-        } else if (getType() == VehicleType.FIGHTER) {
-            enemyGroundAttack = MyStrategy.game.getFighterGroundDamage();
-            enemyAerialAttack = MyStrategy.game.getFighterAerialDamage();
-            enemyGroundDefence = MyStrategy.game.getFighterGroundDefence();
-            enemyAerialDefence = MyStrategy.game.getFighterAerialDefence();
-        } else if (getType() == VehicleType.IFV) {
-            enemyGroundAttack = MyStrategy.game.getIfvGroundDamage();
-            enemyAerialAttack = MyStrategy.game.getIfvAerialDamage();
-            enemyGroundDefence = MyStrategy.game.getIfvGroundDefence();
-            enemyAerialDefence = MyStrategy.game.getIfvAerialDefence();
-        } else if (getType() == VehicleType.ARRV) {
-            enemyGroundAttack = 0;
-            enemyAerialAttack = 0;
-            enemyGroundDefence = MyStrategy.game.getArrvGroundDefence();
-            enemyAerialDefence = MyStrategy.game.getArrvAerialDefence();
-        }
-
-        if (type == getType()) {
-            enemyAerialAttack += CustomParams.equalTypeAttackFactor;
-            enemyGroundAttack += CustomParams.equalTypeAttackFactor;
-        }
-        if (type == VehicleType.ARRV) {
-            enemyGroundDefence = 0;
-            enemyAerialDefence = 0;
-        }
-
-        if ((getType() == VehicleType.TANK && type == VehicleType.FIGHTER)
-                ||
-                (getType() == VehicleType.FIGHTER && type == VehicleType.TANK)
-                ||
-                (getType() == VehicleType.ARRV && type == VehicleType.FIGHTER)
-                ||
-                (getType() == VehicleType.FIGHTER && type == VehicleType.ARRV)
-                ||
-                (getType() == VehicleType.ARRV && type == VehicleType.ARRV)
-                ) {
+    public float getDefencePPFactor(boolean attackerIsAerial, boolean attackAerial) {
+        //ae to ae
+        if (attackerIsAerial && attackAerial && isTerrain()) {
             return 0;
         }
 
-        if (isAerial() && isAerial) {
-            return  enemyAerialAttack + enemyAerialDefence;// - allyAerialAttack - allyAerialDefence;
-        } else if (isAerial() && !isAerial) {
-            return  enemyGroundAttack + enemyGroundDefence;// - allyAerialAttack - allyAerialDefence;
-        } else if (!isAerial() && isAerial) {
-            return enemyAerialAttack + enemyAerialDefence;// - allyGroundAttack - allyGroundDefence;
-        } else {
-            return enemyGroundAttack + enemyGroundDefence;// - allyGroundAttack - allyGroundDefence;
+        if (attackerIsAerial && attackAerial && isAerial()) {
+            return getAerialDefence();
         }
+
+        //ae to ter
+        if (attackerIsAerial && !attackAerial && isAerial()) {
+            return 0;
+        }
+
+        if (attackerIsAerial && !attackAerial && isTerrain()) {
+            return getAerialDefence();
+        }
+
+        //ter to ae
+        if (!attackerIsAerial && attackAerial && isTerrain()) {
+            return 0;
+        }
+
+        if (!attackerIsAerial && attackAerial && isAerial()) {
+            return getGroundDefence();
+        }
+
+        //ter to ter
+        if (!attackerIsAerial && !attackAerial && isAerial()) {
+            return 0;
+        }
+
+        if (!attackerIsAerial && !attackAerial && isTerrain()) {
+            return getGroundDefence();
+        }
+
+        return 0;
+    }
+
+    public float getDamagePPFactor (boolean isAerial) {
+        if (isAerial) {
+            return getAerialDamage();
+        }
+
+        return getGroundDamage();
     }
 
     public boolean isAerial() {
@@ -430,7 +380,8 @@ public class SmartVehicle  {
             if (horIntersectPoint == null && verIntersectPoint == null) {
                 throw new Exception("Cant intersect lines found");
             }
-            double speed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
+            //@TODO workaround
+            double speed = getMinSpeed();//getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
             if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.magnitude() < horIntersectPoint.magnitude())) {
                 tStartX += stepX;
                 intersectPoint = verIntersectPoint;
@@ -442,8 +393,8 @@ public class SmartVehicle  {
             tickSum += previousPoint.subtract(intersectPoint).magnitude() / speed;
             previousPoint = intersectPoint;
         }
-
-        tickSum += previousPoint.subtract(targetPoint).magnitude() / (getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose));
+        double speed = getMinSpeed();//(getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose))
+        tickSum += previousPoint.subtract(targetPoint).magnitude() / speed;
 
         return (int)Math.round(tickSum);
     }
@@ -572,10 +523,54 @@ public class SmartVehicle  {
         return MyStrategy.game.getRainWeatherVisionFactor() * getVisionRange();
     }
 
+        public double getMinSpeed() {
+        if (isTerrain()) {
+            return MyStrategy.game.getSwampTerrainSpeedFactor() * getMaxSpeed();
+        }
+        return MyStrategy.game.getRainWeatherSpeedFactor() * getMaxSpeed();
+    }
+
     public double getAttackRange(boolean enemyIsAerial) {
         if (enemyIsAerial) {
             return getAerialAttackRange();
         }
         return getGroundAttackRange();
+    }
+
+    public double getRadius() {
+        return radius;
+    }
+
+    public Point2D getRightTopAngle() {
+        return rightTopAngle;
+    }
+
+    public Point2D getLeftBottomAngle() {
+        return leftBottomAngle;
+    }
+
+    public static boolean isTargetVehicleType(VehicleType allyType, VehicleType enemyType) {
+
+        if (allyType == VehicleType.FIGHTER && (enemyType == VehicleType.FIGHTER || enemyType == VehicleType.HELICOPTER))  {
+            return true;
+        }
+
+        if (allyType == VehicleType.HELICOPTER && (enemyType == VehicleType.ARRV || enemyType == VehicleType.TANK || enemyType == VehicleType.HELICOPTER))  {
+            return true;
+        }
+
+        if (allyType == VehicleType.IFV && (enemyType == VehicleType.HELICOPTER || enemyType == VehicleType.FIGHTER || enemyType == VehicleType.IFV || enemyType == VehicleType.ARRV))  {
+            return true;
+        }
+
+        if (allyType == VehicleType.TANK && (enemyType == VehicleType.IFV || enemyType == VehicleType.ARRV || enemyType == VehicleType.TANK))  {
+            return true;
+        }
+
+        return false;
+    }
+
+    public double getVehicleOnTickSpeed() {
+        return strategy.getPreviousVehiclesStates().get(getId()).getPoint().subtract(getPoint()).magnitude();
     }
 }

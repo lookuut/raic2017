@@ -5,14 +5,14 @@ import java.util.function.Function;
 
 public class BattleFieldCell {
 
-    protected SortedMap<Long, SmartVehicle> vehicles[];
+    protected Map<Long, SmartVehicle> vehicles[];
 
     protected Integer x;
     protected Integer y;
 
     protected Double minMaxXY[][];
 
-    protected Function<Integer, Integer> playerIdToIndex;
+    protected Function<Long, Integer> playerIdToIndex;
 
     public static final int max_x = 0;
     public static final int max_y = 1;
@@ -40,26 +40,26 @@ public class BattleFieldCell {
     }
 
     public void addVehicle(SmartVehicle vehicle) {
-        int pId = playerIdToIndex.apply((int)vehicle.getPlayerId());
+        int pId = playerIdToIndex.apply(vehicle.getPlayerId());
         minMaxUpdate(vehicle);
         vehicles[pId].put(vehicle.getId(), vehicle);
     }
 
     protected void minMaxUpdate(SmartVehicle vehicle) {
-        int pId = playerIdToIndex.apply((int)vehicle.getPlayerId());
+        int pId = playerIdToIndex.apply(vehicle.getPlayerId());
         minMaxXY[pId][max_x] = Math.max(vehicle.getX(), minMaxXY[pId][max_x]);
         minMaxXY[pId][max_y] = Math.max(vehicle.getY(), minMaxXY[pId][max_y]);
         minMaxXY[pId][min_x] = Math.min(vehicle.getX(), minMaxXY[pId][min_x]);
         minMaxXY[pId][min_y] = Math.min(vehicle.getY(), minMaxXY[pId][min_y]);
     }
 
-    public Map<Long, SmartVehicle> getVehicles(Integer playerIndex) {
-        return vehicles[playerIndex];
+    public Map<Long, SmartVehicle> getVehicles(Long playerId) {
+        return vehicles[playerIdToIndex.apply(playerId)];
     }
 
     public void remove(SmartVehicle vehicle) {
-        vehicles[playerIdToIndex.apply((int)vehicle.getPlayerId())].remove(vehicle.getId());
-        recalculationMaxMin(playerIdToIndex.apply((int)vehicle.getPlayerId()));
+        vehicles[playerIdToIndex.apply(vehicle.getPlayerId())].remove(vehicle.getId());
+        recalculationMaxMin(playerIdToIndex.apply(vehicle.getPlayerId()));
     }
 
     protected void recalculationMaxMin (Integer playerId) {
@@ -105,7 +105,7 @@ public class BattleFieldCell {
     public SmartVehicle getNearestVehicle(double x, double y) {
         SmartVehicle nearestVehicle = null;
         double minDistance = Double.MAX_VALUE;
-        for (SortedMap.Entry<Long, SmartVehicle> entry : vehicles[playerIdToIndex.apply(MyStrategy.getEnemyPlayerId().intValue())].entrySet()) {
+        for (SortedMap.Entry<Long, SmartVehicle> entry : vehicles[playerIdToIndex.apply(MyStrategy.getEnemyPlayerId())].entrySet()) {
             if (entry.getValue().getDurability() > 0) {
                 double localX = (entry.getValue().getX() - x);
                 double localY = (entry.getValue().getY() - y);

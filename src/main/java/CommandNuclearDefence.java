@@ -3,7 +3,7 @@ import model.Player;
 
 import java.util.function.Consumer;
 
-public class CommandNuclearDefence extends Command {
+public class    CommandNuclearDefence extends Command {
     protected Integer attackTick;
     protected double attackX;
     protected double attackY;

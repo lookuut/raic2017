@@ -25,13 +25,14 @@ public class CommandNuclearAttack extends  Command {
                 MyStrategy.move.setVehicleId(gunner.getId());
             };
 
-            addCommand(new CommandWrapper(nuclearAttack, this, CustomParams.runImmediatelyTick, army.getGroupId()));
+            addCommand(new CommandWrapper(nuclearAttack, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
+            CommandQueue.getInstance().selectGroup(CustomParams.noAssignGroupId);
             super.run(army);
         }
     }
 
     public boolean check(ArmyAllyOrdering army) {
-        if (getState() == CommandStates.Run) {
+        if (attackIndex + MyStrategy.game.getTacticalNuclearStrikeDelay() > MyStrategy.world.getTickIndex()) {
             setState(CommandStates.Complete);
             return true;
         }
