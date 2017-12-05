@@ -64,7 +64,7 @@ public class ArmyDivisions {
         isGotoHealCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
 
         BTreeNode isHaveFacility = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> !army.isAerial()),
+                (Predicate<ArmyAlly>)((armyLocal) -> !army.isAerial() && MyStrategy.isHaveFacilities()),
                 army
         );
         isGotoHealCond.addChildNode(isHaveFacility);

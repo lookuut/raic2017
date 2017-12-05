@@ -172,7 +172,7 @@ public final class MyStrategy implements Strategy {
     }
 
     public static boolean isNuclearAttack() {
-        Player player = Arrays.stream(MyStrategy.world.getPlayers()).filter(player1 -> player1.getNextNuclearStrikeTickIndex() > 0).findFirst().orElse(null);
+        Player player = Arrays.stream(MyStrategy.world.getPlayers()).filter(player1 -> player1.getNextNuclearStrikeTickIndex() > 0 && player1.getId() != MyStrategy.player.getId()).findFirst().orElse(null);
         return player != null;
     }
 
@@ -185,6 +185,9 @@ public final class MyStrategy implements Strategy {
         return MyStrategy.world.getOpponentPlayer().getId();
     }
 
+    public static boolean isHaveFacilities() {
+        return MyStrategy.world.getFacilities().length > 0;
+    }
     /**
      * weather and terrain static data
      */
