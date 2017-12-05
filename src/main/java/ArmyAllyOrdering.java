@@ -100,16 +100,15 @@ public class ArmyAllyOrdering extends ArmyAlly {
     public CommandMove pathFinder(CommandMove command, TargetPoint target) throws Exception {
         getForm().recalc(getVehicles());
 
+        getTrack().clearFuture(MyStrategy.world.getTickIndex() + 1);
+        getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastModificateTick() - 1 ));
+
         if (command.getTargetVector().magnitude() < 1.0) {
             return command;
         }
 
         Set<VehicleType> types = getVehiclesType();
-
         PPField sumPPFields = MyStrategy.enemyField.getVehicleTypesField(types);
-
-        getTrack().clearFuture(MyStrategy.world.getTickIndex() + 1);
-        getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastModificateTick() - 1 ));
 
         Track movingAerialArmyTrack = new Track();
         Track movingTerrainArmyTrack = new Track();

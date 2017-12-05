@@ -37,7 +37,7 @@ public class ArmyDivisions {
 
         army.init(terrainPPField, weatherPPField);
 
-        army.addCommand(new CommandCreateArmy(square));
+        army.addCommand(new CommandCreateArmy(square, type));
         setEmptyBehaviourTree(army);
         armyList.put(armyId, army);
         armyByType.get(type).add(armyId);

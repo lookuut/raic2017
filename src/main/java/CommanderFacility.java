@@ -1,5 +1,6 @@
 import model.Facility;
 import model.FacilityType;
+import model.VehicleType;
 
 import java.util.HashMap;
 import java.util.Set;
@@ -19,6 +20,21 @@ public class CommanderFacility {
         armiesGotoFacility = new HashMap<>();
     }
 
+    public void orderCreateVehicle() {
+        try {
+            for (SmartFacility facility : facilities.values()) {
+                if (facility.getOwnerPlayerId() == MyStrategy.player.getId() &&
+                        facility.getProductionProgress() == 0 &&
+                        facility.getType() == FacilityType.VEHICLE_FACTORY) {
+                    CommandCreateVehicle createVehicle = new CommandCreateVehicle(facility.getId(), VehicleType.HELICOPTER);
+                    createVehicle.run(null);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
 
     public void updateFacility(Facility facility) {
         SmartFacility smartFacility;
@@ -70,15 +86,22 @@ public class CommanderFacility {
             return minDistFacility;
         };
         SmartFacility minDistFacility = null;
-        if (facilitiesByTypes.containsKey(FacilityType.CONTROL_CENTER)) {
-            minDistFacility = getMinDistanceFacility.apply(facilitiesByTypes.get(FacilityType.CONTROL_CENTER));
+
+        FacilityType priorityFacilityType = FacilityType.CONTROL_CENTER;
+        if (armiesGotoFacility.values().stream().filter(facility -> facility.getType() == FacilityType.CONTROL_CENTER).count() * 2 >= armiesGotoFacility.size()) {
+            priorityFacilityType = FacilityType.VEHICLE_FACTORY;
         }
 
-        if (facilitiesByTypes.containsKey(FacilityType.VEHICLE_FACTORY) && minDistFacility == null) {
-            minDistFacility = getMinDistanceFacility.apply(facilitiesByTypes.get(FacilityType.VEHICLE_FACTORY));
+        if (facilitiesByTypes.containsKey(priorityFacilityType) ) {
+            minDistFacility = getMinDistanceFacility.apply(facilitiesByTypes.get(priorityFacilityType));
+        }
+        if (facilitiesByTypes.containsKey(priorityFacilityType) && minDistFacility == null) {
+            minDistFacility = getMinDistanceFacility.apply(facilitiesByTypes.get(priorityFacilityType));
         }
 
-        armiesGotoFacility.put(army, minDistFacility);
+        if (minDistFacility != null) {
+            armiesGotoFacility.put(army, minDistFacility);
+        }
 
         return minDistFacility;
     }

@@ -24,11 +24,10 @@ public class CustomParams {
     public static double nearestEnemyEps = 0.1;
 
     //armies config
-    public static int minVehiclesCountInArmy = 10;
+    public static int minVehiclesCountInArmy = 25;
     public static int maxVehiclesCountInArmy = 25;
     public static double maxSizeVehicleInArmy = 2.8;//for scale
 
-    public static int equalTypeAttackFactor = -1;
     //commands config
     public static int runImmediatelyTick = -1;
 

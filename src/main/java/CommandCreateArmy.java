@@ -1,4 +1,5 @@
 import model.ActionType;
+import model.Vehicle;
 import model.VehicleType;
 
 import java.util.function.Consumer;
@@ -6,8 +7,10 @@ import java.util.function.Consumer;
 public class CommandCreateArmy extends Command {
 
     private Square square;
-    public CommandCreateArmy(Square square) {
+    private VehicleType vehicleType;
+    public CommandCreateArmy(Square square, VehicleType vehicleType) {
         this.square = square;
+        this.vehicleType = vehicleType;
     }
 
 
@@ -29,6 +32,7 @@ public class CommandCreateArmy extends Command {
                 MyStrategy.move.setRight(square.getRightTopAngle().getX());
                 MyStrategy.move.setTop(square.getLeftBottomAngle().getY());
                 MyStrategy.move.setBottom(square.getRightTopAngle().getY());
+                MyStrategy.move.setVehicleType(this.vehicleType);
             };
 
             Consumer<Command> assign = (command) -> {

@@ -33,6 +33,8 @@ class Commander {
         constructArmies();
 
         nuclearAttack();
+        MyStrategy.commanderFacility.orderCreateVehicle();
+
         //run divisions logic
         for (ArmyAllyOrdering army : divisions.getArmyList()) {
             if (army.isArmyAlive()) {
@@ -48,7 +50,7 @@ class Commander {
                 if (entry.getValue().size() > CustomParams.minVehiclesCountInArmy) {
                     Square vehicleTypeSquare = noArmySquaereMap.get(entry.getKey());
 
-                    if (entry.getKey() == VehicleType.ARRV && entry.getKey() != VehicleType.HELICOPTER && entry.getValue().size() > CustomParams.maxVehiclesCountInArmy) {
+                    if (entry.getKey() == VehicleType.ARRV && entry.getValue().size() > CustomParams.maxVehiclesCountInArmy) {
                         double centreX = (vehicleTypeSquare.getRightTopAngle().getX() - vehicleTypeSquare.getLeftBottomAngle().getX()) / 2;
                         double centreY = (vehicleTypeSquare.getRightTopAngle().getY() - vehicleTypeSquare.getLeftBottomAngle().getY()) / 2;
                         Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY );
@@ -71,14 +73,12 @@ class Commander {
                         divisions.addArmy(vehicleTypeSquare, entry.getKey());
                     }
 
+                    noArmyVehicles.get(entry.getKey()).clear();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }
-
-        noArmyVehicles.clear();
     }
 
     public void check () {
