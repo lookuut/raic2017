@@ -38,10 +38,6 @@ public class CommandMove extends Command {
 
         if (maxRunnableTick + startTick <= MyStrategy.world.getTickIndex()) {
             setState(CommandStates.Complete);
-            if (army.isNeedToCompact()) {
-                army.addCommand(new CommandScale());
-            }
-
             return true;
         }
 
@@ -70,7 +66,6 @@ public class CommandMove extends Command {
                     MyStrategy.move.setAction(ActionType.MOVE);
                     MyStrategy.move.setX(target.vector.getX());
                     MyStrategy.move.setY(target.vector.getY());
-                    MyStrategy.move.setMaxSpeed(army.getMinSpeed());
 
                 } catch (Exception e) {
                     e.printStackTrace();

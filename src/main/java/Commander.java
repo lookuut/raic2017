@@ -73,10 +73,11 @@ class Commander {
 
                         armySquare = new Square(new Point2D(centrePoint.getX(), vehicleTypeSquare.getLeftBottomAngle().getY()), new Point2D(vehicleTypeSquare.getRightTopAngle().getX(), centrePoint.getY()));
                         divisions.addArmy(armySquare, entry.getKey());
-                    } else if (entry.getKey() == VehicleType.FIGHTER ||
-                            entry.getKey() == VehicleType.HELICOPTER ||
-                            entry.getKey() == VehicleType.TANK ||
-                            entry.getKey() == VehicleType.IFV) {
+                    } else if (entry.getKey() == VehicleType.FIGHTER
+                            || entry.getKey() == VehicleType.HELICOPTER ||
+                            entry.getKey() == VehicleType.TANK
+                            ||entry.getKey() == VehicleType.IFV
+                            ) {
                         divisions.addArmy(vehicleTypeSquare, entry.getKey());
                     }
 

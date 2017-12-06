@@ -130,12 +130,6 @@ public class SmartVehicle  {
         return aerialAttackRange;
     }
 
-    public Point2D getTerrainPoint(Point2D point) {
-        int x = (int)Math.floor(MyStrategy.game.getTerrainWeatherMapColumnCount() * (getX() / MyStrategy.world.getWidth()));
-        int y = (int)Math.floor(MyStrategy.game.getTerrainWeatherMapRowCount() * (getY() / MyStrategy.world.getHeight()));
-        return new Point2D(x, y);
-    }
-
     public double getAttackRange(SmartVehicle enemyVehicle) {
         if (enemyVehicle.isAerial()) {
             return getAerialAttackRange();
@@ -162,22 +156,6 @@ public class SmartVehicle  {
 
     public VehicleType getType() {
         return this.type;
-    }
-
-    public int getTypeInt() {
-        switch (getType()) {
-            case HELICOPTER:
-                return 1;
-            case IFV:
-                return 2;
-            case TANK:
-                return 3;
-            case FIGHTER:
-                return 4;
-            case ARRV:
-                return 5;
-        }
-        return 0;
     }
 
     public int getDurability () {
@@ -385,7 +363,7 @@ public class SmartVehicle  {
                 throw new Exception("Cant intersect lines found");
             }
             //@TODO workaround
-            double speed = getMinSpeed();//getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
+            double speed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
             if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.magnitude() < horIntersectPoint.magnitude())) {
                 tStartX += stepX;
                 intersectPoint = verIntersectPoint;
@@ -397,7 +375,7 @@ public class SmartVehicle  {
             tickSum += previousPoint.subtract(intersectPoint).magnitude() / speed;
             previousPoint = intersectPoint;
         }
-        double speed = getMinSpeed();//(getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose))
+        double speed = (getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose));
         tickSum += previousPoint.subtract(targetPoint).magnitude() / speed;
 
         return (int)Math.round(tickSum);
@@ -559,7 +537,7 @@ public class SmartVehicle  {
             return true;
         }
 
-        if (allyType == VehicleType.HELICOPTER && (enemyType == VehicleType.ARRV || enemyType == VehicleType.TANK || enemyType == VehicleType.HELICOPTER))  {
+        if (allyType == VehicleType.HELICOPTER && (enemyType == VehicleType.ARRV || enemyType == VehicleType.TANK || enemyType == VehicleType.HELICOPTER || enemyType == VehicleType.IFV))  {
             return true;
         }
 
@@ -567,7 +545,7 @@ public class SmartVehicle  {
             return true;
         }
 
-        if (allyType == VehicleType.TANK && (enemyType == VehicleType.IFV || enemyType == VehicleType.ARRV || enemyType == VehicleType.TANK))  {
+        if (allyType == VehicleType.TANK && (enemyType == VehicleType.IFV || enemyType == VehicleType.ARRV || enemyType == VehicleType.TANK || enemyType == VehicleType.HELICOPTER))  {
             return true;
         }
 

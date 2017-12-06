@@ -122,8 +122,8 @@ public class Track {
     }
 
     public void clearPast(Integer tick) {
-        this.terrainTrackMap.headMap(tick).clear();
-        this.aerialTrackMap.headMap(tick).clear();
+        this.terrainTrackMap.headMap(Math.min(tick, getLastTerrainTick())).clear();
+        this.aerialTrackMap.headMap(Math.min(tick, getLastAerialTick())).clear();
     }
 
     public void clearFuture(Integer tick) {

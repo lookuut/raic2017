@@ -37,13 +37,14 @@ public class ArmyForm {
 
         minPoint = new Point2D(Double.MAX_VALUE, Double.MAX_VALUE);
         maxPoint = new Point2D(0.0, 0.0);
-
+        edgesVehicles.clear();
         for (Map.Entry<Long, SmartVehicle> entry : vehicles.entrySet()) {
             if (entry.getValue().getDurability() > 0) {
                 maxPoint = new Point2D(Math.max(maxPoint.getX(), entry.getValue().getX()) , Math.max(maxPoint.getY(), entry.getValue().getY()));
                 minPoint = new Point2D(Math.min(minPoint.getX(), entry.getValue().getX()) , Math.min(minPoint.getY(), entry.getValue().getY()));
                 sumVector.setX(entry.getValue().getPoint().getX() + sumVector.getX());
                 sumVector.setY(entry.getValue().getPoint().getY() + sumVector.getY());
+                updateEdgesVehicles(entry.getValue());
                 count++;
             }
         }
@@ -99,7 +100,7 @@ public class ArmyForm {
 
     public void removeVehicle(Map<Long, SmartVehicle> vehicles, SmartVehicle vehicle) {
         if (edgesVehicles.values().contains(vehicle)) {
-            edgesVehicles.remove(vehicle);
+            edgesVehicles.values().remove(vehicle);
             vehicles.values().stream().filter(_vehicle -> _vehicle.getDurability() > 0).forEach(_vehicle -> {
                 this.updateEdgesVehicles(_vehicle);
             });
@@ -121,5 +122,32 @@ public class ArmyForm {
         return edgesVehicles;
     }
 
+    public Point2D getEdgesCentre() {
+        Point2D centre = new Point2D(0,0);
+        Integer edgesCount = 0;
+        for (SmartVehicle vehicle : edgesVehicles.values()) {
+            if (vehicle.getDurability() == 0) {//////@TODO if no errors here remove it
+                System.out.println("durability with zero bag");
+                System.exit(-1);
+            }
+            edgesCount++;
+            centre.setX(vehicle.getPoint().getX() + centre.getX());
+            centre.setY(vehicle.getPoint().getY() + centre.getY());
+        }
+        return centre.multiply(1/(double)edgesCount);
+    }
 
+    public Point2D getMaxDistanceVec(Point2D fromPoint) {
+        Point2D maxDistancePoint = null;
+        double maxDist = 0;
+        for (SmartVehicle vehicle : edgesVehicles.values()) {
+            double dist = vehicle.getPoint().distance(fromPoint);
+            if (dist > maxDist) {
+                maxDistancePoint = vehicle.getPoint();
+                maxDist = dist;
+            }
+        }
+
+        return maxDistancePoint.subtract(fromPoint);
+    }
 }

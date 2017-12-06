@@ -87,7 +87,7 @@ public class ArmyAlly extends Army {
             if (minValuePoint == null) {
                 return null;
             }
-            target.maxDamageValue = damageFieldsSum.getFactor(minValuePoint.getIntX(), minValuePoint.getIntY());
+            target.maxDamageValue = damageFieldsSum.getFactor(minValuePoint.getIntX(), minValuePoint.getIntY()) + 100;
             //target.maxDamageValue = 1000;
 
             BattleFieldCell cell = battleField.getBattleFieldCell(minValuePoint.getIntX(), minValuePoint.getIntY());
@@ -126,9 +126,10 @@ public class ArmyAlly extends Army {
             Point2D targetVector = targetPoint.subtract(fromPoint);
             double targetVectorMagnitude = targetVector.magnitude();
 
+            /*
             if (targetVectorMagnitude > attackRange) {
                 targetVector = targetVector.multiply((targetVectorMagnitude - attackRange) / targetVectorMagnitude);
-            }
+            }*/
 
             if (targetVectorMagnitude > attackRange && Math.abs(targetVectorMagnitude - attackRange) <= CustomParams.nearestEnemyEps) {
                 targetVector.multiply(1.01);
@@ -158,7 +159,7 @@ public class ArmyAlly extends Army {
     }
 
 
-    public Point2D dangerPoint() {
+    public Point2D dangerPoint() throws Exception {
         return MyStrategy.enemyField.onDanger(getVehiclesType(), getForm().getAvgPoint(), CustomParams.dangerRadious);
     }
 

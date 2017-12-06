@@ -115,17 +115,18 @@ public class EnemyField {
         return sum;
     }
 
-    public Point2D onDanger(Set<VehicleType> types, Point2D armyCenter, double dangerRadious) {
+    public Point2D onDanger(Set<VehicleType> types, Point2D armyCenter, double dangerRadious) throws Exception {
 
         int propose = (int)(MyStrategy.world.getWidth() / getWidth());
         int intDangerRadoius = (int)Math.floor(dangerRadious / propose);
         Point2D armyTransformedCentre = new Point2D(Math.round(armyCenter.getX() / propose), Math.round(armyCenter.getY() / propose));
+        PPFieldEnemy damageField = getDamageField(types.iterator().next());//@TODO do it well;
 
         Function<Integer, Point2D> xAxisFunction = (y) -> {
             try {
                 for (int x = 1; x <= intDangerRadoius; x++) {
                     for (VehicleType type : types) {
-                        PPFieldEnemy damageField = getDamageField(type);
+
                         if (armyTransformedCentre.getIntX() + x < getWidth() && damageField.getFactor(armyTransformedCentre.getIntX() + x, y) > 0) {
                             return damageField.getWorldPoint(new Point2D(armyTransformedCentre.getIntX() + x, y));
                         }

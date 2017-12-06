@@ -10,8 +10,7 @@ public class CustomParams {
     public static int safetyDistance = 160;
     public static int dangerRadious = 80;
 
-    public static float armyScaleFactor = 0.3F;
-    public static int armyScaleMaxTime = 10;
+    public static float armyScaleFactor = 0.1F;
     public static int armyAfterCreateTimeWait = 20;
 
     public static int maxLinearPPRange = 3;
@@ -24,9 +23,10 @@ public class CustomParams {
     public static double nearestEnemyEps = 0.1;
 
     //armies config
+    public static double compactAngle = Math.PI / 4;
     public static int minVehiclesCountInArmy = 25;
     public static int maxVehiclesCountInArmy = 25;
-    public static double maxSizeVehicleInArmy = 2.8;//for scale
+    public static double maxSizeVehicleInArmy = 1.0;//for scale
 
     //commands config
     public static int runImmediatelyTick = -1;

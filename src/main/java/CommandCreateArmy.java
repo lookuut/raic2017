@@ -41,7 +41,7 @@ public class CommandCreateArmy extends Command {
                 MyStrategy.move.setAction(ActionType.ASSIGN);
                 MyStrategy.move.setGroup(army.getGroupId());
             };
-
+            /*
             Consumer<Command> scale = (command) -> {
 
                 Point2D centre = new Point2D(
@@ -52,11 +52,11 @@ public class CommandCreateArmy extends Command {
                 MyStrategy.move.setX(centre.getX());
                 MyStrategy.move.setY(centre.getY());
                 MyStrategy.move.setFactor(CustomParams.armyScaleFactor);
-            };
+            };*/
 
             addCommand(new CommandWrapper(selectVehicleType, this, -1, CustomParams.noAssignGroupId));
             addCommand(new CommandWrapper(assign, this, -1, CustomParams.noAssignGroupId));
-            addCommand(new CommandWrapper(scale, this, -1, CustomParams.noAssignGroupId));
+            //addCommand(new CommandWrapper(scale, this, -1, CustomParams.noAssignGroupId));
 
             super.run(army);
         }
@@ -71,7 +71,7 @@ public class CommandCreateArmy extends Command {
                     army.setEnemy(vehicle);
                 }
             }
-
+            army.getForm().recalc(army.getVehicles());
             army.addCommand(new CommandWait(CustomParams.armyAfterCreateTimeWait));
             setState(CommandStates.Complete);
             return true;

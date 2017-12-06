@@ -9,7 +9,6 @@ public class Army {
     private Integer lastModificateTick = -1;
     private HashMap<VehicleType, Integer> vehicleTypes;
     private double maxVisionRange;
-    private double avgDurability;
 
     protected HashMap<Integer, BattleFieldCell> battleFieldCellMap;
 

@@ -6,10 +6,11 @@ public class CommandDefence extends Command {
 
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {
-        army.getForm().recalc(army.getVehicles());
+
         Point2D point = army.dangerPoint();
 
         if (point == null) {//danger is gone, relax take it easy
+            setParentCommand(new CommandWait(20));
             return;
         }
 

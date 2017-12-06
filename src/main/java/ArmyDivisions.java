@@ -49,6 +49,7 @@ public class ArmyDivisions {
 
     public void setEmptyBehaviourTree(ArmyAllyOrdering army) {
         BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
+
         BTreeNode isHaveEnemyCond = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal() && armyByType.get(VehicleType.ARRV).size() > 0),
                 army

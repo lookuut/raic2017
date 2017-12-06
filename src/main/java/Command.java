@@ -12,13 +12,14 @@ abstract public class Command {
 
     private CommandStates state;
     private Queue<CommandWrapper> queue;
-    protected Integer runTickIndex = -1;
+    private Integer runTickIndex;
     private Command parentCommand;
 
     public Command() {
         this.setState(CommandStates.New);
         queue = new LinkedList<>();
         parentCommand = null;
+        runTickIndex = -1;
     }
 
     public CommandStates getState() {
@@ -59,7 +60,13 @@ abstract public class Command {
         return runTickIndex;
     }
 
-    abstract public void pinned();
+    public Integer getRunningTicks() {
+        return MyStrategy.world.getTickIndex() - getRunTickIndex();
+    }
+
+    public void pinned() {
+        setRunTickIndex(MyStrategy.world.getTickIndex());
+    }
 
     public boolean check(ArmyAllyOrdering army) {
         if (parentCommand != null) {
@@ -97,6 +104,9 @@ abstract public class Command {
 
     }
 
+    public void setRunTickIndex (Integer tick) {
+        runTickIndex = tick;
+    }
     public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {}
 
     public void setParentCommand(Command parentCommand) {
