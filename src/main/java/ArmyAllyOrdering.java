@@ -30,10 +30,6 @@ public class ArmyAllyOrdering extends ArmyAlly {
         commandQueue.addLast(command);
     }
 
-    public void addCommandToHead(Command command) {
-        commandQueue.addFirst(command);
-    }
-
     public Command pollCommand() {
 
         if (commandQueue.size() == 0) {
@@ -50,15 +46,13 @@ public class ArmyAllyOrdering extends ArmyAlly {
 
         this.battleField = battleField;
         if (runningCommand == null || runningCommand.isFinished()) {
-            Command command = pollCommand();
-            runningCommand = command.prepare(this);
+            runningCommand = pollCommand();
+            runningCommand.prepare(this);
         }
 
         if (runningCommand != null && runningCommand.isNew()) {
             runningCommand.run(this);
         }
-
-
     }
 
     public void check () {
@@ -97,14 +91,14 @@ public class ArmyAllyOrdering extends ArmyAlly {
         return runningCommand;
     }
 
-    public CommandMove pathFinder(CommandMove command, TargetPoint target) throws Exception {
+    public Point2D pathFinder(CommandMove command, TargetPoint target) throws Exception {
         getForm().recalc(getVehicles());
 
         getTrack().clearFuture(MyStrategy.world.getTickIndex() + 1);
         getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastModificateTick() - 1 ));
 
         if (command.getTargetVector().magnitude() < 1.0) {
-            return command;
+            return target.vector;
         }
 
         Set<VehicleType> types = getVehiclesType();
@@ -152,13 +146,8 @@ public class ArmyAllyOrdering extends ArmyAlly {
             }
         }
 
-        Point2D newDestPos = sumPPFields.searchPath(this, command.getTargetVector().add(getForm().getAvgPoint()), trackMap, target);
-
-        //check limits
-        newDestPos = new Point2D(Math.max((getForm().getMaxPoint().getX() - getForm().getMinPoint().getX())/2.0, newDestPos.getX()) , Math.max((getForm().getMinPoint().getY() - getForm().getMinPoint().getY())/2.0, newDestPos.getY()) );
-        newDestPos = new Point2D(Math.min(MyStrategy.world.getWidth() - (getForm().getMaxPoint().getX() - getForm().getMinPoint().getX())/2.0, newDestPos.getX()) , Math.min(MyStrategy.world.getHeight() - (getForm().getMaxPoint().getY() - getForm().getMinPoint().getY())/2.0, newDestPos.getY()));
-
-        return new CommandMove(newDestPos.subtract(getForm().getAvgPoint()));
+        //what should we do with limits
+        return sumPPFields.searchPath(this, command.getTargetVector().add(getForm().getAvgPoint()), trackMap, target);
     }
 
     public double getMinSpeed() {

@@ -12,6 +12,9 @@ public class CommandCreateVehicle extends Command{
         this.vehicleType = vehicleType;
     }
 
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {}
+
     public boolean check (ArmyAllyOrdering army) {
         setState(CommandStates.Complete);
         return true;

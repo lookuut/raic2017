@@ -74,9 +74,9 @@ public final class MyStrategy implements Strategy {
         try {
             this.init(me, world, game, move);
             this.updateWorld(world);
-
-            this.commander.logic(battleField);
             this.commander.check();
+            this.commander.logic(battleField);
+
             this.updatePreviousVehiclesStates(world);
             CommandQueue.getInstance().run(world.getTickIndex());
         } catch (Exception e) {
@@ -108,7 +108,7 @@ public final class MyStrategy implements Strategy {
                     army.setEnemy(vehicle);
                 }
 
-                if (army.isArmyAlive() && army.isRun()) {
+                if (army.isArmyAlive()) {
                     army.result(vehicle);
                 }
             }

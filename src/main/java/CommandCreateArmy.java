@@ -13,6 +13,8 @@ public class CommandCreateArmy extends Command {
         this.vehicleType = vehicleType;
     }
 
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {}
 
     public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {
         if (vehicle.getSelected() && !vehicle.isHaveArmy(army)) {

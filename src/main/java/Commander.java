@@ -47,7 +47,6 @@ class Commander {
         for (ArmyAllyOrdering army : divisions.getArmyList()) {
             if (army.isArmyAlive()) {
                 army.run(battleField);
-                army.check();
             }
         }
     }
@@ -90,8 +89,15 @@ class Commander {
     }
 
     public void check () {
-        for (ArmyAllyOrdering army : divisions.getArmyList()) {
-            army.check();
+
+        Iterator<ArmyAllyOrdering> iter = divisions.getArmyList().iterator();
+        while (iter.hasNext()) {
+            ArmyAllyOrdering army = iter.next();
+            if (!army.isArmyAlive()) {
+                iter.remove();
+            } else if (army.isRun()) {
+                army.check();
+            }
         }
     }
 

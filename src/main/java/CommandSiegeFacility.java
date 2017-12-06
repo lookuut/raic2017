@@ -7,37 +7,28 @@ public class CommandSiegeFacility extends Command {
 
     }
 
-    public Command prepare(ArmyAllyOrdering army) throws Exception {
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {
 
         army.getForm().recalc(army.getVehicles());
 
         facility = MyStrategy.commanderFacility.getFacilityToSiege(army);
         if (facility == null) {//no facility to siege
-            return null;
+            return;
         }
         facility.addGoingToFacilityArmy(army);
         Point2D targetVec = facility.getFacilityCentre().subtract(army.getForm().getAvgPoint());
 
         if (targetVec.magnitude() < CustomParams.onFacilityEps) {
-            setState(CommandStates.Complete);
-            return null;
+            return;
         }
 
         TargetPoint point = new TargetPoint();
         point.maxDamageValue = 100;
         point.vector = targetVec;
-
-        return army.pathFinder(new CommandMove(targetVec), point);
+        setParentCommand(new CommandMove(targetVec));
     }
 
-    public boolean check (ArmyAllyOrdering army) {
-        setState(CommandStates.Complete);
-        return true;
-    }
-
-    public void run(ArmyAllyOrdering army) throws Exception {
-        setState(CommandStates.Complete);
-    }
     @Override
     public void pinned(){
 

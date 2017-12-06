@@ -12,6 +12,9 @@ public class CommandNuclearDefence extends Command {
         super();
     }
 
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {}
+
     public void run (ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
             Consumer<Command> commandSelect = (command) -> {

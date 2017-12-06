@@ -9,6 +9,8 @@ public class CommandEmpty extends Command {
         return true;
     }
 
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {}
 
     public void run(ArmyAllyOrdering army) throws Exception {
         if (isNew()) {

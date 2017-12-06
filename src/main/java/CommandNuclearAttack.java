@@ -15,6 +15,9 @@ public class CommandNuclearAttack extends  Command {
 
     protected int attackIndex;
 
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {}
+
     public void run(ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
 

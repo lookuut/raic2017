@@ -83,7 +83,12 @@ public class ArmyAlly extends Army {
 
             List<Point2D> minValueCells = enemyDefenceFieldsAvg.getMinValueCells();
             Point2D minValuePoint = damageFieldsSum.getMinValueCell(minValueCells);
+
+            if (minValuePoint == null) {
+                return null;
+            }
             target.maxDamageValue = damageFieldsSum.getFactor(minValuePoint.getIntX(), minValuePoint.getIntY());
+            //target.maxDamageValue = 1000;
 
             BattleFieldCell cell = battleField.getBattleFieldCell(minValuePoint.getIntX(), minValuePoint.getIntY());
             Point2D enemyCellPoint = damageFieldsSum.getWorldPoint(cell.getPoint());

@@ -17,11 +17,13 @@ public class CommandWait extends Command {
         return false;
     }
 
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {}
 
     public void run(ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
             runTick = MyStrategy.world.getTickIndex();
-            super.run(army);
+            setState(CommandStates.Run);
         }
     }
     @Override

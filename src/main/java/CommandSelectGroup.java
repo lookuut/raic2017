@@ -14,6 +14,8 @@ public class CommandSelectGroup extends Command {
         this.addCommand(new CommandWrapper(select, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
     }
 
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {}
     public boolean check(ArmyAllyOrdering army) {
         return true;
     }

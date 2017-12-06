@@ -268,6 +268,10 @@ public class SmartVehicle  {
     }
 
     public float getDefencePPFactor(boolean attackerIsAerial, boolean attackAerial) {
+
+        if (getType() == VehicleType.ARRV) {
+            return 300;
+        }
         //ae to ae
         if (attackerIsAerial && attackAerial && isTerrain()) {
             return 0;
@@ -523,7 +527,7 @@ public class SmartVehicle  {
         return MyStrategy.game.getRainWeatherVisionFactor() * getVisionRange();
     }
 
-        public double getMinSpeed() {
+    public double getMinSpeed() {
         if (isTerrain()) {
             return MyStrategy.game.getSwampTerrainSpeedFactor() * getMaxSpeed();
         }

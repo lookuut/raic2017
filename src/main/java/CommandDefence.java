@@ -4,37 +4,22 @@ public class CommandDefence extends Command {
         super();
     }
 
-    private CommandMove moveToSafePointCommand;
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {
+        army.getForm().recalc(army.getVehicles());
+        Point2D point = army.dangerPoint();
 
-    public void run(ArmyAllyOrdering army) throws Exception {
-        if (isNew()) {
-            army.getForm().recalc(army.getVehicles());
-            Point2D point = army.dangerPoint();
-
-            if (point == null) {//danger is gone, relax take it easy
-                setState(CommandStates.Complete);
-                return;
-            }
-
-            point = MyStrategy.enemyField.searchNearestSafetyPoint(army.getVehiclesType(), army.getForm().getAvgPoint(), point);
-
-            if (point == null) {
-                throw new Exception("Mistake call defence");
-            }
-
-            moveToSafePointCommand = new CommandMove(point.subtract(army.getForm().getAvgPoint()));
-            moveToSafePointCommand.run(army);
-            setState(CommandStates.Run);
-        }
-    }
-
-    public boolean check(ArmyAllyOrdering army) {
-        if (moveToSafePointCommand.check(army)) {
-            setState(CommandStates.Complete);
-            return true;
+        if (point == null) {//danger is gone, relax take it easy
+            return;
         }
 
-        return false;
+        point = MyStrategy.enemyField.searchNearestSafetyPoint(army.getVehiclesType(), army.getForm().getAvgPoint(), point);
+
+        if (point == null) {
+            throw new Exception("Mistake call defence");
+        }
+
+        setParentCommand(new CommandMove(point.subtract(army.getForm().getAvgPoint())));
     }
 
     public void pinned() {

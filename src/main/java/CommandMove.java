@@ -3,7 +3,8 @@ import model.ActionType;
 import java.util.function.Consumer;
 
 public class CommandMove extends Command {
-    protected Point2D targetVector;
+
+    protected TargetPoint target;
 
     private int startTick;
     private int maxRunnableTick = 0;
@@ -11,9 +12,20 @@ public class CommandMove extends Command {
 
     public CommandMove(Point2D targetVector){
         super();
-        this.targetVector = targetVector;
+        target = new TargetPoint();
+        target.vector = targetVector;
+        target.maxDamageValue = 0;
     }
 
+    public CommandMove(TargetPoint target){
+        super();
+        this.target = target;
+    }
+
+    @Override
+    public void prepare(ArmyAllyOrdering army) throws Exception {}
+
+    @Override
     public boolean check (ArmyAllyOrdering army) {
 
         if (getState() == CommandStates.Complete || getState() == CommandStates.Failed) {
@@ -41,23 +53,28 @@ public class CommandMove extends Command {
 
         if (isNew()) {
 
-            army.getForm().recalc(army.getVehicles());
-            //be carefull with double values
-            Point2D avgPoint = new Point2D(army.getForm().getAvgPoint().getX(), army.getForm().getAvgPoint().getY());
-            SmartVehicle nearVehicle = army.getNearestVehicle(avgPoint);
-            maxRunnableTick = Math.max(nearVehicle.getVehiclePointAtTick(targetVector), 1);
-
-            if (targetVector.magnitude() == 0) {//already at point
+            if (target.vector.magnitude() == 0) {//already at point
                 setState(CommandStates.Complete);
                 return;
             }
 
-            startTick = MyStrategy.world.getTickIndex();
             Consumer<Command> funcMove = (command) -> {
-                MyStrategy.move.setAction(ActionType.MOVE);
-                MyStrategy.move.setX(targetVector.getX());
-                MyStrategy.move.setY(targetVector.getY());
-                MyStrategy.move.setMaxSpeed(army.getMinSpeed());
+                try {
+                    army.getForm().recalc(army.getVehicles());
+                    Point2D avgPoint = new Point2D(army.getForm().getAvgPoint().getX(), army.getForm().getAvgPoint().getY());
+                    SmartVehicle nearVehicle = army.getNearestVehicle(avgPoint);
+
+                    target.vector = army.pathFinder(this, target);
+                    maxRunnableTick = Math.max(nearVehicle.getVehiclePointAtTick(target.vector), 1);
+
+                    MyStrategy.move.setAction(ActionType.MOVE);
+                    MyStrategy.move.setX(target.vector.getX());
+                    MyStrategy.move.setY(target.vector.getY());
+                    MyStrategy.move.setMaxSpeed(army.getMinSpeed());
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             };
 
             addCommand(new CommandWrapper(funcMove, this, CustomParams.runImmediatelyTick, army.getGroupId()));
@@ -65,21 +82,7 @@ public class CommandMove extends Command {
         }
     }
 
-    public Command prepare(ArmyAllyOrdering army) throws Exception {
-        TargetPoint target = new TargetPoint();
-
-        target.vector = this.targetVector;
-        target.maxDamageValue = 0;
-
-        CommandMove move = army.pathFinder(this, target);
-        if (move == this) {
-            return this;
-        }
-        this.targetVector = this.getTargetVector().subtract(move.targetVector);
-        return move;
-    }
-
-    public void result(ArmyAlly army, SmartVehicle vehicle) {
+    public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {
         if (army.containVehicle(vehicle.getId())) {
             army.putVehicle(vehicle);
         }
@@ -91,7 +94,7 @@ public class CommandMove extends Command {
     }
 
     public Point2D getTargetVector() {
-        return targetVector;
+        return target.vector;
     }
 
     public Integer getMaxRunnableTick () {

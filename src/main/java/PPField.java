@@ -21,6 +21,10 @@ public class PPField {
         minValue = Float.MAX_VALUE;
     }
 
+    public void rehreshMinValue() {
+        minValue = Float.MAX_VALUE;
+    }
+
     public void addLinearPPValue(int x, int y, float factor) {
 
         for (int j = -CustomParams.maxLinearPPRange; j <= CustomParams.maxLinearPPRange; j++) {
@@ -63,6 +67,7 @@ public class PPField {
     }
 
     public void sumField(PPField localField) {
+        rehreshMinValue();
         operateField(localField, 1);
     }
 
@@ -289,7 +294,7 @@ public class PPField {
         }
 
         addPathTrack(army, minPathVector, minPathJourneyTick);
-        return minPathVector.add(startPoint);
+        return minPathVector;
     }
 
     public void addPathTrack (ArmyAlly army, Point2D pathVector, Integer pathTime) {

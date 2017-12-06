@@ -9,9 +9,7 @@ public class CommandScale extends Command {
 
 
     @Override
-    public Command prepare(ArmyAllyOrdering army) throws Exception {
-        return this;
-    }
+    public void prepare(ArmyAllyOrdering army) throws Exception {}
 
     public void run (ArmyAllyOrdering army) throws Exception {
         if (isNew()) {

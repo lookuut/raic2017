@@ -50,9 +50,10 @@ public class ArmyDivisions {
     public void setEmptyBehaviourTree(ArmyAllyOrdering army) {
         BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
         BTreeNode isHaveEnemyCond = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal()),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal() && armyByType.get(VehicleType.ARRV).size() > 0),
                 army
         );
+
         isHaveEnemyCond.addChildNode(new BTreeAction(() -> new CommandHeal(this)));
 
         BTreeNode isGotoHealCond = new BTreeNodeCondition(
@@ -85,5 +86,12 @@ public class ArmyDivisions {
             return null;
         }
         return armyList.entrySet().stream().filter(entry -> armyKeys.contains(entry.getKey()) && entry.getValue().isArmyAlive()).map(entry -> entry.getValue()).collect(Collectors.toList());
+    }
+
+    public void removeArmy(ArmyAllyOrdering army) {
+        armyList.remove(army.getGroupId());
+        for (VehicleType vehicleType : army.getVehiclesType()) {
+            armyByType.get(vehicleType).remove(army.getGroupId());
+        }
     }
 }
