@@ -1,4 +1,7 @@
 
+import model.Vehicle;
+import model.VehicleType;
+
 import java.util.List;
 import java.util.Map;
 
@@ -98,4 +101,19 @@ public class BattleField {
         return battleField[point.getIntY()][point.getIntX()];
     }
 
+    public PPFieldEnemy getDamageField(VehicleType type) {
+        PPFieldEnemy damageField = new PPFieldEnemy(getWidth(), getHeight());
+        for (int j = 0; j < getHeight(); j++) {
+            for (int i = 0; i < getHeight(); i++) {
+                if (getBattleFieldCell(i, j).getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
+                    int damage = 0;
+                    for (Map.Entry<VehicleType, Integer> entry : getBattleFieldCell (i, j).getEnemyVehiclesTypeCountMap().entrySet()) {
+                        damage += SmartVehicle.getEnemyDamage(type, entry.getKey()) * entry.getValue();
+                    }
+                    damageField.addLinearPPValue(i, j, damage);
+                }
+            }
+        }
+        return damageField;
+    }
 }

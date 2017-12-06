@@ -10,8 +10,6 @@ public class EnemyField {
     private Integer lastUpdateNuclearAttackRatingTick = -1;
     private SortedSet<NuclearAttackPoint> nuclearAttackPointsRating;
 
-    private PPFieldEnemy aerialDamageField;
-    private PPFieldEnemy terrainDamageField;
 
     //be attention with calc avg values
     private PPFieldEnemy aerialToTerrainEnemyField;
@@ -32,9 +30,6 @@ public class EnemyField {
         height = battleField.getHeight();
 
         enemyField = new PPFieldEnemy(width, height);
-
-        aerialDamageField = new PPFieldEnemy(width, height);
-        terrainDamageField = new PPFieldEnemy(width, height);
 
         aerialToTerrainEnemyField = new PPFieldEnemy(width, height);
         aerialToAerialEnemyField = new PPFieldEnemy(width, height);
@@ -83,40 +78,9 @@ public class EnemyField {
      * @return
      */
     public PPFieldEnemy getDamageField(VehicleType type) throws Exception {
-        if (SmartVehicle.isTerrain(type)) {
-            return terrainDamageField;
-        }
-        return aerialDamageField;
+        return battleField.getDamageField(type);
     }
 
-    /**
-     * @desc get nearest safety point for vehicle in cell point
-     * @param allyVehicle
-     * @param point
-     * @return
-     * @throws Exception
-     */
-    public Point2D getNearestEnemyToVehicleInCell (SmartVehicle allyVehicle, Point2D point) throws Exception {
-        SmartVehicle enemyVehicle = MyStrategy.battleField.getBattleFieldCell((int)point.getX(),(int)point.getY()).getNearestVehicle((int)point.getX(), (int)point.getY());
-
-        double attackRange = 0;
-        Point2D vector = point;
-
-        //@TODO workaround, use terrain and weather factor
-        if (enemyVehicle != null) {
-            attackRange = enemyVehicle.getAttackRange(allyVehicle);
-            vector = enemyVehicle.getPoint().subtract(allyVehicle.getPoint());
-        }
-
-        if (enemyVehicle == null) {
-            System.out.println("Cant find enemy in " + point);
-        }
-
-        double distance = vector.magnitude();
-        double safetyDistance = (distance - attackRange) / distance;
-
-        return vector.multiply(safetyDistance).add(allyVehicle.getPoint());
-    }
 
     public void removeFromCellVehicle(int x, int y, SmartVehicle vehicle) {
         if (!vehicle.isAlly()) {
@@ -131,8 +95,6 @@ public class EnemyField {
     }
 
     protected void updateCell(int x, int y, SmartVehicle vehicle, int operator) {
-        terrainDamageField.addLinearPPValue(x, y, vehicle.getDamagePPFactor(false) * operator);
-        aerialDamageField.addLinearPPValue(x, y, vehicle.getDamagePPFactor( true) * operator);
 
         aerialToAerialEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(true, true) * operator);
         aerialToTerrainEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(true, false) * operator);
@@ -143,14 +105,6 @@ public class EnemyField {
         enemyField.addFactor(x, y, operator);
     }
 
-
-    public Point2D nuclearAttackTarget () {
-        return enemyField.nuclearAttackTarget();
-    }
-
-    public Point2D[] getNearestEnemyPointAndSafetyPoint(Point2D point, float safetyDistance) {
-        return enemyField.getNearestEnemyPointAndSafetyPoint(point, safetyDistance);
-    }
 
     public PPField getVehicleTypesField (Set<VehicleType> vehicleTypes) throws Exception{
         PPField sum = new PPField(width, height);
@@ -314,6 +268,5 @@ public class EnemyField {
     }
 
     public void print() {
-        aerialDamageField.print();
     }
 }

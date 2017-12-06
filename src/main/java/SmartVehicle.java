@@ -269,7 +269,7 @@ public class SmartVehicle  {
 
     public float getDefencePPFactor(boolean attackerIsAerial, boolean attackAerial) {
 
-        if (getType() == VehicleType.ARRV) {
+        if (getType() == VehicleType.ARRV && !attackerIsAerial && !attackAerial) {//@TODO boolshit remove it
             return 300;
         }
         //ae to ae
@@ -576,5 +576,118 @@ public class SmartVehicle  {
 
     public double getVehicleOnTickSpeed() {
         return strategy.getPreviousVehiclesStates().get(getId()).getPoint().subtract(getPoint()).magnitude();
+    }
+
+    public static int fighterGroundDefence = 70;
+    public static int fighterAerialDefence = 70;
+
+    public static int helicopterGroundDefence = 40;
+    public static int helicopterAerialDefence = 40;
+
+    public static int tankGroundDefence = 80;
+    public static int tankAerialDefence = 60;
+
+    public static int ifvGroundDefence = 60;
+    public static int ifvAerialDefence = 80;
+
+    public static int arrvGroundDefence = 20;
+    public static int arrvAerialDefence = 50;
+
+
+    public static int fighterGroundDamage = 0;
+    public static int fighterAerialDamage = 100;
+
+    public static int helicopterGroundDamage = 100;
+    public static int helicopterAerialDamage = 80;
+
+    public static int tankGroundDamage = 100;
+    public static int tankAerialDamage = 60;
+
+    public static int ifvGroundDamage = 90;
+    public static int ifvAerialDamage = 80;
+
+    public static int arrvGroundDamage = 0;
+    public static int arrvAerialDamage = 0;
+
+    public static int getEnemyDamage(VehicleType allyType, VehicleType enemyType) {
+
+        int damage = 0;
+        int defence = 0;
+        if (SmartVehicle.isTerrain(allyType)) {
+            switch (enemyType) {
+                case FIGHTER:
+                    damage = fighterGroundDamage;
+                    break;
+                case ARRV:
+                    damage = arrvGroundDamage;
+                    break;
+                case TANK:
+                    damage = tankGroundDamage;
+                    break;
+                case IFV:
+                    damage = ifvGroundDamage;
+                    break;
+                case HELICOPTER:
+                    damage = helicopterGroundDamage;
+                    break;
+            }
+        } else {
+            switch (enemyType) {
+                case FIGHTER:
+                    damage = fighterAerialDamage;
+                    break;
+                case ARRV:
+                    damage = arrvAerialDamage;
+                    break;
+                case TANK:
+                    damage = tankAerialDamage;
+                    break;
+                case IFV:
+                    damage = ifvAerialDamage;
+                    break;
+                case HELICOPTER:
+                    damage = helicopterAerialDamage;
+                    break;
+            }
+        }
+
+        if (SmartVehicle.isTerrain(enemyType)) {
+            switch (allyType) {
+                case FIGHTER:
+                    defence = fighterGroundDefence;
+                    break;
+                case ARRV:
+                    defence = arrvGroundDefence;
+                    break;
+                case TANK:
+                    defence = tankGroundDefence;
+                    break;
+                case IFV:
+                    defence = ifvGroundDefence;
+                    break;
+                case HELICOPTER:
+                    defence = helicopterGroundDefence;
+                    break;
+            }
+        } else {
+            switch (allyType) {
+                case FIGHTER:
+                    defence = fighterAerialDefence;
+                    break;
+                case ARRV:
+                    defence = arrvAerialDefence;
+                    break;
+                case TANK:
+                    defence = tankAerialDefence;
+                    break;
+                case IFV:
+                    defence = ifvAerialDefence;
+                    break;
+                case HELICOPTER:
+                    defence = helicopterAerialDefence;
+                    break;
+            }
+        }
+        return Math.max(damage - defence, 0);
     }
 }
