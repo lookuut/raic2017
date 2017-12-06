@@ -90,10 +90,12 @@ class Commander {
 
     public void check () {
 
-        Iterator<ArmyAllyOrdering> iter = divisions.getArmyList().iterator();
+        Iterator<Map.Entry<Integer, ArmyAllyOrdering>> iter = divisions.getArmies().entrySet().iterator();
         while (iter.hasNext()) {
-            ArmyAllyOrdering army = iter.next();
+            Map.Entry<Integer, ArmyAllyOrdering> entry = iter.next();
+            ArmyAllyOrdering army = entry.getValue();
             if (!army.isArmyAlive()) {
+                divisions.removeArmy(army);
                 iter.remove();
             } else if (army.isRun()) {
                 army.check();

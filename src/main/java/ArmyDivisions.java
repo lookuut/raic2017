@@ -80,6 +80,10 @@ public class ArmyDivisions {
         return armyList.values();
     }
 
+    public Map<Integer, ArmyAllyOrdering> getArmies() {
+        return armyList;
+    }
+
     public Collection<ArmyAllyOrdering> getArmyList(VehicleType type) {
         Set armyKeys = armyByType.get(type);
         if (armyKeys == null || armyKeys.size() == 0) {
@@ -89,7 +93,6 @@ public class ArmyDivisions {
     }
 
     public void removeArmy(ArmyAllyOrdering army) {
-        armyList.remove(army.getGroupId());
         for (VehicleType vehicleType : army.getVehiclesType()) {
             armyByType.get(vehicleType).remove(army.getGroupId());
         }
