@@ -115,7 +115,7 @@ public class Army {
         Arrays.fill(minLenght, Double.MAX_VALUE);//boolshit get first element length
 
         SmartVehicle[] vehicles = new SmartVehicle[points.length];
-        getVehicles().entrySet().stream().forEach(
+        getVehicles().entrySet().stream().filter(vehicle -> vehicle.getValue().getDurability() > 0).forEach(
             item -> {
                 for (int i = 0; i < points.length; i++) {
                     Point2D point = points[i];

@@ -11,7 +11,7 @@ public class CustomParams {
     public static int dangerRadious = 80;
 
     public static float armyScaleFactor = 0.1F;
-    public static int armyAfterCreateTimeWait = 20;
+    public static int armyAfterCreateTimeWait = 30;
 
     public static int maxLinearPPRange = 3;
     public static int noAssignGroupId = 0;
@@ -46,7 +46,7 @@ public class CustomParams {
 
     //nuclear attack
     public static int nuclearAttackRatingRecalcTickInterval = 1;
-    public static int nuclearAttackRatingItemCount = 15;
+    public static int nuclearAttackRatingItemCount = 3;
     public static int gunnerMinDurability = 100;
 
     public static int borderPointsCount = 12;

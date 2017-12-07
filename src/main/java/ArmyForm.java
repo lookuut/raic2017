@@ -122,21 +122,6 @@ public class ArmyForm {
         return edgesVehicles;
     }
 
-    public Point2D getEdgesCentre() {
-        Point2D centre = new Point2D(0,0);
-        Integer edgesCount = 0;
-        for (SmartVehicle vehicle : edgesVehicles.values()) {
-            if (vehicle.getDurability() == 0) {//////@TODO if no errors here remove it
-                System.out.println("durability with zero bag");
-                System.exit(-1);
-            }
-            edgesCount++;
-            centre.setX(vehicle.getPoint().getX() + centre.getX());
-            centre.setY(vehicle.getPoint().getY() + centre.getY());
-        }
-        return centre.multiply(1/(double)edgesCount);
-    }
-
     public Point2D getMaxDistanceVec(Point2D fromPoint) {
         Point2D maxDistancePoint = null;
         double maxDist = 0;

@@ -244,35 +244,37 @@ public class PPField {
 
             double factor = 0.0;
             Integer pathJourneyTick = 0;
-            Point2D[] edgesPoints = army.getForm().getEdgePoints(startPoint.add(turnedPathVector));
-            SmartVehicle vehicles[] = army.getNearestVehicle(edgesPoints);
-
+            Map<Point2D, SmartVehicle> vehicles = army.getForm().getEdgesVehicles();
             for (double pathSegment = pathSegmentLenght; pathSegment <= turnedPathVector.magnitude(); pathSegment += pathSegmentLenght ) {
 
                 Point2D pathSegmentVector = turnedPathVector.multiply(pathSegment / turnedPathVector.magnitude());
-                for (int i = 0; i < vehicles.length; i++) {
-                    Point2D vehiclePoint = vehicles[i].getPoint();
-                    Integer tick = vehicles[i].getVehiclePointAtTick(pathSegmentVector);
-                    if (tick > pathJourneyTick) {
-                        pathJourneyTick = tick;
-                    }
+                for (SmartVehicle vehicle : vehicles.values()) {
+                    if (vehicle.getDurability() > 0) {
+                        Point2D vehiclePoint = vehicle.getPoint();
+                        Integer tick = vehicle.getVehiclePointAtTick(pathSegmentVector);
+                        if (tick > pathJourneyTick) {
+                            pathJourneyTick = tick;
+                        }
 
-                    tick += MyStrategy.world.getTickIndex();
-                    Point2D transformedPoint = getTransformedPoint(vehiclePoint.add(pathSegmentVector));
+                        tick += MyStrategy.world.getTickIndex();
+                        Point2D transformedPoint = getTransformedPoint(vehiclePoint.add(pathSegmentVector));
 
-                    if (trackMap.containsKey(tick)) {
-                        Map<Integer, Step> tickTrackMap = trackMap.get(tick);
-                        int trackMapIndex = transformedPoint.getIntX() + transformedPoint.getIntY() * getWidth();
-                        if (tickTrackMap.containsKey(trackMapIndex)) {
-                            factor += tickTrackMap.get(trackMapIndex).getPower();
+                        if (trackMap.containsKey(tick)) {
+                            Map<Integer, Step> tickTrackMap = trackMap.get(tick);
+                            int trackMapIndex = transformedPoint.getIntX() + transformedPoint.getIntY() * getWidth();
+                            if (tickTrackMap.containsKey(trackMapIndex)) {
+                                factor += tickTrackMap.get(trackMapIndex).getPower();
+                            }
                         }
                     }
                 }
             }
 
-            for (int i = 0; i < vehicles.length; i++) {
-                Point2D vehiclePoint = vehicles[i].getPoint();
-                factor += getPathFactor(vehiclePoint, vehiclePoint.add(turnedPathVector));
+            for (SmartVehicle vehicle : vehicles.values()) {
+                if (vehicle.getDurability() > 0) {
+                    Point2D vehiclePoint = vehicle.getPoint();
+                    factor += getPathFactor(vehiclePoint, vehiclePoint.add(turnedPathVector));
+                }
             }
 
             if (minPathFactor > factor && factor < CustomParams.minPathFactor) {
@@ -281,7 +283,7 @@ public class PPField {
                 minPathJourneyTick = pathJourneyTick;
             }
 
-            if (factor < target.maxDamageValue) {//@TODO workaround boolshit
+            if (factor < target.maxDamageValue || factor < 50) {//@TODO workaround boolshit
                 minPathFactor = factor;
                 minPathVector = turnedPathVector;
                 minPathJourneyTick = pathJourneyTick;

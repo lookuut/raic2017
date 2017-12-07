@@ -4,8 +4,15 @@ import java.util.function.Consumer;
 
 public class CommandScale extends Command {
     private Integer scaleDurability;
+    private Point2D scalePoint;
     public CommandScale(Integer scaleDurability) {
         this.scaleDurability = scaleDurability;
+        this.scalePoint = null;
+    }
+
+    public CommandScale(Integer scaleDurability, Point2D scalePoint) {
+        this.scaleDurability = scaleDurability;
+        this.scalePoint = scalePoint;
     }
 
 
@@ -16,9 +23,16 @@ public class CommandScale extends Command {
         if (isNew()) {
             Consumer<Command> commandScale = (command) -> {
                 MyStrategy.move.setAction(ActionType.SCALE);
-                army.getForm().recalc(army.getVehicles());
-                MyStrategy.move.setX(army.getForm().getAvgPoint().getX());
-                MyStrategy.move.setY(army.getForm().getAvgPoint().getY());
+
+                if (scalePoint == null) {
+                    army.getForm().recalc(army.getVehicles());
+                    MyStrategy.move.setX(army.getForm().getAvgPoint().getX());
+                    MyStrategy.move.setY(army.getForm().getAvgPoint().getY());
+                } else {
+                    MyStrategy.move.setX(scalePoint.getX());
+                    MyStrategy.move.setY(scalePoint.getY());
+                }
+
                 MyStrategy.move.setFactor(CustomParams.armyScaleFactor);
             };
 

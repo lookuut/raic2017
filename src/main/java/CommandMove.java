@@ -8,10 +8,18 @@ public class CommandMove extends Command {
 
     private int startTick;
     private int maxRunnableTick = 0;
-
+    private boolean withPathFinder = true;
 
     public CommandMove(Point2D targetVector){
         super();
+        target = new TargetPoint();
+        target.vector = targetVector;
+        target.maxDamageValue = 0;
+    }
+
+    public CommandMove(Point2D targetVector, boolean withPathFinder) {
+        super();
+        this.withPathFinder = withPathFinder;
         target = new TargetPoint();
         target.vector = targetVector;
         target.maxDamageValue = 0;
@@ -60,7 +68,10 @@ public class CommandMove extends Command {
                     Point2D avgPoint = new Point2D(army.getForm().getAvgPoint().getX(), army.getForm().getAvgPoint().getY());
                     SmartVehicle nearVehicle = army.getNearestVehicle(avgPoint);
 
-                    target.vector = army.pathFinder(this, target);
+                    if (withPathFinder) {
+                        target.vector = army.pathFinder(this, target);
+                    }
+
                     maxRunnableTick = Math.max(nearVehicle.getVehiclePointAtTick(target.vector), 1);
 
                     MyStrategy.move.setAction(ActionType.MOVE);

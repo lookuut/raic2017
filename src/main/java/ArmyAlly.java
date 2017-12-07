@@ -95,6 +95,7 @@ public class ArmyAlly extends Army {
 
             if (enemyCellPoint.subtract(getForm().getAvgPoint()).magnitude() >  CustomParams.safetyDistance) {
                 target.vector = enemyCellPoint.subtract(getForm().getAvgPoint());
+                target.targetPoint = enemyCellPoint;
                 return target;
             }
             Map<Long,SmartVehicle> enemyVehicles = cell.getVehicles(MyStrategy.world.getOpponentPlayer().getId());
@@ -126,10 +127,10 @@ public class ArmyAlly extends Army {
             Point2D targetVector = targetPoint.subtract(fromPoint);
             double targetVectorMagnitude = targetVector.magnitude();
 
-            /*
+
             if (targetVectorMagnitude > attackRange) {
                 targetVector = targetVector.multiply((targetVectorMagnitude - attackRange) / targetVectorMagnitude);
-            }*/
+            }
 
             if (targetVectorMagnitude > attackRange && Math.abs(targetVectorMagnitude - attackRange) <= CustomParams.nearestEnemyEps) {
                 targetVector.multiply(1.01);
@@ -147,6 +148,7 @@ public class ArmyAlly extends Army {
                 targetVector.setY(targetVector.getY() + epsy);
             }
             target.vector = targetVector;
+            target.targetPoint = fromPoint.add(targetVector);
         } catch (Exception e) {
             e.printStackTrace();
         }
