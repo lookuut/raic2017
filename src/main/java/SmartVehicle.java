@@ -2,6 +2,7 @@
 import model.*;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class SmartVehicle  {
 
@@ -550,6 +551,40 @@ public class SmartVehicle  {
         }
 
         return false;
+    }
+
+    public static boolean isVictimType (VehicleType allyType, VehicleType enemyType) {
+        if (allyType == VehicleType.FIGHTER && (enemyType == VehicleType.HELICOPTER))  {
+            return true;
+        }
+
+        if (allyType == VehicleType.HELICOPTER && (enemyType == VehicleType.ARRV ))  {
+            return true;
+        }
+
+        if (allyType == VehicleType.IFV && (enemyType == VehicleType.HELICOPTER || enemyType == VehicleType.FIGHTER || enemyType == VehicleType.ARRV))  {
+            return true;
+        }
+
+        if (allyType == VehicleType.TANK && (enemyType == VehicleType.IFV || enemyType == VehicleType.ARRV ))  {
+            return true;
+        }
+        return false;
+    }
+
+    public static Point2D getAvgPoint(Map<Long, SmartVehicle> vehicles) {
+        int count = 0;
+        Point2D avgPoint = new Point2D(0,0);
+        for (SmartVehicle vehicle : vehicles.values()) {
+            if (vehicle.getDurability() > 0) {
+                avgPoint.setX(avgPoint.getX() + vehicle.getPoint().getX());
+                avgPoint.setY(avgPoint.getY() + vehicle.getPoint().getY());
+                count++;
+            }
+        }
+        avgPoint.setX(avgPoint.getX() / count);
+        avgPoint.setY(avgPoint.getY() / count);
+        return avgPoint;
     }
 
     public double getVehicleOnTickSpeed() {

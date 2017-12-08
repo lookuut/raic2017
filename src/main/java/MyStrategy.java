@@ -20,7 +20,7 @@ public final class MyStrategy implements Strategy {
     public static BattleField battleField;
     public static EnemyField enemyField;
 
-    protected HashMap<Long, SmartVehicle> previousVehiclesStates;
+    static protected HashMap<Long, SmartVehicle> previousVehiclesStates;
     private static  HashMap<Long, SmartVehicle> vehicles;
 
 
@@ -167,7 +167,7 @@ public final class MyStrategy implements Strategy {
         return previousVehiclesStates;
     }
 
-    public SmartVehicle getVehiclePrevState(Long vehicleId) {
+    public static SmartVehicle getVehiclePrevState(Long vehicleId) {
         return previousVehiclesStates.get(vehicleId);
     }
 

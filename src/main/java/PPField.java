@@ -229,7 +229,7 @@ public class PPField {
         Point2D pathVector = targetPoint.subtract(startPoint);
 
         if (pathVector.magnitude() > CustomParams.pathSegmentLenght) {
-            pathVector = pathVector.multiply(CustomParams.pathSegmentLenght / pathVector.magnitude());
+            pathVector = pathVector.multiply(2.5 * CustomParams.pathSegmentLenght / pathVector.magnitude());
         }
         Integer minPathJourneyTick = 0;
         double minPathFactor = Double.MAX_VALUE;
@@ -277,13 +277,13 @@ public class PPField {
                 }
             }
 
-            if (minPathFactor > factor && factor < CustomParams.minPathFactor) {
+            if (minPathFactor > factor) {
                 minPathFactor = factor;
                 minPathVector = turnedPathVector;
                 minPathJourneyTick = pathJourneyTick;
             }
 
-            if (factor < target.maxDamageValue || factor < 50) {//@TODO workaround boolshit
+            if (factor < target.maxDamageValue || factor < 500) {//@TODO workaround boolshit
                 minPathFactor = factor;
                 minPathVector = turnedPathVector;
                 minPathJourneyTick = pathJourneyTick;
@@ -291,6 +291,9 @@ public class PPField {
             }
         }
 
+        if (minPathVector != null && minPathVector.magnitude() > CustomParams.pathSegmentLenght) {
+            minPathVector = minPathVector.normalize().multiply(CustomParams.pathSegmentLenght);
+        }
         if (minPathVector == null) {//do nothing
             return startPoint;
         }

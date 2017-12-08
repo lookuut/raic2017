@@ -40,8 +40,13 @@ public class ArmyForm {
         edgesVehicles.clear();
         for (Map.Entry<Long, SmartVehicle> entry : vehicles.entrySet()) {
             if (entry.getValue().getDurability() > 0) {
-                maxPoint = new Point2D(Math.max(maxPoint.getX(), entry.getValue().getX()) , Math.max(maxPoint.getY(), entry.getValue().getY()));
-                minPoint = new Point2D(Math.min(minPoint.getX(), entry.getValue().getX()) , Math.min(minPoint.getY(), entry.getValue().getY()));
+
+                maxPoint.setX(Math.max(maxPoint.getX(), entry.getValue().getX()));
+                maxPoint.setY(Math.max(maxPoint.getY(), entry.getValue().getY()));
+
+                minPoint.setX(Math.min(minPoint.getX(), entry.getValue().getX()));
+                minPoint.setY(Math.min(minPoint.getY(), entry.getValue().getY()));
+
                 sumVector.setX(entry.getValue().getPoint().getX() + sumVector.getX());
                 sumVector.setY(entry.getValue().getPoint().getY() + sumVector.getY());
                 updateEdgesVehicles(entry.getValue());
@@ -55,6 +60,7 @@ public class ArmyForm {
 
         recalculationIndex = MyStrategy.world.getTickIndex();
     }
+
 
     public Point2D getAvgPoint() { return avgPoint; }
     public Point2D getMaxPoint() { return maxPoint; }
@@ -111,7 +117,7 @@ public class ArmyForm {
     public boolean isPointInDistance(Point2D point, double distance) {
 
         for (SmartVehicle vehicle : edgesVehicles.values()) {
-            if (vehicle.getPoint().distance(point) <= distance) {
+            if (vehicle.getDurability() > 0 && vehicle.getPoint().distance(point) <= distance) {
                 return true;
             }
         }

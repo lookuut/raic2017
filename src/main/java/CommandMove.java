@@ -72,6 +72,9 @@ public class CommandMove extends Command {
                         target.vector = army.pathFinder(this, target);
                     }
 
+                    if (target == null || target.vector == null) {
+                        return;
+                    }
                     maxRunnableTick = Math.max(nearVehicle.getVehiclePointAtTick(target.vector), 1);
 
                     MyStrategy.move.setAction(ActionType.MOVE);

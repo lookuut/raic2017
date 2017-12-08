@@ -204,4 +204,10 @@ public class Point2D {
         double u = seg1_line2_start / (seg1_line2_start - seg1_line2_end);
         return fLineStart.add( dir1.multiply(u));
     }
+
+    public void multiplySelf(double factor)
+    {
+        setX(getX() * factor);
+        setY(getY() * factor);
+    }
 }

@@ -1,4 +1,5 @@
 import model.Player;
+import model.Vehicle;
 import model.VehicleType;
 
 
@@ -60,7 +61,7 @@ class Commander {
                     if (entry.getKey() == VehicleType.ARRV && entry.getValue().size() > CustomParams.maxVehiclesCountInArmy) {
                         double centreX = (vehicleTypeSquare.getRightTopAngle().getX() - vehicleTypeSquare.getLeftBottomAngle().getX()) / 2;
                         double centreY = (vehicleTypeSquare.getRightTopAngle().getY() - vehicleTypeSquare.getLeftBottomAngle().getY()) / 2;
-                        Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY );
+                        Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY);
 
                         Square armySquare = new Square(vehicleTypeSquare.getLeftBottomAngle(), centrePoint);
                         divisions.addArmy(armySquare, entry.getKey());
@@ -73,14 +74,24 @@ class Commander {
 
                         armySquare = new Square(new Point2D(centrePoint.getX(), vehicleTypeSquare.getLeftBottomAngle().getY()), new Point2D(vehicleTypeSquare.getRightTopAngle().getX(), centrePoint.getY()));
                         divisions.addArmy(armySquare, entry.getKey());
+                    }else if (entry.getKey() == VehicleType.HELICOPTER) {
+                        double centreX = (vehicleTypeSquare.getRightTopAngle().getX() - vehicleTypeSquare.getLeftBottomAngle().getX()) / 2;
+                        double centreY = (vehicleTypeSquare.getRightTopAngle().getY() - vehicleTypeSquare.getLeftBottomAngle().getY()) / 2;
+                        Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY);
+
+                        Square armySquare = new Square(vehicleTypeSquare.getLeftBottomAngle(), centrePoint.add(new Point2D(0, 2 * centreY)));
+                        divisions.addArmy(armySquare, entry.getKey());
+
+                        armySquare = new Square(new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY()), vehicleTypeSquare.getRightTopAngle());
+                        divisions.addArmy(armySquare, entry.getKey());
                     } else if (entry.getKey() == VehicleType.FIGHTER
-                            || entry.getKey() == VehicleType.HELICOPTER ||
+                             ||
                             entry.getKey() == VehicleType.TANK
                             ||entry.getKey() == VehicleType.IFV
                             ) {
                         divisions.addArmy(vehicleTypeSquare, entry.getKey());
                     }
-
+                    noArmySquaereMap.remove(entry.getKey());
                     noArmyVehicles.get(entry.getKey()).clear();
                 }
             } catch (Exception e) {
@@ -173,9 +184,14 @@ class Commander {
                 noArmyVehicles.put(vehicle.getType(), new ArrayList<>());
                 noArmySquaereMap.put(vehicle.getType(), new Square(vehicle.getLeftBottomAngle(), vehicle.getRightTopAngle()));
             } else {
-                Square square = noArmySquaereMap.get(vehicle.getType());
-                square.addPoint(vehicle.getLeftBottomAngle());
-                square.addPoint(vehicle.getRightTopAngle());
+                if (!noArmySquaereMap.containsKey(vehicle.getType())) {
+                    noArmySquaereMap.put(vehicle.getType(), new Square(vehicle.getLeftBottomAngle(), vehicle.getRightTopAngle()));
+                } else {
+                    Square square = noArmySquaereMap.get(vehicle.getType());
+                    square.addPoint(vehicle.getLeftBottomAngle());
+                    square.addPoint(vehicle.getRightTopAngle());
+                }
+
             }
 
             List<SmartVehicle> vehicleList = noArmyVehicles.get(vehicle.getType());
