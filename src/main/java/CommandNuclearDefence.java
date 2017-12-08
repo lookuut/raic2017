@@ -10,6 +10,7 @@ public class CommandNuclearDefence extends Command {
 
     public CommandNuclearDefence() {
         super();
+        attackTick = null;
     }
 
     @Override
@@ -19,6 +20,9 @@ public class CommandNuclearDefence extends Command {
         if (isNew()) {
             Consumer<Command> commandSelect = (command) -> {
                 Player player = MyStrategy.nuclearAttack();
+                if (player == null) {//nuclear attack already was passed :( @TODO boolshit code
+                    return;
+                }
                 attackTick = player.getNextNuclearStrikeTickIndex();
                 MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
                 attackX = player.getNextNuclearStrikeX();
@@ -31,6 +35,9 @@ public class CommandNuclearDefence extends Command {
             };
 
             Consumer<Command> commandDefence = (command) -> {
+                if (attackTick == null) {//@TODO boolshit code
+                    return;
+                }
                 MyStrategy.move.setAction(ActionType.SCALE);
                 MyStrategy.move.setX(attackX);
                 MyStrategy.move.setY(attackY);
@@ -38,6 +45,9 @@ public class CommandNuclearDefence extends Command {
             };
 
             Consumer<Command> commandCompact = (command) -> {
+                if (attackTick == null) {//@TODO boolshit code
+                    return;
+                }
                 MyStrategy.move.setAction(ActionType.SCALE);
                 MyStrategy.move.setX(attackX);
                 MyStrategy.move.setY(attackY);
