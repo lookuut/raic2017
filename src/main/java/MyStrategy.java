@@ -32,7 +32,7 @@ public final class MyStrategy implements Strategy {
         this.vehicles = new HashMap<>();
         this.commanderFacility = new CommanderFacility();
 
-        CommandQueue.getInstance().addPriority(CustomParams.noAssignGroupId);
+        CommandQueue.getInstance().addPriority(CustomParams.noAssignGroupId, 0);
     }
 
     protected void init(Player me, World world, Game game, Move move) throws Exception {
@@ -75,7 +75,7 @@ public final class MyStrategy implements Strategy {
             this.init(me, world, game, move);
             this.updateWorld(world);
             this.commander.check();
-            this.commander.logic(battleField);
+            this.commander.logic();
 
             this.updatePreviousVehiclesStates(world);
             CommandQueue.getInstance().run(world.getTickIndex());
@@ -103,7 +103,6 @@ public final class MyStrategy implements Strategy {
 
         Consumer<SmartVehicle> updateVehiclesInArmies = (vehicle) -> {
             for (ArmyAllyOrdering army : armies) {
-                Collection<SmartVehicle> edgesVehicles = army.getForm().getEdgesVehicles().values();
                 if (army.isArmyAlive() && !vehicle.isAlly()) {
                     army.setEnemy(vehicle);
                 }
@@ -127,8 +126,11 @@ public final class MyStrategy implements Strategy {
                 }
 
                 commander.addNoArmyVehicle(smartVehicle);
+                commander.result(smartVehicle);
+
                 battleField.addVehicle(smartVehicle);
                 updateVehiclesInArmies.accept(smartVehicle);
+
             });
 
         Arrays.stream(
@@ -140,6 +142,7 @@ public final class MyStrategy implements Strategy {
                     if (smartVehicle == null) {
                         throw new Exception("Something goes wrong with vehicles");
                     }
+                    commander.result(smartVehicle);
                     smartVehicle.vehicleUpdate(vehicleUpdate);
                     battleField.addVehicle(smartVehicle);
                     updateVehiclesInArmies.accept(smartVehicle);

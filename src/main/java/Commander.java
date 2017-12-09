@@ -1,5 +1,3 @@
-import model.Player;
-import model.Vehicle;
 import model.VehicleType;
 
 
@@ -17,6 +15,10 @@ class Commander {
     private Map<VehicleType, List<SmartVehicle>> noArmyVehicles;
     private Map<VehicleType, Square> noArmySquaereMap;
     private CommandNuclearDefence nuclearAttackDefence;
+    private static Deque<CommanderTask> tasksQueue;
+
+    private static TerrainPPField terrainPPField;
+    private static WeatherPPField weatherPPField;
 
     /**
      * @param strategy
@@ -29,6 +31,16 @@ class Commander {
         noArmyVehicles = new HashMap<>();
         noArmySquaereMap = new HashMap<>();
         nuclearAttackDefence = new CommandNuclearDefence();
+        tasksQueue = new LinkedList<>();
+
+        int ppFieldX = (int)(MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount());
+        int ppFieldY = (int)(MyStrategy.world.getHeight() / MyStrategy.game.getTerrainWeatherMapRowCount());
+
+        terrainPPField = new TerrainPPField(ppFieldX, ppFieldY);
+        terrainPPField.addTerrainMap(MyStrategy.world.getTerrainByCellXY());
+
+        weatherPPField = new WeatherPPField(ppFieldX, ppFieldY);
+        weatherPPField.addWeatherMap(MyStrategy.getWeatherMap());
     }
 
     private void checkAttackNuclear() throws Exception {
@@ -37,17 +49,26 @@ class Commander {
         }
     }
 
-    public void logic (BattleField battleField) throws Exception {
+    public void logic () throws Exception {
         constructArmies();
 
         checkAttackNuclear();
         nuclearAttack();
         MyStrategy.commanderFacility.orderCreateVehicle();
 
+        while (tasksQueue.size() > 0) {
+            tasksQueue.getFirst().run();
+            if (!tasksQueue.getFirst().check()) {
+                break;
+            }
+            CommanderTask task = tasksQueue.pollFirst();
+            divisions.addCondifuredArmy(task.getArmy());
+        }
+
         //run divisions logic
         for (ArmyAllyOrdering army : divisions.getArmyList()) {
             if (army.isArmyAlive()) {
-                army.run(battleField);
+                army.run();
             }
         }
     }
@@ -64,32 +85,32 @@ class Commander {
                         Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY);
 
                         Square armySquare = new Square(vehicleTypeSquare.getLeftBottomAngle(), centrePoint);
-                        divisions.addArmy(armySquare, entry.getKey());
+                        divisions.addArmy(armySquare, entry.getKey(), terrainPPField, weatherPPField);
 
                         armySquare = new Square(centrePoint, vehicleTypeSquare.getRightTopAngle());
-                        divisions.addArmy(armySquare, entry.getKey());
+                        divisions.addArmy(armySquare, entry.getKey(), terrainPPField, weatherPPField);
 
                         armySquare = new Square(new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX(), centrePoint.getY()), new Point2D(centrePoint.getX(), vehicleTypeSquare.getRightTopAngle().getY()));
-                        divisions.addArmy(armySquare, entry.getKey());
+                        divisions.addArmy(armySquare, entry.getKey(), terrainPPField, weatherPPField);
 
                         armySquare = new Square(new Point2D(centrePoint.getX(), vehicleTypeSquare.getLeftBottomAngle().getY()), new Point2D(vehicleTypeSquare.getRightTopAngle().getX(), centrePoint.getY()));
-                        divisions.addArmy(armySquare, entry.getKey());
-                    }else if (entry.getKey() == VehicleType.HELICOPTER) {
+                        divisions.addArmy(armySquare, entry.getKey(), terrainPPField, weatherPPField);
+                    } else if (entry.getKey() == VehicleType.HELICOPTER) {
                         double centreX = (vehicleTypeSquare.getRightTopAngle().getX() - vehicleTypeSquare.getLeftBottomAngle().getX()) / 2;
                         double centreY = (vehicleTypeSquare.getRightTopAngle().getY() - vehicleTypeSquare.getLeftBottomAngle().getY()) / 2;
                         Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY);
 
-                        Square armySquare = new Square(vehicleTypeSquare.getLeftBottomAngle(), centrePoint.add(new Point2D(0, 2 * centreY)));
-                        divisions.addArmy(armySquare, entry.getKey());
+                        Square armySquare = new Square(vehicleTypeSquare.getLeftBottomAngle(), centrePoint.add(new Point2D(0, centreY)));
+                        divisions.addArmy(armySquare, entry.getKey(), terrainPPField, weatherPPField);
 
                         armySquare = new Square(new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY()), vehicleTypeSquare.getRightTopAngle());
-                        divisions.addArmy(armySquare, entry.getKey());
+                        divisions.addArmy(armySquare, entry.getKey(), terrainPPField, weatherPPField);
                     } else if (entry.getKey() == VehicleType.FIGHTER
                              ||
                             entry.getKey() == VehicleType.TANK
                             ||entry.getKey() == VehicleType.IFV
                             ) {
-                        divisions.addArmy(vehicleTypeSquare, entry.getKey());
+                        divisions.addArmy(vehicleTypeSquare, entry.getKey(), terrainPPField, weatherPPField);
                     }
                     noArmySquaereMap.remove(entry.getKey());
                     noArmyVehicles.get(entry.getKey()).clear();
@@ -106,7 +127,7 @@ class Commander {
         while (iter.hasNext()) {
             Map.Entry<Integer, ArmyAllyOrdering> entry = iter.next();
             ArmyAllyOrdering army = entry.getValue();
-            if (!army.isArmyAlive()) {
+            if (!army.isArmyAlive()) {//@TODO boolshit
                 divisions.removeArmy(army);
                 iter.remove();
             } else if (army.isRun()) {
@@ -191,11 +212,17 @@ class Commander {
                     square.addPoint(vehicle.getLeftBottomAngle());
                     square.addPoint(vehicle.getRightTopAngle());
                 }
-
             }
 
             List<SmartVehicle> vehicleList = noArmyVehicles.get(vehicle.getType());
             vehicleList.add(vehicle);
+
+            Point2D vehicleTransformedPoint = this.terrainPPField.getTransformedPoint(vehicle.getPoint());
+            if (vehicle.isTerrain()) {
+                this.terrainPPField.addFactor(vehicleTransformedPoint, CustomParams.allyUnitPPFactor);
+            } else {
+                this.weatherPPField.addFactor(vehicleTransformedPoint, CustomParams.allyUnitPPFactor);
+            }
         }
     }
 
@@ -205,5 +232,22 @@ class Commander {
         }
 
         return Commander.nuclearAttack.check(null);
+    }
+
+    public static void addTask(CommanderTask task) {
+        tasksQueue.add(task);
+    }
+
+    public void result(SmartVehicle vehicle) {
+        if (tasksQueue.size() > 0) {
+            tasksQueue.getFirst().result(vehicle);
+        }
+    }
+
+    public static TerrainPPField getTerrainPPField () {
+        return terrainPPField;
+    }
+    public static WeatherPPField getWeatherPPField () {
+        return weatherPPField;
     }
 }

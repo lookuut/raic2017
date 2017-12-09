@@ -1,15 +1,15 @@
 public class GroupPriority implements  Comparable<GroupPriority>{
-    private Integer group;
+    private Integer armyId;
     private Integer priority;
 
 
-    public GroupPriority (Integer group, Integer priority) {
-        this.group = group;
+    public GroupPriority (Integer armyId, Integer priority) {
+        this.armyId = armyId;
         this.priority = priority;
     }
 
-    public Integer getGroup() {
-        return group;
+    public Integer getArmyId() {
+        return armyId;
     }
 
     public Integer getPriority() {
@@ -17,11 +17,11 @@ public class GroupPriority implements  Comparable<GroupPriority>{
     }
 
     public int hashCode() {
-        return group.hashCode();
+        return armyId.hashCode();
     }
 
     @Override
     public int compareTo(GroupPriority groupPriority) {
-        return (priority - groupPriority.getPriority());
+        return priority == groupPriority.getPriority() ? armyId - groupPriority.armyId : (priority - groupPriority.getPriority());
     }
 }

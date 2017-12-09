@@ -20,44 +20,23 @@ public class ArmyAlly extends Army {
 
     private Track track;
 
-    public ArmyAlly(Integer groupId) {
+    public ArmyAlly(Integer groupId, BattleField battleField, PPField terrainField, PPField aerialField) {
         super();
         this.groupId = groupId;
         track = new Track();
         targetEnemyMap = new HashMap<>();
+        this.battleField = battleField;
+        this.staticTerrainPPField = terrainField;
+        this.staticAerialPPField = aerialField;
     }
 
     public Track getTrack() {
         return track;
     }
-
-    public Map<Integer, Step> getActualTrackSteps() {
-        Set<VehicleType> types = getVehiclesType();
-
-        return track.sumTracks(types, this.getLastModificateTick());
-    }
-
-    public boolean isContainVehicleId(Long vehicleId) {
-        return getVehicles().containsKey(vehicleId);
-    }
-
+    
     public Integer getGroupId () {
         return groupId;
     }
-
-    public void setAerialPPField (PPField field) {
-        staticAerialPPField = field;
-    }
-
-    public void setTerrainPPField (PPField field) {
-        staticTerrainPPField = field;
-    }
-
-    public void init (PPField terrainField, PPField aerialField) {
-        setTerrainPPField(terrainField);
-        setAerialPPField(aerialField);
-    }
-
 
     public TargetPoint searchNearestEnemy() {
         TargetPoint target = null;

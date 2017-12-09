@@ -7,7 +7,7 @@ public class TerrainPPField extends PPField {
     }
 
 
-    public void addTerrainMap (TerrainType[][] map) throws Exception {
+    public void addTerrainMap (TerrainType[][] map){
         for (int i = 0; i < getHeight(); i++) {
             for (int j = 0; j < getWidth(); j++) {
                 if (i == 0 || j == 0 || i == (getHeight() - 1) || j == (getWidth() - 1)) {
@@ -19,7 +19,7 @@ public class TerrainPPField extends PPField {
     }
 
 
-    public static float terrainToPP (TerrainType type) throws Exception {
+    public static float terrainToPP (TerrainType type){
         switch (type) {
             case PLAIN:
                 return (float)(3.0 / (MyStrategy.game.getPlainTerrainSpeedFactor() + MyStrategy.game.getPlainTerrainStealthFactor() + MyStrategy.game.getPlainTerrainVisionFactor()));
@@ -28,7 +28,6 @@ public class TerrainPPField extends PPField {
             case FOREST:
                 return (float)(3.0 / (MyStrategy.game.getForestTerrainSpeedFactor() + MyStrategy.game.getForestTerrainStealthFactor() + MyStrategy.game.getForestTerrainVisionFactor()));
         }
-        throw new Exception("Boolchit");
+        return 0f;
     }
-
 }

@@ -59,7 +59,7 @@ public class CommandAttack extends Command {
     public boolean check(ArmyAllyOrdering army) {
         boolean checkResult = super.check(army);
 
-        if (rageModeOn == false && attackedEnemies.size() > 5 && (moveAttack == null || moveAttack.isFinished())) {
+        if (rageModeOn == false && attackedEnemies.size() > 5 && (moveAttack == null || moveAttack.isFinished()) && false) {
             VehicleType armyVehicleType = army.getVehiclesType().stream().findFirst().get();
             Integer victimsCount = 0;
             Integer predatorCount = 0;
@@ -111,21 +111,21 @@ public class CommandAttack extends Command {
             }
         }
 
-        /*
-        if (scale != null && scale.isFinished() && moveAttack == null && army.isAerial()) {
+
+        if (scale != null && scale.isFinished() && moveAttack == null) {
 
             if (rotateLeft == null) {
                 army.getForm().recalc(army.getVehicles());
-                rotateLeft = new CommandRotate(Math.PI/6, army.getForm().getAvgPoint(), 10);
+                rotateLeft = new CommandRotate(Math.PI/2, army.getForm().getAvgPoint(), 10);
                 setParentCommand(rotateLeft);
                 checkResult = false;
             } else if (rotateLeft.isFinished() && rotateRight == null) {
-                rotateRight = new CommandRotate(-Math.PI/6, army.getForm().getAvgPoint(), 10);
+                rotateRight = new CommandRotate(-Math.PI/2, army.getForm().getAvgPoint(), 10);
                 setParentCommand(rotateRight);
                 checkResult = false;
             }
 
-        }*/
+        }
 
         if (damageSum > 0 && (rageModeOn == false)) {//go to defence command need
             Integer inflictedDamage = 0;
@@ -139,27 +139,10 @@ public class CommandAttack extends Command {
 
             if (heat == false) {
                 try {
-                    Integer victimsCount = 0;
-                    Integer predatorCount = 0;
-                    for (Map.Entry<VehicleType, Integer> entry : attackedEnemiesTypes.entrySet()) {
-                        if (SmartVehicle.isVictimType(entry.getKey(),  army.getVehiclesType().iterator().next())) {
-                            predatorCount += entry.getValue();
-                        }
-                        if (SmartVehicle.isVictimType( army.getVehiclesType().iterator().next(), entry.getKey())) {
-                            victimsCount += entry.getValue();
-                        }
-                    }
-                    if (predatorCount > victimsCount && predatorCount > army.getVehicleCount() * 0.75) {
-                        complete();
-                        army.addCommand(new CommandDefence());
-                        return true;
-                    } else if (predatorCount > army.getVehicleCount() * 0.3) {
-                        getParentCommand().complete();
-                        scale = new CommandScale(10, army.getForm().getAvgPoint());
-                        setParentCommand(scale);
-                        checkResult = false;
-                    }
-
+                    getParentCommand().complete();
+                    scale = new CommandScale(10, army.getForm().getAvgPoint());
+                    setParentCommand(scale);
+                    checkResult = false;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

@@ -73,12 +73,8 @@ public class Army {
         return form;
     }
 
-    public double getMaxVisionRange() {
-        return maxVisionRange;
-    }
-
     public boolean isArmyAlive () {
-        return getVehicles().size() == 0 || getVehicleCount() > 0;
+        return getVehicleCount() > 0;
     }
 
     public SmartVehicle getNearestVehicle(Point2D point) {

@@ -13,14 +13,14 @@ public class CommandQueue {
 
     private HashMap<Integer, Queue<CommandWrapper>> groupedQueueMap;
     private SortedSet<GroupPriority> prioritySortedSet;
-    private Integer selectedGroup;
+    private Integer selectedArmyId;
 
     private static CommandQueue instance = null;
 
     private CommandQueue () {
         groupedQueueMap = new HashMap<>();
         prioritySortedSet = new TreeSet<>();
-        selectedGroup = -1;
+        selectedArmyId = -1;
     }
 
     public static CommandQueue getInstance() {
@@ -31,25 +31,21 @@ public class CommandQueue {
         return instance;
     }
 
-    private static Integer priority = 0;
-    public static Integer getPriority() {
-        return priority++;
-    }
     /**
      * @desc change priority set, last added go to priority high
-     * @param group army group id
+     * @param armyId army armyId id
      */
-    public void addPriority(Integer group) {
-        prioritySortedSet.add(new GroupPriority(group, getPriority()));
+    public void addPriority(Integer armyId, Integer priority) {
+        prioritySortedSet.add(new GroupPriority(armyId, priority));
     }
 
     public void addCommand(CommandWrapper cw) {
 
-        if (!groupedQueueMap.containsKey(cw.group)) {
-            groupedQueueMap.put(cw.group,new LinkedList<>());
+        if (!groupedQueueMap.containsKey(cw.armyId)) {
+            groupedQueueMap.put(cw.armyId, new LinkedList<>());
         }
 
-        groupedQueueMap.get(cw.group).add(cw);
+        groupedQueueMap.get(cw.armyId).add(cw);
     }
 
     public void run(Integer tick) {
@@ -60,14 +56,14 @@ public class CommandQueue {
         if (MyStrategy.player.getRemainingActionCooldownTicks() == 0) {
             Queue<CommandWrapper> queue = null;
 
-            if (groupedQueueMap.containsKey(selectedGroup) && groupedQueueMap.get(selectedGroup).size() > 0) {//if have selected group command run it
-                queue = groupedQueueMap.get(selectedGroup);
+            if (groupedQueueMap.containsKey(selectedArmyId) && groupedQueueMap.get(selectedArmyId).size() > 0) {//if have selected armyId command run it
+                queue = groupedQueueMap.get(selectedArmyId);
             } else {//else search commands by priority
 
                 for (GroupPriority priority : prioritySortedSet) {
-                    //if group have commands run it
-                    if (groupedQueueMap.containsKey(priority.getGroup()) && groupedQueueMap.get(priority.getGroup()).size() > 0) {
-                        queue = groupedQueueMap.get(priority.getGroup());
+                    //if armyId have commands run it
+                    if (groupedQueueMap.containsKey(priority.getArmyId()) && groupedQueueMap.get(priority.getArmyId()).size() > 0) {
+                        queue = groupedQueueMap.get(priority.getArmyId());
                         break;
                     }
                 }
@@ -76,13 +72,13 @@ public class CommandQueue {
             if (queue != null) {
                 CommandWrapper cw = queue.peek();
 
-                if (selectGroup(cw.group)) {
+                if (selectGroup(cw.armyId)) {
                     if (MyStrategy.world.getTickIndex() - cw.command.getRunTickIndex() >= cw.tickIndex) {
                         cw.consumer.accept(cw.command);
                         cw.command.setState(CommandStates.Run);
                         queue.poll();
                         cw.command.pinned();
-                        System.out.println("Running group " + cw.group);
+                        System.out.println("Running armyId " + cw.armyId);
                     } else {
                         System.out.println("======================>");
                     }
@@ -93,20 +89,20 @@ public class CommandQueue {
         this.tick = tick;
     }
 
-    public boolean selectGroup(Integer group) {
-        if (selectedGroup == group) {//group already selected or no need to be select group command id
+    public boolean selectGroup(Integer armyId) {
+        if (selectedArmyId == armyId) {//armyId already selected or no need to be select armyId command id
             return true;
         }
 
-        selectedGroup = group;
+        selectedArmyId = armyId;
 
-        if (group == CustomParams.noAssignGroupId) {
+        if (armyId == CustomParams.noAssignGroupId) {
             return true;
         }
 
         MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
-        MyStrategy.move.setGroup(group);
-        System.out.println("Select group " + group);
+        MyStrategy.move.setGroup(armyId);
+        System.out.println("Select armyId " + armyId);
         return false;
     }
 

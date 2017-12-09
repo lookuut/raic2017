@@ -9,8 +9,7 @@ import java.util.stream.Collectors;
 public class ArmyDivisions {
 
 
-    private static final AtomicInteger armyLastId = new AtomicInteger(0);
-
+    private static final AtomicInteger armyLastId = new AtomicInteger(1);
     private Map<VehicleType, HashSet<Integer>> armyByType;
     private Map<Integer, ArmyAllyOrdering> armyList;
 
@@ -19,31 +18,29 @@ public class ArmyDivisions {
         armyByType = new HashMap<>();
     }
 
-    public Integer addArmy(Square square, VehicleType type) throws Exception {
+    public Integer addArmy(Square square, VehicleType type, TerrainPPField terrainPPField, WeatherPPField weatherPPField) throws Exception {
         if (!armyByType.containsKey(type)) {
             armyByType.put(type , new HashSet<>());
         }
 
         Integer armyId = armyLastId.incrementAndGet();
-        ArmyAllyOrdering army = new ArmyAllyOrdering(armyId);
 
-        int ppFieldX = (int)(MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount());
-        int ppFieldY = (int)(MyStrategy.world.getHeight() / MyStrategy.game.getTerrainWeatherMapRowCount());
-        TerrainPPField terrainPPField = new TerrainPPField(ppFieldX, ppFieldY);
-        terrainPPField.addTerrainMap(MyStrategy.world.getTerrainByCellXY());
-
-        WeatherPPField weatherPPField = new WeatherPPField(ppFieldX, ppFieldY);
-        weatherPPField.addWeatherMap(MyStrategy.getWeatherMap());
-
-        army.init(terrainPPField, weatherPPField);
-
-        army.addCommand(new CommandCreateArmy(square, type));
+        ArmyAllyOrdering army = new ArmyAllyOrdering(armyId, MyStrategy.battleField, terrainPPField, weatherPPField);
         setEmptyBehaviourTree(army);
-        armyList.put(armyId, army);
-        armyByType.get(type).add(armyId);
 
+        armyByType.get(type).add(armyId);
+        Commander.addTask(new CommanderTask(army, new CommandCreateArmy(square, type)));
+
+        Integer priority = armyId + 5;
         //@TODO configured options, brain it
-        CommandQueue.getInstance().addPriority(armyId);
+        if (type == VehicleType.FIGHTER) {
+            priority = 1;
+        }
+        if (type == VehicleType.HELICOPTER) {
+            priority = 2;
+        }
+
+        CommandQueue.getInstance().addPriority(armyId, priority);
         return armyId;
     }
 
@@ -97,5 +94,9 @@ public class ArmyDivisions {
         for (VehicleType vehicleType : army.getVehiclesType()) {
             armyByType.get(vehicleType).remove(army.getGroupId());
         }
+    }
+
+    public void addCondifuredArmy(ArmyAllyOrdering army) {
+        armyList.put(army.getGroupId(), army);
     }
 }

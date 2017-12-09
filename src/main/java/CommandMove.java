@@ -68,6 +68,10 @@ public class CommandMove extends Command {
                     Point2D avgPoint = new Point2D(army.getForm().getAvgPoint().getX(), army.getForm().getAvgPoint().getY());
                     SmartVehicle nearVehicle = army.getNearestVehicle(avgPoint);
 
+                    if (nearVehicle == null) {
+                        throw new Exception("No near vehicle");
+                    }
+
                     if (withPathFinder) {
                         target.vector = army.pathFinder(this, target);
                     }

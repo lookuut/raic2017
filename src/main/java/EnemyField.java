@@ -53,19 +53,19 @@ public class EnemyField {
      */
     public PPField getEnemyField(SmartVehicle allyVehicle) throws Exception {
         if (allyVehicle.getType() == VehicleType.FIGHTER) {
-            return battleField.calcEnemyFieldAvgValues(aerialToAerialEnemyField, allyVehicle.getAerialDamage());
+            return battleField.calcEnemyFieldAvgValues(aerialToAerialEnemyField, allyVehicle.getAerialDamage(), true);
         }
         if (allyVehicle.getType() == VehicleType.HELICOPTER) {
 
-            PPField aeToAeAvgEnemyField = battleField.calcEnemyFieldAvgValues(aerialToAerialEnemyField, allyVehicle.getAerialDamage());
-            PPField aeToTerAvgEnemyField = battleField.calcEnemyFieldAvgValues(aerialToTerrainEnemyField, allyVehicle.getGroundDamage());
+            PPField aeToAeAvgEnemyField = battleField.calcEnemyFieldAvgValues(aerialToAerialEnemyField, allyVehicle.getAerialDamage(), true);
+            PPField aeToTerAvgEnemyField = battleField.calcEnemyFieldAvgValues(aerialToTerrainEnemyField, allyVehicle.getGroundDamage(), false);
             aeToAeAvgEnemyField.sumField(aeToTerAvgEnemyField);
             return aeToAeAvgEnemyField;
         }
 
         if (allyVehicle.getType() == VehicleType.TANK || allyVehicle.getType() == VehicleType.IFV) {
-            PPField aeToAeAvgEnemyField = battleField.calcEnemyFieldAvgValues(terrainToAerialEnemyField, allyVehicle.getAerialDamage());
-            PPField aeToTerAvgEnemyField = battleField.calcEnemyFieldAvgValues(terrainToTerrainEnemyField, allyVehicle.getGroundDamage());
+            PPField aeToAeAvgEnemyField = battleField.calcEnemyFieldAvgValues(terrainToAerialEnemyField, allyVehicle.getAerialDamage(), true);
+            PPField aeToTerAvgEnemyField = battleField.calcEnemyFieldAvgValues(terrainToTerrainEnemyField, allyVehicle.getGroundDamage(), false);
             aeToAeAvgEnemyField.sumField(aeToTerAvgEnemyField);
             return aeToAeAvgEnemyField;
         }
@@ -145,14 +145,14 @@ public class EnemyField {
         };
 
         for (int y = 0; y <= intDangerRadoius; y++) {
-            if (armyTransformedCentre.getIntY() + y < getHeight()) {
+            if (armyTransformedCentre.getIntY() + y < getHeight() && armyTransformedCentre.getIntY() + y >= 0) {
                 Point2D point = xAxisFunction.apply(armyTransformedCentre.getIntY() + y);
                 if (point != null) {
                     return point;
                 }
             }
 
-            if (armyTransformedCentre.getIntY() - y >= 0) {
+            if (armyTransformedCentre.getIntY() - y >= 0 && armyTransformedCentre.getIntY() - y < getHeight()) {
                 Point2D point = xAxisFunction.apply(armyTransformedCentre.getIntY() - y);
                 if (point != null) {
                     return point;

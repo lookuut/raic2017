@@ -74,14 +74,14 @@ public class BattleField {
         return pFieldWidth;
     }
 
-    public PPField calcEnemyFieldAvgValues(PPField field, float damage) {
+    public PPField calcEnemyFieldAvgValues(PPField field, float damage, boolean isAerial) {
         PPField avgField = new PPField(field.getWidth(), field.getHeight());
         for (int y = 0; y < field.getHeight(); y++) {
             for (int x = 0; x < field.getWidth(); x++) {
                 if (field.getFactor(x, y) > 0) {
                     BattleFieldCell cell = getBattleFieldCell(x,y);
                     Map<Long, SmartVehicle> vehicles = cell.getVehicles(MyStrategy.getEnemyPlayerId());
-                    Long count = vehicles.values().stream().filter(vehicle -> vehicle.getDurability() > 0).count();
+                    Long count = vehicles.values().stream().filter(vehicle -> vehicle.getDurability() > 0 && vehicle.isAerial() == isAerial).count();
                     avgField.setFactor(x, y,   field.getFactor(x,y) / count.intValue() - damage);
                 }
             }

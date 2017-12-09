@@ -83,9 +83,6 @@ public class PPField {
         }
         return sum;
     }
-    public void minusField(PPField localField) {
-        operateField(localField, -1);
-    }
 
     public void operateField(PPField localField, int operate) {
         int xFactor = (getWidth() / localField.getWidth());
@@ -110,25 +107,6 @@ public class PPField {
 
     public Point2D getTransformedPoint(Point2D point) {
         return point.multiply(getWidth() /MyStrategy.world.getWidth());
-    }
-
-    public float recursive(HashSet<Integer> visitedCells, HashSet<Integer> intersectCells, int x, int y, LineSegment line) {
-        float factor = 0;
-        for (int j = -1; j <= 1 && j + y >= 0 && j + y < getHeight(); j++) {
-            for (int i = -1; i <= 1 && x + i >= 0 && x + i < getWidth(); i++) {
-                int number = x + i + (y + j) * width;
-
-                if (!visitedCells.contains(number)) {
-                    visitedCells.add(number);
-
-                    if (line.isIntersectSquare(x + i, y + j, 1)) {
-                        intersectCells.add(number);
-                        factor += recursive(visitedCells, intersectCells, x + i, y + j, line) + getFactor(x + i, y + j);
-                    }
-                }
-            }
-        }
-        return factor;
     }
 
     public void print() {
@@ -161,32 +139,6 @@ public class PPField {
         }
 
         return minValuePoint;
-    }
-
-    public Point2D getMinValueCell() {
-        Point2D maxPoint = null;
-        Point2D minPoint = null;
-
-        float max = field[0][0];
-        float min = Float.MAX_VALUE;
-
-        for (int j = 0; j < getHeight(); j++) {
-            for (int i = 0; i < getWidth(); i++) {
-                if (field[j][i] != 0) {
-                    if (field[j][i] > max) {
-                        max = field[j][i];
-                        maxPoint = new Point2D(i, j);
-                    }
-
-                    if (field[j][i] < min) {
-                        min = field[j][i];
-                        minPoint = new Point2D(i, j);
-                    }
-                }
-            }
-        }
-
-        return minPoint;
     }
 
     public Point2D getWorldPoint(Point2D point) {
@@ -457,9 +409,5 @@ public class PPField {
         }
 
         return factorSum;
-    }
-
-    public void setAvg(int x, int y, int count) {
-        setFactor(x, y, getFactor(x, y) / (float)count);
     }
 }

@@ -17,8 +17,8 @@ public class ArmyAllyOrdering extends ArmyAlly {
     protected BehaviourTree behaviourTree;
 
 
-    public ArmyAllyOrdering(Integer groupId) {
-        super(groupId);
+    public ArmyAllyOrdering(Integer groupId, BattleField battleField, PPField terrainField, PPField aerialField) {
+        super(groupId, battleField, terrainField, aerialField);
         commandQueue = new ArrayDeque<>();
     }
 
@@ -42,9 +42,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
         }
     }
 
-    public void run (BattleField battleField) throws Exception {
-
-        this.battleField = battleField;
+    public void run () throws Exception {
         if (runningCommand == null || runningCommand.isFinished()) {
             runningCommand = pollCommand();
             runningCommand.prepare(this);
@@ -69,6 +67,10 @@ public class ArmyAllyOrdering extends ArmyAlly {
     }
 
     public void result(SmartVehicle vehicle) {
+        if (runningCommand == null) {
+            return;
+        }
+
         if (runningCommand.isRun()) {
             runningCommand.result(this, vehicle);
         }

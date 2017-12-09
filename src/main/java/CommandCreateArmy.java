@@ -17,11 +17,21 @@ public class CommandCreateArmy extends Command {
     public void prepare(ArmyAllyOrdering army) throws Exception {}
 
     public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {
-        if (vehicle.getSelected() && !vehicle.isHaveArmy(army)) {
+        if (vehicle.getSelected() && !vehicle.isHaveArmy(army) && vehicle.getArmySet().size() == 0) {
             vehicle.addArmy(army);
             army.addVehicle(vehicle);
+            vehicle.addArmy(army);
+
             army.setLastModificateTick(MyStrategy.world.getTickIndex());
             army.getTrack().addStep(MyStrategy.world.getTickIndex(), new Step(army.getBattleField().pointTransform(vehicle.getPoint()), CustomParams.allyUnitPPFactor), vehicle.getType());
+            //remove vehicle from static maps
+
+            Point2D vehicleTransformedPoint = Commander.getTerrainPPField().getTransformedPoint(vehicle.getPoint());
+            if (vehicle.isTerrain()) {
+                Commander.getTerrainPPField().addFactor(vehicleTransformedPoint, -CustomParams.allyUnitPPFactor);
+            } else {
+                Commander.getWeatherPPField().addFactor(vehicleTransformedPoint, -CustomParams.allyUnitPPFactor);
+            }
         }
     }
 
@@ -41,23 +51,9 @@ public class CommandCreateArmy extends Command {
                 MyStrategy.move.setAction(ActionType.ASSIGN);
                 MyStrategy.move.setGroup(army.getGroupId());
             };
-            /*
-            Consumer<Command> scale = (command) -> {
-
-                Point2D centre = new Point2D(
-                        square.getLeftBottomAngle().getX() + (square.getRightTopAngle().getX() - square.getLeftBottomAngle().getX()) / 2 ,
-                        square.getLeftBottomAngle().getY() + (square.getRightTopAngle().getY() - square.getLeftBottomAngle().getY()) / 2
-                );
-                MyStrategy.move.setAction(ActionType.SCALE);
-                MyStrategy.move.setX(centre.getX());
-                MyStrategy.move.setY(centre.getY());
-                MyStrategy.move.setFactor(CustomParams.armyScaleFactor);
-            };*/
 
             addCommand(new CommandWrapper(selectVehicleType, this, -1, CustomParams.noAssignGroupId));
             addCommand(new CommandWrapper(assign, this, -1, CustomParams.noAssignGroupId));
-            //addCommand(new CommandWrapper(scale, this, -1, CustomParams.noAssignGroupId));
-
             super.run(army);
         }
     }
@@ -71,8 +67,8 @@ public class CommandCreateArmy extends Command {
                     army.setEnemy(vehicle);
                 }
             }
+
             army.getForm().recalc(army.getVehicles());
-            army.addCommand(new CommandWait(CustomParams.armyAfterCreateTimeWait));
             setState(CommandStates.Complete);
             return true;
         }
