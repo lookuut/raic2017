@@ -134,19 +134,11 @@ public class Army {
         return lastModificateTick;
     }
 
-    public double getAvgDurability() {
-        double value = getVehicles().values().stream().filter(vehicle -> vehicle.getDurability() > 0).mapToDouble(SmartVehicle::getDurability).average().getAsDouble();
-        return value;
-    }
 
     public boolean timeToGoHeal() {
-        if (!isArmyAlive() || !isAerial()) {
-            return false;
-        }
-
-        return getVehicles().values().stream().
-                filter(vehicle -> vehicle.getDurability() > 0 && vehicle.getDurability() < CustomParams.minVehicleDurabilityToHeal).
-                count() > CustomParams.minVehicleToHealCount;
+        Integer durabilitySum = getVehicles().values().stream().
+                filter(vehicle -> vehicle.getDurability() > 0).map(SmartVehicle::getDurability).reduce(0, Integer::sum);
+        return durabilitySum / (double)getVehicleCount() * 100 < CustomParams.percentOfHeatedVehicles;
     }
 
     public boolean isAerial () {

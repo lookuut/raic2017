@@ -43,6 +43,7 @@ public class CommandHeal extends Command {
         target.maxDamageValue = 200.0f;
 
         if (target.vector.magnitude() < CustomParams.onHealerEps) {
+
             complete();
             return;
         }

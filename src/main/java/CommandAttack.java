@@ -59,59 +59,6 @@ public class CommandAttack extends Command {
     public boolean check(ArmyAllyOrdering army) {
         boolean checkResult = super.check(army);
 
-        if (rageModeOn == false && attackedEnemies.size() > 5 && (moveAttack == null || moveAttack.isFinished()) && false) {
-            VehicleType armyVehicleType = army.getVehiclesType().stream().findFirst().get();
-            Integer victimsCount = 0;
-            Integer predatorCount = 0;
-            Point2D vicitmsAgvPoint = new Point2D(0,0);
-            SmartVehicle attackedVictim = null;
-            for (Map.Entry<Long , SmartVehicle> entry : attackedEnemies.entrySet()) {
-                if (entry.getValue().getDurability() > 0) {
-                    if (SmartVehicle.isVictimType(armyVehicleType, entry.getValue().getType())) {
-                        victimsCount += 1;
-                        vicitmsAgvPoint.setX(vicitmsAgvPoint.getX() + entry.getValue().getPoint().getX());
-                        vicitmsAgvPoint.setY(vicitmsAgvPoint.getY() + entry.getValue().getPoint().getY());
-                        if (attackedVictim == null) {
-                            attackedVictim = entry.getValue();
-                        }
-                    }
-
-                    if (SmartVehicle.isVictimType(entry.getValue().getType(), armyVehicleType)) {
-                        predatorCount += 1;
-                    }
-                }
-            }
-
-            if (victimsCount > 0 && victimsCount < army.getVehicles().size() && predatorCount < army.getVehicles().size() / 2) {//need rage mode
-
-                vicitmsAgvPoint.setX(vicitmsAgvPoint.getX()/ victimsCount);
-                vicitmsAgvPoint.setY(vicitmsAgvPoint.getY()/ victimsCount);
-
-                SmartVehicle previousEnemyState = MyStrategy.getVehiclePrevState(attackedVictim.getId());
-                Point2D enemyMoveDirection = attackedVictim.getPoint().subtract(previousEnemyState.getPoint());
-                enemyMoveDirection = enemyMoveDirection.multiply(20);
-
-                army.getForm().recalc(army.getVehicles());
-
-                Point2D enemyVector = vicitmsAgvPoint.subtract(army.getForm().getAvgPoint());
-                Point2D enemyFuturePoint = enemyMoveDirection.add(vicitmsAgvPoint);
-                Point2D moveAttackVector = enemyFuturePoint.subtract(army.getForm().getAvgPoint());
-
-                if (moveAttackVector.angle(enemyVector) > Math.PI * (5 / 6) && moveAttackVector.angle(enemyVector) < Math.PI * (7 / 6)) {//enemy move to our side just scale and wait
-                    scale = new CommandScale(15, army.getForm().getAvgPoint());
-                    getParentCommand().complete();
-                    setParentCommand(scale);
-                } else {// go to forward to enemy
-                    moveAttackVector.multiplySelf(1.4);
-                    moveAttack = new CommandMove(moveAttackVector, false );
-                    setParentCommand(moveAttack);
-                }
-                rageModeOn = true;
-                checkResult = false;
-            }
-        }
-
-
         if (scale != null && scale.isFinished() && moveAttack == null) {
 
             if (rotateLeft == null) {
@@ -132,12 +79,14 @@ public class CommandAttack extends Command {
             for (Map.Entry<Long, SmartVehicle> entry : attackedEnemies.entrySet()) {
                 inflictedDamage += entry.getValue().getDurability() - MyStrategy.getVehicles().get(entry.getKey()).getDurability();
             }
+            Integer cooldownSum = 0;
             Integer damageSumAtTick = 0;
             for (Map.Entry<Long, Integer> entry : durabilityBeforeAttack.entrySet()) {
                 damageSumAtTick +=  (entry.getValue() - MyStrategy.getVehicles().get(entry.getKey()).getDurability());
+                cooldownSum += MyStrategy.getVehicles().get(entry.getKey()).getRemainingAttackCooldownTicks();
             }
 
-            if (heat == false) {
+            if (heat == false && cooldownSum > 0) {
                 try {
                     getParentCommand().complete();
                     scale = new CommandScale(10, army.getForm().getAvgPoint());

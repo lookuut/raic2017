@@ -48,7 +48,7 @@ public class ArmyDivisions {
         BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
 
         BTreeNode isHaveEnemyCond = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal() && false && armyByType.get(VehicleType.ARRV).size() > 0),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal() && armyLocal.isAerial() && armyByType.get(VehicleType.ARRV).size() > 0),
                 army
         );
 

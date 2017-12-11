@@ -47,12 +47,11 @@ public class CustomParams {
 
     //nuclear attack
     public static int nuclearAttackRatingRecalcTickInterval = 1;
-    public static int nuclearAttackRatingItemCount = 3;
+    public static int nuclearAttackRatingItemCount = 7;
     public static int gunnerMinDurability = 100;
 
     public static int borderPointsCount = 12;
-    public static double minVehicleDurabilityToHeal = 70;
-    public static double minVehicleToHealCount = 20;
+    public static double percentOfHeatedVehicles = 0.7;
     //facilities
     public static int maxGotoSiegeArmyCount = 2;
 
