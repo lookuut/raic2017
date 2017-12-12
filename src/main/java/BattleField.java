@@ -1,17 +1,18 @@
-
-import model.Vehicle;
 import model.VehicleType;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 public class BattleField {
 
     protected BattleFieldCell[][] battleField;
-    protected List<Army> armyList;
 
     protected int pFieldWidth;
     protected int pFieldHeight;
+    private List<Army> enemyArmies;
+    private Integer enemyArmiesCalcTick = -1;
 
     //temporary code remove it before upload
     private Integer cellSize;
@@ -29,6 +30,7 @@ public class BattleField {
                 this.battleField[y][x] = new BattleFieldCell(x,y);
             }
         }
+        enemyArmies = new ArrayList<>();
     }
 
     public Point2D pointTransform(Point2D point) {
@@ -52,16 +54,26 @@ public class BattleField {
         BattleFieldCell battleFieldCell =  this.battleField[battleFieldY][battleFieldX];
         BattleFieldCell vehicleBattleFieldCell = vehicle.getBattleFieldCell();
 
-        if ((vehicleBattleFieldCell != null && vehicleBattleFieldCell != battleFieldCell) || vehicle.getDurability() == 0) {
-            vehicleBattleFieldCell.remove(vehicle);
+        if ((
+                vehicleBattleFieldCell != null &&
+                        (vehicleBattleFieldCell != battleFieldCell
+                        || vehicle.getDurability() == 0
+                        || vehicle.isDurabilityChanched()
+                        || vehicle.isAttackCooldownChanched()
+                        ))
+                ) {
+
+            vehicleBattleFieldCell.remove(MyStrategy.getVehiclePrevState(vehicle.getId()));
 
             Integer lastVehicleX = vehicleBattleFieldCell.getX();
             Integer lastVehicleY = vehicleBattleFieldCell.getY();
 
-            MyStrategy.enemyField.removeFromCellVehicle(lastVehicleX, lastVehicleY, vehicle);
+            MyStrategy.enemyField.removeFromCellVehicle(lastVehicleX, lastVehicleY, MyStrategy.getVehiclePrevState(vehicle.getId()));
         }
 
-        if (vehicle.getDurability() > 0 && (vehicleBattleFieldCell == null || (vehicleBattleFieldCell != null && vehicleBattleFieldCell != battleFieldCell))) {
+        if (vehicle.getDurability() > 0 && ((vehicleBattleFieldCell == null || (vehicleBattleFieldCell != null && vehicleBattleFieldCell != battleFieldCell))
+                || vehicle.isDurabilityChanched()
+                || vehicle.isAttackCooldownChanched())) {
             battleFieldCell.addVehicle(vehicle);
             MyStrategy.enemyField.addVehicleToCell(battleFieldX, battleFieldY, vehicle);
         }
@@ -72,21 +84,6 @@ public class BattleField {
 
     public int getWidth() {
         return pFieldWidth;
-    }
-
-    public PPField calcEnemyFieldAvgValues(PPField field, float damage, boolean isAerial) {
-        PPField avgField = new PPField(field.getWidth(), field.getHeight());
-        for (int y = 0; y < field.getHeight(); y++) {
-            for (int x = 0; x < field.getWidth(); x++) {
-                if (field.getFactor(x, y) > 0) {
-                    BattleFieldCell cell = getBattleFieldCell(x,y);
-                    Map<Long, SmartVehicle> vehicles = cell.getVehicles(MyStrategy.getEnemyPlayerId());
-                    Long count = vehicles.values().stream().filter(vehicle -> vehicle.getDurability() > 0 && vehicle.isAerial() == isAerial).count();
-                    avgField.setFactor(x, y,   field.getFactor(x,y) / count.intValue() - damage);
-                }
-            }
-        }
-        return avgField;
     }
 
     public int getHeight() {
@@ -101,19 +98,69 @@ public class BattleField {
         return battleField[point.getIntY()][point.getIntX()];
     }
 
-    public PPFieldEnemy getDamageField(VehicleType type) {
-        PPFieldEnemy damageField = new PPFieldEnemy(getWidth(), getHeight());
-        for (int j = 0; j < getHeight(); j++) {
-            for (int i = 0; i < getHeight(); i++) {
-                if (getBattleFieldCell(i, j).getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
-                    int damage = 0;
-                    for (Map.Entry<VehicleType, Integer> entry : getBattleFieldCell (i, j).getEnemyVehiclesTypeCountMap().entrySet()) {
-                        damage += SmartVehicle.getEnemyDamage(type, entry.getKey()) * entry.getValue();
+    public Army getTargetArmy(ArmyAlly allyArmy) {
+        Set<VehicleType> allyTypes = allyArmy.getVehiclesType();
+        List<Army> enemyArmies = MyStrategy.battleField.defineEnemiesArmy();
+        Army targetArmy = null;
+        for (Army enemyArmy : enemyArmies) {
+            for (VehicleType enemyArmyType : enemyArmy.getVehiclesType()) {
+                for (VehicleType allyType : allyTypes) {
+                    if (SmartVehicle.isVictimType(allyType, enemyArmyType)) {
+                        return enemyArmy;
                     }
-                    damageField.addLinearPPValue(i, j, damage);
+
+                    if (SmartVehicle.isTargetVehicleType(allyType, enemyArmyType)) {
+                        targetArmy = enemyArmy;
+                    }
                 }
             }
         }
-        return damageField;
+
+        return targetArmy;
+    }
+
+    public List<Army> defineEnemiesArmy() {
+
+        if (enemyArmiesCalcTick == MyStrategy.world.getTickIndex()) {
+            return enemyArmies;
+        }
+
+        Set<Point2D> visitedCells = new HashSet();
+        enemyArmies = new ArrayList();
+        for (int j = 0; j < getHeight(); j++) {
+            for (int i = 0; i < getWidth(); i++) {
+                Point2D point = new Point2D(i,j);
+                if (battleField[j][i].getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
+                    if (!visitedCells.contains(point)) {
+                        Army enemyArmy = new Army();
+                        recursiveDeepSearchEnemies(point, visitedCells, enemyArmy);
+                        enemyArmies.add(enemyArmy);
+                        if (enemyArmies.size() > CustomParams.enemyArmiesMaxSize) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return enemyArmies;
+    }
+
+    public void recursiveDeepSearchEnemies(Point2D point, Set<Point2D> visitedCells, Army enemyArmy) {
+        for (int j = -1; j <= 1  && (point.getIntY() + j) < getHeight(); j++) {
+            for (int i = -1; i <= 1 && (point.getIntX() + i) < getWidth(); i++) {
+                if (point.getIntY() + j < 0 || point.getIntX() + i < 0) {
+                    continue;
+                }
+                Point2D visitedPoint = new Point2D(point.getIntX() + i, point.getIntY() + j);
+                BattleFieldCell cell = getBattleFieldCell(visitedPoint);
+
+                if (!visitedCells.contains(visitedPoint) &&
+                        cell.getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
+                    cell.getVehicles(MyStrategy.getEnemyPlayerId()).values().forEach(vehicle -> enemyArmy.addVehicle(vehicle));
+                    visitedCells.add(visitedPoint);
+                    recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy);
+                }
+            }
+        }
     }
 }

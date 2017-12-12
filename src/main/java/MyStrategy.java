@@ -74,6 +74,9 @@ public final class MyStrategy implements Strategy {
         try {
             this.init(me, world, game, move);
             this.updateWorld(world);
+
+            //testPPField(world);
+
             this.commander.check();
             this.commander.logic();
 
@@ -85,6 +88,16 @@ public final class MyStrategy implements Strategy {
             System.out.println("Out of tick " + world.getTickIndex() + " commands count " + player.getRemainingActionCooldownTicks());
         }
     }
+
+    /*
+    public void testPPField (World world) {
+        Vehicle vehicle = Arrays.stream(world.getNewVehicles()).filter(vehicle1 -> vehicle1.getPlayerId() == 1 && vehicle1.getType() == VehicleType.HELICOPTER).findFirst().get();
+        SmartVehicle smartVehicle = new SmartVehicle(vehicle, this);
+        this.previousVehiclesStates.put(vehicle.getId(), new SmartVehicle(vehicle, this));
+        battleField.addVehicle(smartVehicle);
+        //battleField.addVehicle(smartVehicle);
+        enemyField.print();
+    }*/
 
     public void updateWorld(World world) {
         updateVehicles(world);

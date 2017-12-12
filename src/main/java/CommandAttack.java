@@ -5,24 +5,9 @@ import java.util.Map;
 
 public class CommandAttack extends Command {
 
-
-    private Map<Long, Integer> durabilityBeforeAttack;
-    private Integer damageSum;
-
     private TargetPoint target;
-    private Map<Long, SmartVehicle> attackedEnemies;
-    private Map<VehicleType, Integer> attackedEnemiesTypes;
 
     public CommandAttack () {
-        durabilityBeforeAttack = new HashMap<>();
-        attackedEnemies = new HashMap<>();
-        attackedEnemiesTypes = new HashMap<>();
-        damageSum = 0;
-        attackedEnemiesTypes.put(VehicleType.HELICOPTER, 0);
-        attackedEnemiesTypes.put(VehicleType.FIGHTER, 0);
-        attackedEnemiesTypes.put(VehicleType.TANK, 0);
-        attackedEnemiesTypes.put(VehicleType.IFV, 0);
-        attackedEnemiesTypes.put(VehicleType.ARRV, 0);
     }
 
     @Override
@@ -40,101 +25,53 @@ public class CommandAttack extends Command {
             return;
         }
 
+        if (target.vector.magnitude() > CustomParams.pathSegmentLenght){
+            target.vector = target.vector.normalize().multiply(CustomParams.pathSegmentLenght);
+        }
+
         CommandMove move = new CommandMove(target);
         setParentCommand(move);
-
-        for (SmartVehicle vehicle : army.getVehicles().values()) {
-            if (vehicle.getDurability() > 0) {
-                durabilityBeforeAttack.put(vehicle.getId(), vehicle.getDurability());
-            }
-        }
     }
-    private boolean heat = false;
-    private boolean rageModeOn = false;
 
-    private CommandScale scale;
-    private CommandRotate rotateLeft;
-    private CommandRotate rotateRight;
-    private CommandMove moveAttack;
     public boolean check(ArmyAllyOrdering army) {
-        boolean checkResult = super.check(army);
 
-        if (scale != null && scale.isFinished() && moveAttack == null) {
+        PPFieldEnemy damageField = army.getDamageField();
 
-            if (rotateLeft == null) {
-                army.getForm().recalc(army.getVehicles());
-                rotateLeft = new CommandRotate(Math.PI/2, army.getForm().getAvgPoint(), 10);
-                setParentCommand(rotateLeft);
-                checkResult = false;
-            } else if (rotateLeft.isFinished() && rotateRight == null) {
-                rotateRight = new CommandRotate(-Math.PI/2, army.getForm().getAvgPoint(), 10);
-                setParentCommand(rotateRight);
-                checkResult = false;
-            }
-
-        }
-
-        if (damageSum > 0 && (rageModeOn == false)) {//go to defence command need
-            Integer inflictedDamage = 0;
-            for (Map.Entry<Long, SmartVehicle> entry : attackedEnemies.entrySet()) {
-                inflictedDamage += entry.getValue().getDurability() - MyStrategy.getVehicles().get(entry.getKey()).getDurability();
-            }
-            Integer cooldownSum = 0;
-            Integer damageSumAtTick = 0;
-            for (Map.Entry<Long, Integer> entry : durabilityBeforeAttack.entrySet()) {
-                damageSumAtTick +=  (entry.getValue() - MyStrategy.getVehicles().get(entry.getKey()).getDurability());
-                cooldownSum += MyStrategy.getVehicles().get(entry.getKey()).getRemainingAttackCooldownTicks();
-            }
-
-            if (heat == false && cooldownSum > 0) {
-                try {
-                    getParentCommand().complete();
-                    scale = new CommandScale(10, army.getForm().getAvgPoint());
-                    setParentCommand(scale);
-                    checkResult = false;
-                } catch (Exception e) {
-                    e.printStackTrace();
+        for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
+            if (vehicle.getDurability() > 0) {
+                Point2D transformedPoint = damageField.getTransformedPoint(vehicle.getPoint());
+                if (damageField.getFactor(transformedPoint) > 10) {//fuck this shit run forest run
+                    complete();
+                    army.addCommand(new CommandDefence());
+                    break;
                 }
-                heat = true;
-            } else  if ((damageSumAtTick - inflictedDamage) > 100) {
-                complete();
-                army.getForm().recalc(army.getVehicles());
-                army.addCommand(new CommandDefence());
-                return true;
-            } else if ((inflictedDamage - damageSumAtTick) > 100 && (moveAttack == null)) {
-                complete();
-                try {
-                    moveAttack = new CommandMove(target.vector.normalize().multiply(7), false );
-                    setParentCommand(moveAttack);
-                    checkResult = false;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
             }
         }
 
-        damageSum = 0;
-        return checkResult;
+        return super.check(army);
     }
 
     public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {
-        if (army.containVehicle(vehicle.getId())) {
-            army.putVehicle(vehicle);
-            damageSum += (durabilityBeforeAttack.get(vehicle.getId()) - vehicle.getDurability());
-        }
 
-        if (!vehicle.isAlly()
-                &&
-                army.getForm().isPointInDistance(vehicle.getPoint(),  CustomParams.enemyVisionRange)) {//@TODO might be high perfomance operation
+        if (!vehicle.isAlly() && SmartVehicle.isTargetVehicleType(army.getVehiclesType().iterator().next(), vehicle.getType())) {
 
-            if (!attackedEnemies.containsKey(vehicle.getId())) {
-                attackedEnemies.put(vehicle.getId(), vehicle);
-                attackedEnemiesTypes.put(vehicle.getType(), attackedEnemiesTypes.get(vehicle.getType()) + 1);
-            }
+            if (army.getForm().isPointInDistance(vehicle.getPoint(), vehicle.getAttackRange(vehicle.isAerial()))) {
+                army.getForm().recalc(army.getVehicles());
 
-            if (vehicle.getDurability() == 0) {
-                attackedEnemiesTypes.put(vehicle.getType(), attackedEnemiesTypes.get(vehicle.getType()) - 1);
+                Point2D enemyArmyVector = vehicle.getPoint().subtract(army.getForm().getAvgPoint());
+
+                SmartVehicle prevVehicleState = MyStrategy.getVehiclePrevState(vehicle.getId());
+                Point2D enemyMoveDirection = vehicle.getPoint().subtract(prevVehicleState.getPoint());
+
+                double angle = enemyArmyVector.angle(enemyMoveDirection);
+                if ((angle < 180 / 6 && angle > -180 / 6) || (angle > (2 * 180 - 180 / 6) && angle < (2 * 180 + 180 / 6))) { //enemy running
+                    //@TODO do something to catch them
+                } else if ((angle < 180 + 180 / 6 && angle > 180  - 180 / 6)) {
+                    army.addCommand(new CommandScale(10));
+                    army.addCommand(new CommandRotate(Math.PI / 2, army.getForm().getAvgPoint() , 20));
+                    army.addCommand(new CommandRotate(-Math.PI / 2, army.getForm().getAvgPoint() , 20));
+                    complete();
+                }
             }
         }
     }

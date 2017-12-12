@@ -9,7 +9,6 @@ import java.util.function.Function;
 public class BattleFieldCell {
 
     private Map<Long, SmartVehicle> vehicles[];
-    private Map<VehicleType, Integer> enemyVehiclesTypeCountMap;
 
     protected Integer x;
     protected Integer y;
@@ -29,7 +28,6 @@ public class BattleFieldCell {
 
         minMaxXY = new Double[CustomParams.max_player_index][4];
         vehicles = new SortedMap[2];
-        enemyVehiclesTypeCountMap = new HashMap<>();
 
         for (int playerIndex = 0; playerIndex < CustomParams.max_player_index; playerIndex++) {
             vehicles[playerIndex] = new TreeMap<>();
@@ -48,18 +46,8 @@ public class BattleFieldCell {
         int pId = playerIdToIndex.apply(vehicle.getPlayerId());
         minMaxUpdate(vehicle);
         vehicles[pId].put(vehicle.getId(), vehicle);
-        if (!vehicle.isAlly()) {
-            operateVehicleType(vehicle.getType(), 1);
-        }
     }
 
-    private void operateVehicleType(VehicleType type, int operate) {
-        Integer typeCount = 0;
-        if (enemyVehiclesTypeCountMap.containsKey(type)) {
-            typeCount = enemyVehiclesTypeCountMap.get(type);
-        }
-        enemyVehiclesTypeCountMap.put(type, typeCount + operate);
-    }
 
     protected void minMaxUpdate(SmartVehicle vehicle) {
         int pId = playerIdToIndex.apply(vehicle.getPlayerId());
@@ -76,10 +64,6 @@ public class BattleFieldCell {
     public void remove(SmartVehicle vehicle) {
         vehicles[playerIdToIndex.apply(vehicle.getPlayerId())].remove(vehicle.getId());
         recalculationMaxMin(playerIdToIndex.apply(vehicle.getPlayerId()));
-
-        if (!vehicle.isAlly()) {
-            operateVehicleType(vehicle.getType(), -1);
-        }
     }
 
     protected void recalculationMaxMin (Integer playerId) {
@@ -144,7 +128,4 @@ public class BattleFieldCell {
         return new Point2D(x,y);
     }
 
-    public Map<VehicleType, Integer> getEnemyVehiclesTypeCountMap() {
-        return enemyVehiclesTypeCountMap;
-    }
 }

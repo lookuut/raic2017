@@ -105,6 +105,9 @@ public class SmartVehicle  {
         this.point.setY(vehicle.getY());
     }
 
+    public int getMaxDurability () {
+        return maxDurability;
+    }
 
     public double getX() {
         return x;
@@ -155,6 +158,10 @@ public class SmartVehicle  {
         return groundDefence;
     }
 
+    public int getAttackCooldownTicks() {
+        return attackCooldownTicks;
+    }
+
     public VehicleType getType() {
         return this.type;
     }
@@ -181,6 +188,14 @@ public class SmartVehicle  {
      */
     public boolean isVehicleMoved() {
         return strategy.getVehiclePrevState(getId()) == null || getX() != strategy.getVehiclePrevState(getId()).getX() || getY() != strategy.getVehiclePrevState(getId()).getY();
+    }
+
+    public boolean isDurabilityChanched () {
+        return strategy.getVehiclePrevState(getId()) == null || strategy.getVehiclePrevState(getId()).getDurability() != getDurability();
+    }
+
+    public boolean isAttackCooldownChanched () {
+        return strategy.getVehiclePrevState(getId()) == null || strategy.getVehiclePrevState(getId()).getRemainingAttackCooldownTicks() != getRemainingAttackCooldownTicks();
     }
 
     public boolean getSelected () {

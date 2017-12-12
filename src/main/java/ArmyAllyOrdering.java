@@ -104,7 +104,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
         }
 
         Set<VehicleType> types = getVehiclesType();
-        PPField sumPPFields = MyStrategy.enemyField.getVehicleTypesField(types);
+        PPField sumPPFields = MyStrategy.enemyField.getDamageField(types);
 
         Track movingAerialArmyTrack = new Track();
         Track movingTerrainArmyTrack = new Track();
@@ -148,12 +148,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
             }
         }
 
-        //what should we do with limits
         return sumPPFields.searchPath(this, command.getTargetVector().add(getForm().getAvgPoint()), trackMap, target);
     }
 
-    public double getMinSpeed() {
-        SmartVehicle vehicle = getForm().getEdgesVehicles().values().stream().findFirst().get();
-        return vehicle.getMinSpeed();
-    }
 }

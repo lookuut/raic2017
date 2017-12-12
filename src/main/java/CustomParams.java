@@ -1,23 +1,22 @@
 public class CustomParams {
     //path search
-    public static float allyUnitPPFactor = 10000;
+    public static float allyUnitPPFactor = 1000000;
     public static int pathFinderSectorCount = 24;
     public static int pathSegmentLenght = 60;
-    public static float minPathFactor = 5000;
+
     public static float borderFactor = 1000;
     //search safety point sector count
     public static int searchSafetyZoneSectorCount = 12;
     public static int safetyDistance = 160;
     public static int dangerRadious = 80;
-    public static int enemyVisionRange = 30;
 
     public static float armyScaleFactor = 0.1F;
-    public static int armyAfterCreateTimeWait = 30;
+    public static int enemyArmiesMaxSize = 20;
 
-    public static int maxLinearPPRange = 3;
+    public static int maxLinearPPRange = 10;
     public static int noAssignGroupId = 0;
 
-    public static double positionAtMapEps = 0.5;
+
     public static double onFacilityEps = 2.0;
     public static double onHealerEps = 2.0;
 
@@ -54,5 +53,8 @@ public class CustomParams {
     public static double percentOfHeatedVehicles = 0.7;
     //facilities
     public static int maxGotoSiegeArmyCount = 2;
+
+    //compact
+    public static int armyCompactTimeout = 200;
 
 }

@@ -8,8 +8,9 @@ import java.util.List;
  */
 public class PPField {
     private float field[][];
-    //dirty init here
+
     private float minValue;
+    private float maxValue;
 
     private int width;
     private int height;
@@ -19,13 +20,26 @@ public class PPField {
         this.width = width;
         this.height = height;
         minValue = Float.MAX_VALUE;
+        maxValue = Float.MIN_VALUE;
     }
 
     public void rehreshMinValue() {
         minValue = Float.MAX_VALUE;
     }
 
-    public void addLinearPPValue(int x, int y, float factor) {
+    public double cellSize () {
+        return MyStrategy.world.getWidth() / getWidth();
+    }
+
+    public float getMaxValue () {
+        return maxValue;
+    }
+
+    public float getMinValue () {
+        return minValue;
+    }
+
+    public void addLinearPPValue(int x, int y, double factor, Set<Point2D> exceptPoints) {
 
         for (int j = -CustomParams.maxLinearPPRange; j <= CustomParams.maxLinearPPRange; j++) {
             for (int i = -CustomParams.maxLinearPPRange; i <= CustomParams.maxLinearPPRange; i++) {
@@ -33,23 +47,45 @@ public class PPField {
                         x + i < getWidth() &&
                         y + j >= 0 &&
                         y + j < getHeight() &&
-                        i * i + j * j <= CustomParams.maxLinearPPRange * CustomParams.maxLinearPPRange
+                        i * i + j * j <= CustomParams.maxLinearPPRange * CustomParams.maxLinearPPRange &&
+                        !exceptPoints.contains(new Point2D(x + i, y + j))
                         )
                 {
                     float divide = (float)(1 + Math.abs(j) + Math.abs(i));
-                    double value = factor > 0 ? Math.ceil(factor / divide) : Math.floor(factor / divide);
-                    addFactor(x + i, y + j, (float)value);
+                    float value = factor >= 0 ? (float)Math.floor(factor / divide) : (float)Math.ceil(factor / divide);
+                    addFactor(x + i, y + j, value);
                 }
             }
         }
     }
 
-    public void setFactor(int x, int y, float factor) {
+    public void addExponentionalFactor(int x, int y, double factor, Set<Point2D> exceptPoints) {
+        for (int j = -CustomParams.maxLinearPPRange; j <= CustomParams.maxLinearPPRange; j++) {
+            for (int i = -CustomParams.maxLinearPPRange; i <= CustomParams.maxLinearPPRange; i++) {
+                if (x + i >= 0 &&
+                        x + i < getWidth() &&
+                        y + j >= 0 &&
+                        y + j < getHeight() &&
+                        i * i + j * j <= CustomParams.maxLinearPPRange * CustomParams.maxLinearPPRange
+                        && !exceptPoints.contains(new Point2D(x + i, y + j))
+                        )
+                {
+
+                    float distance = (float)Math.sqrt(i * i + j * j);
+
+                    double divide = factor / Math.exp(Math.abs(distance));
+                    double value = factor > 0 ? Math.ceil(divide * 1000) / 1000 : Math.floor(divide * 1000) / 1000;
+                    addFactor(x + i, y + j, (float)value);
+                }
+            }
+        }
+    }
+    public void setFactor(int x, int y, double factor) {
         if (minValue > factor) {
-            minValue = factor;
+            minValue = (float)factor;
         }
 
-        this.field[y][x] = factor;
+        this.field[y][x] = (float)factor;
     }
 
     public void addFactor(Point2D point, float factor) {
@@ -61,9 +97,15 @@ public class PPField {
         if (minValue > this.field[y][x]) {
             minValue = this.field[y][x];
         }
+        if (maxValue < this.field[y][x]) {
+            maxValue = this.field[y][x];
+        }
     }
     public float getFactor (int x, int y) {
         return field[y][x];
+    }
+    public float getFactor (Point2D point) {
+        return field[(int)Math.floor(point.getY())][(int)Math.floor(point.getX())];
     }
 
     public void sumField(PPField localField) {
@@ -72,12 +114,15 @@ public class PPField {
     }
 
     public static PPField sumField(PPField field1, PPField field2) {
+        return PPField.sumField(field1, field2, 1);
+    }
+    public static PPField sumField(PPField field1, PPField field2, int operate) {
         PPField sum = new PPField(field1.getWidth(), field1.getHeight());
 
         for (int y = 0; y < sum.getHeight(); y++) {
             for (int x = 0; x < sum.getWidth(); x++) {
                 if (field1.getFactor(x, y) > 0 || field2.getFactor(x, y) > 0) {
-                    sum.addFactor(x, y, field1.getFactor(x, y) + field2.getFactor(x, y));
+                    sum.addFactor(x, y, field1.getFactor(x, y) + operate * field2.getFactor(x, y));
                 }
             }
         }
@@ -110,8 +155,19 @@ public class PPField {
     }
 
     public void print() {
-        System.out.println(Arrays.deepToString(field).replaceAll("],", "]," + System.getProperty("line.separator")));
+        //System.out.println(Arrays.deepToString(field).replaceAll("],", "]," + System.getProperty("line.separator")));
+        printCuttedFloats(100);
         System.out.println("==========================================>");
+    }
+
+    public void printCuttedFloats(int tailSize) {
+        for (int y = 0; y < getHeight(); y++) {
+            String row = "";
+            for (int x = 0; x < getWidth(); x++) {
+                row += Math.ceil(field[y][x] * tailSize)/ tailSize + " ";
+            }
+            System.out.println(row);
+        }
     }
 
     public List<Point2D> getMinValueCells() {
@@ -331,13 +387,35 @@ public class PPField {
         double maxHeight = MyStrategy.world.getHeight();
         double factorSum = getFactor((int)Math.floor(tStartX / propose), (int)Math.floor(tStartY / propose));
         Integer intersectCellsCount = 1;
+        if (
+                (
+                        Math.floor(voxelEndPoint.getY()) != Math.floor(voxelStartPoint.getY()) ||
+                        Math.floor(voxelEndPoint.getX()) != Math.floor(voxelStartPoint.getX())
+                ) &&
+                        Math.floor(voxelEndPoint.getX()) >= 0 && Math.floor(voxelEndPoint.getY()) >= 0
+                        &&
+                        Math.floor(voxelEndPoint.getX()) < maxWidth && Math.floor(voxelEndPoint.getY()) < maxHeight
+
+                ) {
+
+            factorSum += getFactor((int)Math.floor(voxelEndPoint.getX()), (int)Math.floor(voxelEndPoint.getY()));
+            intersectCellsCount++;
+        }
 
         while (
+                ((
+                stepX > 0 && Math.floor((tStartX + stepX) / propose) < Math.floor(voxelEndPoint.getX())
+                        ||
+                stepY > 0 && Math.floor((tStartY + stepY) / propose) < Math.floor(voxelEndPoint.getY())
+                )
+                        ||
                 (
-                        Math.floor(tStartX / propose) < Math.floor(voxelEndPoint.getX())
-                                ||
-                        Math.floor(tStartY / propose) < Math.floor(voxelEndPoint.getY())
-                ) &&
+                stepX < 0 && Math.floor((tStartX + stepX) / propose) > Math.floor(voxelEndPoint.getX())
+                        ||
+                stepY < 0 && Math.floor((tStartY + stepY) / propose) > Math.floor(voxelEndPoint.getY())
+                ))
+
+                        &&
                     tStartX + stepX < maxWidth
                     &&
                     tStartX + stepX >= 0

@@ -47,30 +47,38 @@ public class ArmyDivisions {
     public void setEmptyBehaviourTree(ArmyAllyOrdering army) {
         BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
 
-        BTreeNode isHaveEnemyCond = new BTreeNodeCondition(
+
+
+        BTreeNode isGotoHealCond = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal() && armyLocal.isAerial() && armyByType.get(VehicleType.ARRV).size() > 0),
                 army
         );
 
-        isHaveEnemyCond.addChildNode(new BTreeAction(() -> new CommandHeal(this)));
+        isGotoHealCond.addChildNode(new BTreeAction(() -> new CommandHeal(this)));
 
-        BTreeNode isGotoHealCond = new BTreeNodeCondition(
+        BTreeNode isNeedToCompact = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isNeedToCompact()),
+                army
+        );
+        isGotoHealCond.addChildNode(isNeedToCompact);
+        isNeedToCompact.addChildNode(new BTreeAction(() -> new CommandCompact()));
+
+        BTreeNode isHaveEnemyCond = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> army.isHaveEnemy()),
                 army
         );
-
-        isHaveEnemyCond.addChildNode(isGotoHealCond);
-        isGotoHealCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
+        isNeedToCompact.addChildNode(isHaveEnemyCond);
+        isHaveEnemyCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
 
         BTreeNode isHaveFacility = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> !army.isAerial() && MyStrategy.isHaveFacilities()),
                 army
         );
-        isGotoHealCond.addChildNode(isHaveFacility);
+        isHaveEnemyCond.addChildNode(isHaveFacility);
         isHaveFacility.addChildNode(new BTreeAction(() -> new CommandSiegeFacility()));
         isHaveFacility.addChildNode(new BTreeAction(() -> new CommandDefence()));
 
-        bTree.addRoot(isHaveEnemyCond);
+        bTree.addRoot(isGotoHealCond);
         army.setBehaviourTree(bTree);
     }
 

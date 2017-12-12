@@ -9,6 +9,7 @@ public class CommandCompact extends Command {
         scale.check(army);
         if (rotate.isFinished() && scale.isFinished()) {
             complete();
+            army.setLastCompactTick(MyStrategy.world.getTickIndex());
             return true;
         }
 

@@ -10,19 +10,14 @@ public class EnemyField {
     private Integer lastUpdateNuclearAttackRatingTick = -1;
     private SortedSet<NuclearAttackPoint> nuclearAttackPointsRating;
 
-
-    //be attention with calc avg values
-    private PPFieldEnemy aerialToTerrainEnemyField;
-    private PPFieldEnemy aerialToAerialEnemyField;
-    private PPFieldEnemy terrainToAerialEnemyField;
-    private PPFieldEnemy terrainToTerrainEnemyField;
-
-
     private PPFieldEnemy enemyField;
 
     private Integer width;
     private Integer height;
     private BattleField battleField;
+
+    private DamageField enemyDamageField;
+    private DamageField allyDamageField;
 
     public EnemyField(BattleField battleField) {
         this.battleField = battleField;
@@ -31,12 +26,9 @@ public class EnemyField {
 
         enemyField = new PPFieldEnemy(width, height);
 
-        aerialToTerrainEnemyField = new PPFieldEnemy(width, height);
-        aerialToAerialEnemyField = new PPFieldEnemy(width, height);
-        terrainToAerialEnemyField = new PPFieldEnemy(width, height);
-        terrainToTerrainEnemyField = new PPFieldEnemy(width, height);
-
         nuclearAttackPointsRating = new TreeSet<>();
+        enemyDamageField = new DamageField(width, height);
+        allyDamageField = new DamageField(width, height);
     }
 
     public int getWidth() {
@@ -48,71 +40,63 @@ public class EnemyField {
     }
 
     /**
-     * @param allyVehicle
+     * @param types
      * @return
      */
-    public PPField getEnemyField(SmartVehicle allyVehicle) throws Exception {
-        if (allyVehicle.getType() == VehicleType.FIGHTER) {
-            return battleField.calcEnemyFieldAvgValues(aerialToAerialEnemyField, allyVehicle.getAerialDamage(), true);
-        }
-        if (allyVehicle.getType() == VehicleType.HELICOPTER) {
+    public PPField getEnemyDamageField(Set<VehicleType> types) throws Exception {
+        PPFieldEnemy damageField = new PPFieldEnemy(getWidth(), getHeight());
 
-            PPField aeToAeAvgEnemyField = battleField.calcEnemyFieldAvgValues(aerialToAerialEnemyField, allyVehicle.getAerialDamage(), true);
-            PPField aeToTerAvgEnemyField = battleField.calcEnemyFieldAvgValues(aerialToTerrainEnemyField, allyVehicle.getGroundDamage(), false);
-            aeToAeAvgEnemyField.sumField(aeToTerAvgEnemyField);
-            return aeToAeAvgEnemyField;
+        for (VehicleType type : types) {
+            damageField.sumField(enemyDamageField.getVehicleTypeDamageField(type));
         }
 
-        if (allyVehicle.getType() == VehicleType.TANK || allyVehicle.getType() == VehicleType.IFV) {
-            PPField aeToAeAvgEnemyField = battleField.calcEnemyFieldAvgValues(terrainToAerialEnemyField, allyVehicle.getAerialDamage(), true);
-            PPField aeToTerAvgEnemyField = battleField.calcEnemyFieldAvgValues(terrainToTerrainEnemyField, allyVehicle.getGroundDamage(), false);
-            aeToAeAvgEnemyField.sumField(aeToTerAvgEnemyField);
-            return aeToAeAvgEnemyField;
+        return damageField;
+    }
+
+    /**
+     * @param types
+     * @return
+     */
+    public PPFieldEnemy getDamageField(Set<VehicleType> types) {
+        PPFieldEnemy damageField = new PPFieldEnemy(getWidth(), getHeight());
+
+        for (VehicleType type : types) {
+            if (type == VehicleType.ARRV) {
+                damageField.sumField(enemyDamageField.getVehicleTypeDamageField(VehicleType.TANK));
+            } else {
+                damageField.sumField(enemyDamageField.getVehicleTypeDamageField(type));
+                damageField.operateField(allyDamageField.getVehicleTypeDamageField(type), -1);
+            }
         }
 
-        throw new Exception("Cant attack type search enemy " + allyVehicle.getType().toString());
+        return damageField;
     }
 
     /**
      * @param type
      * @return
      */
-    public PPFieldEnemy getDamageField(VehicleType type) throws Exception {
-        return battleField.getDamageField(type);
+    public PPField getDamageField(VehicleType type) {
+        return PPField.sumField(enemyDamageField.getVehicleTypeDamageField(type), allyDamageField.getVehicleTypeDamageField(type), -1);
     }
+
 
 
     public void removeFromCellVehicle(int x, int y, SmartVehicle vehicle) {
-        if (!vehicle.isAlly()) {
-            updateCell(x, y, vehicle, -1);
-        }
+        updateCell(x, y, vehicle, -1);
     }
 
     public void addVehicleToCell(int x, int y, SmartVehicle vehicle) {
-        if (!vehicle.isAlly()) {
-            updateCell(x, y, vehicle, 1);
-        }
+        updateCell(x, y, vehicle, 1);
     }
 
     protected void updateCell(int x, int y, SmartVehicle vehicle, int operator) {
-
-        aerialToAerialEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(true, true) * operator);
-        aerialToTerrainEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(true, false) * operator);
-
-        terrainToAerialEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(false, true) * operator);
-        terrainToTerrainEnemyField.addFactor(x, y, vehicle.getDefencePPFactor(false, false) * operator);
-
-        enemyField.addFactor(x, y, operator);
-    }
-
-
-    public PPField getVehicleTypesField (Set<VehicleType> vehicleTypes) throws Exception{
-        PPField sum = new PPField(width, height);
-        for (VehicleType type : vehicleTypes) {
-            sum.sumField(getDamageField(type));
+        if (vehicle.isAlly()) {
+            allyDamageField.addFactor(x, y, vehicle, operator);
+        } else {
+            enemyDamageField.addFactor(x, y, vehicle, operator);
+            enemyField.addFactor(x, y, operator);
         }
-
-        return sum;
     }
 
     public Point2D onDanger(Set<VehicleType> types, Point2D armyCenter, double dangerRadious) throws Exception {
@@ -120,7 +104,7 @@ public class EnemyField {
         int propose = (int)(MyStrategy.world.getWidth() / getWidth());
         int intDangerRadoius = (int)Math.floor(dangerRadious / propose);
         Point2D armyTransformedCentre = new Point2D(Math.round(armyCenter.getX() / propose), Math.round(armyCenter.getY() / propose));
-        PPFieldEnemy damageField = getDamageField(types.iterator().next());//@TODO do it well;
+        PPFieldEnemy damageField = getDamageField(types);
 
         Function<Integer, Point2D> xAxisFunction = (y) -> {
             try {
@@ -168,6 +152,7 @@ public class EnemyField {
 
         double minFactor = Double.MAX_VALUE;
         Point2D minFactorVec = null;
+        PPFieldEnemy field = getDamageField(vehicleTypes);
         for (int angleSector = 0; angleSector < CustomParams.searchSafetyZoneSectorCount; angleSector++) {
             double angle = (angleSector % 2 == 1 ? -1 : 1) * angleSector * (2 * Math.PI) / CustomParams.searchSafetyZoneSectorCount;
             Point2D safetyPointVector = direction.turn(angle).multiply(CustomParams.safetyDistance);
@@ -177,11 +162,7 @@ public class EnemyField {
                 continue;
             }
 
-            double factor = 0;
-            for (VehicleType vehicleType : vehicleTypes) {
-                PPFieldEnemy field = getDamageField(vehicleType);
-                factor += field.getPointRadiousFactorSum( field.getTransformedPoint(escapePoint.add(safetyPointVector)), CustomParams.safetyDistance);
-            }
+            double factor = field.getPointRadiousFactorSum( field.getTransformedPoint(escapePoint.add(safetyPointVector)), CustomParams.safetyDistance);;
 
             if (factor < minFactor) {
                 minFactorVec = destPoint;
@@ -269,5 +250,8 @@ public class EnemyField {
     }
 
     public void print() {
+        //enemyDamageField.print();
+        System.out.println("Ally=================================================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        allyDamageField.print();
     }
 }

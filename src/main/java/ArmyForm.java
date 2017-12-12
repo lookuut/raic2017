@@ -132,10 +132,12 @@ public class ArmyForm {
         Point2D maxDistancePoint = null;
         double maxDist = 0;
         for (SmartVehicle vehicle : edgesVehicles.values()) {
-            double dist = vehicle.getPoint().distance(fromPoint);
-            if (dist > maxDist) {
-                maxDistancePoint = vehicle.getPoint();
-                maxDist = dist;
+            if (vehicle.getDurability() > 0) {
+                double dist = vehicle.getPoint().distance(fromPoint);
+                if (dist > maxDist) {
+                    maxDistancePoint = vehicle.getPoint();
+                    maxDist = dist;
+                }
             }
         }
 
