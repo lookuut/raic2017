@@ -1,8 +1,3 @@
-import model.VehicleType;
-
-import java.util.HashMap;
-import java.util.Map;
-
 public class CommandAttack extends Command {
 
     private TargetPoint target;
