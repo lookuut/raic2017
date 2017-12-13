@@ -61,7 +61,10 @@ public class CommandAttack extends Command {
                 Point2D enemyArmyVector = vehicle.getPoint().subtract(army.getForm().getAvgPoint());
 
                 SmartVehicle prevVehicleState = MyStrategy.getVehiclePrevState(vehicle.getId());
-                Point2D enemyMoveDirection = vehicle.getPoint().subtract(prevVehicleState.getPoint());
+                Point2D enemyMoveDirection = new Point2D(0,0);
+                if (prevVehicleState != null) {
+                    enemyMoveDirection = vehicle.getPoint().subtract(prevVehicleState.getPoint());
+                }
 
                 double angle = enemyArmyVector.angle(enemyMoveDirection);
                 if ((angle < 180 / 6 && angle > -180 / 6) || (angle > (2 * 180 - 180 / 6) && angle < (2 * 180 + 180 / 6))) { //enemy running

@@ -138,7 +138,7 @@ public class Army {
     public boolean timeToGoHeal() {
         Integer durabilitySum = getVehicles().values().stream().
                 filter(vehicle -> vehicle.getDurability() > 0).map(SmartVehicle::getDurability).reduce(0, Integer::sum);
-        return durabilitySum / (double)getVehicleCount() * 100 < CustomParams.percentOfHeatedVehicles;
+        return durabilitySum / (double)(getVehicleCount() * 100) < CustomParams.percentOfHeatedVehicles;
     }
 
     public boolean isAerial () {

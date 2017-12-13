@@ -43,7 +43,6 @@ public class CommandHeal extends Command {
         target.maxDamageValue = 200.0f;
 
         if (target.vector.magnitude() < CustomParams.onHealerEps) {
-
             complete();
             return;
         }
@@ -51,6 +50,16 @@ public class CommandHeal extends Command {
         setParentCommand(new CommandMove(target));
     }
 
+    @Override
+    public boolean check (ArmyAllyOrdering army) {
+        boolean checkResult = super.check(army);
+
+        if (checkResult) {
+            army.addCommand(new CommandWait(200));
+        }
+
+        return checkResult;
+    }
     @Override
     public void pinned(){
     }

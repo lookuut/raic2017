@@ -51,7 +51,7 @@ public class PPField {
                         !exceptPoints.contains(new Point2D(x + i, y + j))
                         )
                 {
-                    float divide = (float)(1 + Math.abs(j) + Math.abs(i));
+                    float divide = (float)((1 + Math.abs(j) + Math.abs(i)) * (1 + Math.abs(j) + Math.abs(i)));
                     float value = factor >= 0 ? (float)Math.floor(factor / divide) : (float)Math.ceil(factor / divide);
                     addFactor(x + i, y + j, value);
                 }
@@ -394,7 +394,7 @@ public class PPField {
                 ) &&
                         Math.floor(voxelEndPoint.getX()) >= 0 && Math.floor(voxelEndPoint.getY()) >= 0
                         &&
-                        Math.floor(voxelEndPoint.getX()) < maxWidth && Math.floor(voxelEndPoint.getY()) < maxHeight
+                        Math.floor(voxelEndPoint.getX()) < getWidth() && Math.floor(voxelEndPoint.getY()) < getHeight()
 
                 ) {
 

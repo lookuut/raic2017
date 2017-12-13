@@ -41,7 +41,7 @@ public class ArmyAlly extends Army {
     }
 
     public TargetPoint searchNearestEnemy() {
-        TargetPoint target = null;
+        TargetPoint target = new TargetPoint();
         try {
             target = new TargetPoint();
 

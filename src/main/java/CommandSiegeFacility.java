@@ -14,12 +14,14 @@ public class CommandSiegeFacility extends Command {
 
         facility = MyStrategy.commanderFacility.getFacilityToSiege(army);
         if (facility == null) {//no facility to siege
+            complete();
             return;
         }
         facility.addGoingToFacilityArmy(army);
         Point2D targetVec = facility.getFacilityCentre().subtract(army.getForm().getAvgPoint());
 
-        if (targetVec.magnitude() < CustomParams.onFacilityEps) {
+        if (targetVec.magnitude() < CustomParams.onFacilityEps && facility.getOwnerPlayerId() == MyStrategy.player.getId()) {
+            complete();
             return;
         }
 

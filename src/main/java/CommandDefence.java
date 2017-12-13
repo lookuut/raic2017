@@ -10,7 +10,15 @@ public class CommandDefence extends Command {
         Point2D point = army.dangerPoint();
 
         if (point == null) {//danger is gone, relax take it easy
-            setParentCommand(new CommandWait(20));
+            army.getForm().recalc(army.getVehicles());
+            Point2D mapCentre = new Point2D(MyStrategy.world.getWidth() / 2, MyStrategy.world.getHeight() / 2);
+            Point2D toCentreVec = mapCentre.subtract(army.getForm().getAvgPoint());
+            if (toCentreVec.magnitude() > 100) {
+                setParentCommand(new CommandMove(toCentreVec));
+            } else {
+                setParentCommand(new CommandWait(20));
+            }
+
             return;
         }
 
