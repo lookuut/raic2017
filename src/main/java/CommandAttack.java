@@ -1,3 +1,5 @@
+import model.VehicleType;
+
 public class CommandAttack extends Command {
 
     private TargetPoint target;
@@ -25,6 +27,12 @@ public class CommandAttack extends Command {
         }
 
         CommandMove move = new CommandMove(target);
+
+        move.setPriority(CommandPriority.Middle);
+        if (army.isAerial()) {
+            move.setPriority(CommandPriority.High);
+        }
+
         setParentCommand(move);
     }
 
@@ -35,8 +43,10 @@ public class CommandAttack extends Command {
         for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
             if (vehicle.getDurability() > 0) {
                 Point2D transformedPoint = damageField.getTransformedPoint(vehicle.getPoint());
-                if (damageField.getFactor(transformedPoint) > 10) {//fuck this shit run forest run
+                if (damageField.getFactor(transformedPoint) >= 0) {//fuck this shit run forest run
                     complete();
+                    CommandDefence defence = new CommandDefence();
+                    defence.setPriority(CommandPriority.High);
                     army.addCommand(new CommandDefence());
                     break;
                 }
@@ -65,9 +75,25 @@ public class CommandAttack extends Command {
                 if ((angle < 180 / 6 && angle > -180 / 6) || (angle > (2 * 180 - 180 / 6) && angle < (2 * 180 + 180 / 6))) { //enemy running
                     //@TODO do something to catch them
                 } else if ((angle < 180 + 180 / 6 && angle > 180  - 180 / 6)) {
-                    army.addCommand(new CommandScale(10));
-                    army.addCommand(new CommandRotate(Math.PI / 2, army.getForm().getAvgPoint() , 20));
-                    army.addCommand(new CommandRotate(-Math.PI / 2, army.getForm().getAvgPoint() , 20));
+                    if (army.isAerial()) {
+                        CommandScale scale = new CommandScale(10);
+                        CommandRotate rotate1 = new CommandRotate(Math.PI / 2, army.getForm().getAvgPoint() , 20);
+                        CommandRotate rotate2 = new CommandRotate(-Math.PI / 2, army.getForm().getAvgPoint() , 20);
+
+                        scale.setPriority(CommandPriority.High);
+                        rotate1.setPriority(CommandPriority.High);
+                        rotate2.setPriority(CommandPriority.High);
+
+                        army.addCommand(scale);
+                        army.addCommand(rotate1);
+                        army.addCommand(rotate2);
+                    } else {
+                        for (SmartVehicle edgeVehicle : army.getForm().getEdgesVehicles().values()) {
+                            if (edgeVehicle.getType() == VehicleType.TANK && edgeVehicle.getDurability() > 0) {
+
+                            }
+                        }
+                    }
                     complete();
                 }
             }

@@ -28,8 +28,9 @@ public class CommandNuclearAttack extends  Command {
                 MyStrategy.move.setVehicleId(gunner.getId());
             };
 
-            addCommand(new CommandWrapper(nuclearAttack, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
-            CommandQueue.getInstance().selectGroup(CustomParams.noAssignGroupId);
+            CommandWrapper cw = new CommandWrapper(this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId, CommandPriority.Middle);
+            cw.addCommand(nuclearAttack);
+            addCommand(cw);
             super.run(army);
         }
     }

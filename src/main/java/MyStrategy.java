@@ -31,8 +31,6 @@ public final class MyStrategy implements Strategy {
         this.previousVehiclesStates = new HashMap();
         this.vehicles = new HashMap<>();
         this.commanderFacility = new CommanderFacility();
-
-        CommandQueue.getInstance().addPriority(CustomParams.noAssignGroupId, 0);
     }
 
     protected void init(Player me, World world, Game game, Move move) throws Exception {
@@ -42,7 +40,7 @@ public final class MyStrategy implements Strategy {
         this.move = move;
 
         if (this.battleField == null) {
-            commander = new Commander(this);
+            commander = Commander.getInstance();
             battleField = new BattleField(CustomParams.tileCellSize);
             enemyField = new EnemyField(battleField);
 
@@ -75,8 +73,6 @@ public final class MyStrategy implements Strategy {
             this.init(me, world, game, move);
             this.updateWorld(world);
 
-            //testPPField(world);
-
             this.commander.check();
             this.commander.logic();
 
@@ -89,15 +85,6 @@ public final class MyStrategy implements Strategy {
         }
     }
 
-    /*
-    public void testPPField (World world) {
-        Vehicle vehicle = Arrays.stream(world.getNewVehicles()).filter(vehicle1 -> vehicle1.getPlayerId() == 1 && vehicle1.getType() == VehicleType.HELICOPTER).findFirst().get();
-        SmartVehicle smartVehicle = new SmartVehicle(vehicle, this);
-        this.previousVehiclesStates.put(vehicle.getId(), new SmartVehicle(vehicle, this));
-        battleField.addVehicle(smartVehicle);
-        //battleField.addVehicle(smartVehicle);
-        enemyField.print();
-    }*/
 
     public void updateWorld(World world) {
         updateVehicles(world);
@@ -140,6 +127,7 @@ public final class MyStrategy implements Strategy {
 
                 commander.addNoArmyVehicle(smartVehicle);
                 commander.result(smartVehicle);
+                commander.armyFormsResult(smartVehicle);
 
                 battleField.addVehicle(smartVehicle);
                 updateVehiclesInArmies.accept(smartVehicle);
@@ -155,8 +143,11 @@ public final class MyStrategy implements Strategy {
                     if (smartVehicle == null) {
                         throw new Exception("Something goes wrong with vehicles");
                     }
-                    commander.result(smartVehicle);
+
                     smartVehicle.vehicleUpdate(vehicleUpdate);
+
+                    commander.result(smartVehicle);
+                    commander.armyFormsResult(smartVehicle);
                     battleField.addVehicle(smartVehicle);
                     updateVehiclesInArmies.accept(smartVehicle);
                 } catch (Exception e) {
@@ -190,6 +181,10 @@ public final class MyStrategy implements Strategy {
     public static boolean isNuclearAttack() {
         Player player = Arrays.stream(MyStrategy.world.getPlayers()).filter(player1 -> player1.getNextNuclearStrikeTickIndex() > 0 && player1.getId() != MyStrategy.player.getId()).findFirst().orElse(null);
         return player != null;
+    }
+
+    public static boolean mayEnemyAttackNuclearSoon () {
+        return MyStrategy.world.getOpponentPlayer().getRemainingNuclearStrikeCooldownTicks() > 0 && MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() == 0;
     }
 
     public static Player nuclearAttack() {

@@ -10,16 +10,22 @@ import java.util.*;
 public class CommandQueue {
 
     private Integer tick = -1;
-
-    private HashMap<Integer, Queue<CommandWrapper>> groupedQueueMap;
-    private SortedSet<GroupPriority> prioritySortedSet;
     private Integer selectedArmyId;
 
+    private Map<CommandPriority, Queue<CommandWrapper>> groupedQueueMap;
+    private Map<CommandPriority, Integer> priorityCounter;
+    private Integer commandCounter = 0;
     private static CommandQueue instance = null;
 
     private CommandQueue () {
+
+        priorityCounter = new HashMap<>();
         groupedQueueMap = new HashMap<>();
-        prioritySortedSet = new TreeSet<>();
+        for (CommandPriority priority : CommandPriority.values()) {
+            priorityCounter.put(priority, 0);
+            groupedQueueMap.put(priority, new LinkedList<>());
+        }
+
         selectedArmyId = -1;
     }
 
@@ -31,54 +37,62 @@ public class CommandQueue {
         return instance;
     }
 
-    /**
-     * @desc change priority set, last added go to priority high
-     * @param armyId army armyId id
-     */
-    public void addPriority(Integer armyId, Integer priority) {
-        prioritySortedSet.add(new GroupPriority(armyId, priority));
-    }
-
     public void addCommand(CommandWrapper cw) {
+        groupedQueueMap.get(cw.getPriority()).add(cw);
+    }
+    private CommandWrapper runningCommands;
 
-        if (!groupedQueueMap.containsKey(cw.armyId)) {
-            groupedQueueMap.put(cw.armyId, new LinkedList<>());
+
+    private Queue<CommandWrapper> pickUpNewQueue () {
+        Queue<CommandWrapper> queue = null;
+
+        if (priorityCounter.get(CommandPriority.Low) < 2 && groupedQueueMap.get(CommandPriority.Low).size() > 0) {
+            queue = groupedQueueMap.get(CommandPriority.Low);
+        } else if (priorityCounter.get(CommandPriority.Middle) < 4 && groupedQueueMap.get(CommandPriority.Middle).size() > 0) {
+            queue = groupedQueueMap.get(CommandPriority.Middle);
+        } else if (groupedQueueMap.get(CommandPriority.High).size() > 0) {
+            queue = groupedQueueMap.get(CommandPriority.High);
+        } else if (2 * (MyStrategy.game.getBaseActionCount() - getCommandCounter()) >= tick % MyStrategy.game.getActionDetectionInterval()) {
+            for (CommandPriority priority : CommandPriority.values()) {
+                if (groupedQueueMap.get(priority).size() > 0)  {
+                    queue = groupedQueueMap.get(priority);
+                    break;
+                }
+            }
         }
 
-        groupedQueueMap.get(cw.armyId).add(cw);
+        return queue;
     }
-
     public void run(Integer tick) {
         if (tick == this.tick) {
             return;
         }
 
         if (MyStrategy.player.getRemainingActionCooldownTicks() == 0) {
-            Queue<CommandWrapper> queue = null;
 
-            if (groupedQueueMap.containsKey(selectedArmyId) && groupedQueueMap.get(selectedArmyId).size() > 0) {//if have selected armyId command run it
-                queue = groupedQueueMap.get(selectedArmyId);
-            } else {//else search commands by priority
+            if (Commander.getInstance().isThereEnemyAround(CustomParams.safetyDistance) &&
+                    MyStrategy.mayEnemyAttackNuclearSoon() &&
+                    MyStrategy.game.getBaseActionCount() - getCommandCounter() <= 2) {//if nuclear attack is possibl need two action to defence
 
-                for (GroupPriority priority : prioritySortedSet) {
-                    //if armyId have commands run it
-                    if (groupedQueueMap.containsKey(priority.getArmyId()) && groupedQueueMap.get(priority.getArmyId()).size() > 0) {
-                        queue = groupedQueueMap.get(priority.getArmyId());
-                        break;
-                    }
+            }
+
+            if (runningCommands == null || runningCommands.getQueue().size() == 0) {
+                Queue<CommandWrapper> queue = pickUpNewQueue();
+                if (queue != null) {
+                    runningCommands = queue.poll();
                 }
             }
 
-            if (queue != null) {
-                CommandWrapper cw = queue.peek();
 
-                if (selectGroup(cw.armyId)) {
-                    if (MyStrategy.world.getTickIndex() - cw.command.getRunTickIndex() >= cw.tickIndex) {
-                        cw.consumer.accept(cw.command);
-                        cw.command.setState(CommandStates.Run);
-                        queue.poll();
-                        cw.command.pinned();
-                        System.out.println("Running armyId " + cw.armyId);
+            if (runningCommands != null && runningCommands.getQueue().size() > 0) {
+                if (selectGroup(runningCommands.getArmyId())) {
+                    if (MyStrategy.world.getTickIndex() - runningCommands.getCommand().getRunTickIndex() >= runningCommands.getTickIndex()) {
+                        runningCommands.getQueue().poll().accept(runningCommands.getCommand());
+                        runningCommands.getCommand().setState(CommandStates.Run);
+                        runningCommands.getCommand().pinned();
+                        incrementGroupCounter(runningCommands);
+                        incrementCommandCounter();
+                        System.out.println("Running armyId " + runningCommands.getArmyId());
                     } else {
                         System.out.println("======================>");
                     }
@@ -87,6 +101,18 @@ public class CommandQueue {
         }
 
         this.tick = tick;
+        if (tick % MyStrategy.game.getActionDetectionInterval() == 0) {
+            for (CommandPriority priority : CommandPriority.values()) {
+                priorityCounter.put(priority, 0);
+            }
+
+            refreshCommandCounter();
+        }
+    }
+
+
+    public void incrementGroupCounter(CommandWrapper cw) {
+        priorityCounter.put(cw.getPriority(), priorityCounter.get(cw.getPriority()) + 1);
     }
 
     public boolean selectGroup(Integer armyId) {
@@ -102,8 +128,19 @@ public class CommandQueue {
 
         MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
         MyStrategy.move.setGroup(armyId);
+        incrementCommandCounter();
         System.out.println("Select armyId " + armyId);
         return false;
+    }
+
+    public void incrementCommandCounter() {
+        commandCounter++;
+    }
+    public Integer getCommandCounter() {
+        return commandCounter;
+    }
+    public void refreshCommandCounter() {
+        commandCounter = 0;
     }
 
 }

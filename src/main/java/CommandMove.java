@@ -44,7 +44,7 @@ public class CommandMove extends Command {
             return false;
         }
 
-        if (maxRunnableTick + startTick <= MyStrategy.world.getTickIndex()) {
+        if (isRun() && maxRunnableTick + startTick <= MyStrategy.world.getTickIndex()) {
             setState(CommandStates.Complete);
             return true;
         }
@@ -65,12 +65,6 @@ public class CommandMove extends Command {
             Consumer<Command> funcMove = (command) -> {
                 try {
                     army.getForm().recalc(army.getVehicles());
-                    Point2D avgPoint = new Point2D(army.getForm().getAvgPoint().getX(), army.getForm().getAvgPoint().getY());
-                    SmartVehicle nearVehicle = army.getNearestVehicle(avgPoint);
-
-                    if (nearVehicle == null) {
-                        throw new Exception("No near vehicle");
-                    }
 
                     if (withPathFinder) {
                         target.vector = army.pathFinder(this, target);
@@ -79,7 +73,18 @@ public class CommandMove extends Command {
                     if (target == null || target.vector == null) {
                         return;
                     }
-                    maxRunnableTick = Math.max(nearVehicle.getVehiclePointAtTick(target.vector), 1);
+
+                    Integer maxRunnableTick = 0;
+                    for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
+                        if (vehicle.getDurability() > 0) {
+                            Integer vehicleRunableTick = Math.max(vehicle.getVehiclePointAtTick(target.vector), 1);
+                            if (maxRunnableTick < vehicleRunableTick) {
+                                maxRunnableTick = vehicleRunableTick;
+                            }
+                        }
+                    }
+
+                    this.maxRunnableTick = maxRunnableTick;
 
                     MyStrategy.move.setAction(ActionType.MOVE);
                     MyStrategy.move.setX(target.vector.getX());
@@ -89,8 +94,9 @@ public class CommandMove extends Command {
                     e.printStackTrace();
                 }
             };
-
-            addCommand(new CommandWrapper(funcMove, this, CustomParams.runImmediatelyTick, army.getGroupId()));
+            CommandWrapper cw = new CommandWrapper(this, CustomParams.runImmediatelyTick, army.getGroupId(), getPriority());
+            cw.addCommand(funcMove);
+            addCommand(cw);
             super.run(army);
         }
     }

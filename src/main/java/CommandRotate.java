@@ -34,8 +34,12 @@ public class CommandRotate extends Command {
                 MyStrategy.move.setX(centre.getX());
                 MyStrategy.move.setY(centre.getY());
                 MyStrategy.move.setAngle(angle);
+                MyStrategy.move.setMaxSpeed(army.getMinSpeed());
             };
-            addCommand(new CommandWrapper(funcRotate, this, CustomParams.runImmediatelyTick, army.getGroupId()));
+            CommandWrapper cw = new CommandWrapper( this, CustomParams.runImmediatelyTick, army.getGroupId(), getPriority());
+            cw.addCommand(funcRotate);
+            addCommand(cw);
+
             super.run(army);
         }
     }

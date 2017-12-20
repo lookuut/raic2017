@@ -86,6 +86,24 @@ public class ArmyAlly extends Army {
         return targetEnemyMap.size() > 0;
     }
 
+    public boolean isHaveEnemyAround (double safetyDistance) {
+        if (MyStrategy.world.getTickIndex() % 10 == 0) {
+            int safetyDist = (int)Math.ceil(2 * safetyDistance * (MyStrategy.battleField.getWidth() / MyStrategy.world.getWidth()));
+            int counter = 0;
+            for (SmartVehicle vehicle : getForm().getEdgesVehicles().values()) {
+                if (vehicle.getDurability() > 0 && counter % 2 == 0) {
+                    Point2D transformedPoint = MyStrategy.battleField.pointTransform(vehicle.getPoint());
+                    if (battleField.searchEnemiesInRaious(safetyDist, transformedPoint) != null) {
+                        return true;
+                    }
+                }
+                counter++;
+            }
+        }
+
+        return false;
+    }
+
     public void setLastCompactTick(Integer tick) {
         lastCompactTick = tick;
     }

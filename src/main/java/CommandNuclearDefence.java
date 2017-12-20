@@ -1,7 +1,6 @@
+
 import model.ActionType;
 import model.Player;
-
-import java.util.function.Consumer;
 
 public class CommandNuclearDefence extends Command {
     protected Integer attackTick;
@@ -18,58 +17,42 @@ public class CommandNuclearDefence extends Command {
 
     public void run (ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
-            Consumer<Command> commandSelect = (command) -> {
-                Player player = MyStrategy.nuclearAttack();
-                if (player == null) {//nuclear attack already was passed :( @TODO boolshit code
-                    return;
+
+            Player player = MyStrategy.nuclearAttack();
+            if (player == null) {//nuclear attack already was passed :( @TODO boolshit code
+                return;
+            }
+            attackTick = player.getNextNuclearStrikeTickIndex();
+            MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
+            attackX = player.getNextNuclearStrikeX();
+            attackY = player.getNextNuclearStrikeY();
+            Point2D attackPoint = new Point2D(attackX, attackY);
+            for (ArmyAllyOrdering armyLocal : Commander.getInstance().getDivisions().getArmies().values()) {
+                if (armyLocal.getForm().isPointInDistance(attackPoint, MyStrategy.game.getTacticalNuclearStrikeRadius())) {
+                    CommandScale scale = new CommandScale(MyStrategy.game.getTacticalNuclearStrikeDelay(), attackPoint, 10);
+                    scale.setPriority(CommandPriority.High);
+                    scale.run(armyLocal);
+                    armyLocal.addCommand(scale);
+                    CommandScale compact = new CommandScale(MyStrategy.game.getTacticalNuclearStrikeDelay(), attackPoint, 0.1);
+                    compact.setPriority(CommandPriority.High);
+                    armyLocal.addCommand(compact);
+                    break;
                 }
-                attackTick = player.getNextNuclearStrikeTickIndex();
-                MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
-                attackX = player.getNextNuclearStrikeX();
-                attackY = player.getNextNuclearStrikeY();
-                MyStrategy.move.setRight(attackX + MyStrategy.game.getTacticalNuclearStrikeRadius());
-                MyStrategy.move.setLeft(attackX - MyStrategy.game.getTacticalNuclearStrikeRadius());
+            }
 
-                MyStrategy.move.setTop(attackY - MyStrategy.game.getTacticalNuclearStrikeRadius());
-                MyStrategy.move.setBottom(attackY + MyStrategy.game.getTacticalNuclearStrikeRadius());
-            };
-
-            Consumer<Command> commandDefence = (command) -> {
-                if (attackTick == null) {//@TODO boolshit code
-                    return;
-                }
-                MyStrategy.move.setAction(ActionType.SCALE);
-                MyStrategy.move.setX(attackX);
-                MyStrategy.move.setY(attackY);
-                MyStrategy.move.setFactor(10);
-            };
-
-            Consumer<Command> commandCompact = (command) -> {
-                if (attackTick == null) {//@TODO boolshit code
-                    return;
-                }
-                MyStrategy.move.setAction(ActionType.SCALE);
-                MyStrategy.move.setX(attackX);
-                MyStrategy.move.setY(attackY);
-                MyStrategy.move.setFactor(0.1);
-            };
-
-
-            addCommand(new CommandWrapper(commandSelect, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
-            addCommand(new CommandWrapper(commandDefence, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
-            addCommand(new CommandWrapper(commandCompact, this, MyStrategy.world.getTickIndex() + MyStrategy.game.getTacticalNuclearStrikeDelay(), CustomParams.noAssignGroupId));
             super.run(army);
         }
     }
 
     public boolean check (ArmyAllyOrdering army) {
-        if (getState() == CommandStates.Run && MyStrategy.world.getTickIndex() >= this.attackTick + MyStrategy.game.getTacticalNuclearStrikeDelay() + 30) {
+        if (getState() == CommandStates.Run && MyStrategy.world.getTickIndex() >= this.attackTick + MyStrategy.game.getTacticalNuclearStrikeDelay()) {
             setState(CommandStates.Complete);
             return true;
         }
 
         return false;
     }
+
 
     @Override
     public void pinned(){

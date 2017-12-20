@@ -20,7 +20,6 @@ public class CommandCreateVehicle extends Command{
         return true;
     }
 
-
     public void run(ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
 
@@ -30,7 +29,10 @@ public class CommandCreateVehicle extends Command{
                 MyStrategy.move.setVehicleType(this.vehicleType);
             };
 
-            addCommand(new CommandWrapper(funcMove, this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId));
+            CommandWrapper cw = new CommandWrapper(this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId, getPriority());
+            cw.addCommand(funcMove);
+
+            addCommand(cw);
             super.run(army);
         }
     }

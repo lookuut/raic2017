@@ -13,11 +13,16 @@ public class CommandCreateArmy extends Command {
         this.vehicleType = vehicleType;
     }
 
+    public CommandCreateArmy(Square square) {
+        this.square = square;
+        this.vehicleType = null;
+    }
+
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {}
 
     public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {
-        if (vehicle.getSelected() && !vehicle.isHaveArmy(army) && vehicle.getArmySet().size() == 0) {
+        if (vehicle.getSelected() && !vehicle.isHaveArmy(army) && vehicle.getArmySet().size() == 0 && isRun()) {
             vehicle.addArmy(army);
             army.addVehicle(vehicle);
             vehicle.addArmy(army);
@@ -26,12 +31,13 @@ public class CommandCreateArmy extends Command {
             army.getTrack().addStep(MyStrategy.world.getTickIndex(), new Step(army.getBattleField().pointTransform(vehicle.getPoint()), CustomParams.allyUnitPPFactor), vehicle.getType());
             //remove vehicle from static maps
 
+            /*
             Point2D vehicleTransformedPoint = Commander.getTerrainPPField().getTransformedPoint(vehicle.getPoint());
             if (vehicle.isTerrain()) {
                 Commander.getTerrainPPField().addFactor(vehicleTransformedPoint, -CustomParams.allyUnitPPFactor);
             } else {
                 Commander.getWeatherPPField().addFactor(vehicleTransformedPoint, -CustomParams.allyUnitPPFactor);
-            }
+            }*/
         }
     }
 
@@ -44,7 +50,10 @@ public class CommandCreateArmy extends Command {
                 MyStrategy.move.setRight(square.getRightTopAngle().getX());
                 MyStrategy.move.setTop(square.getLeftBottomAngle().getY());
                 MyStrategy.move.setBottom(square.getRightTopAngle().getY());
-                MyStrategy.move.setVehicleType(this.vehicleType);
+                if (this.vehicleType != null) {
+                    MyStrategy.move.setVehicleType(this.vehicleType);
+                }
+
             };
 
             Consumer<Command> assign = (command) -> {
@@ -52,8 +61,11 @@ public class CommandCreateArmy extends Command {
                 MyStrategy.move.setGroup(army.getGroupId());
             };
 
-            addCommand(new CommandWrapper(selectVehicleType, this, -1, CustomParams.noAssignGroupId));
-            addCommand(new CommandWrapper(assign, this, -1, CustomParams.noAssignGroupId));
+            CommandWrapper cw = new CommandWrapper( this, -1, CustomParams.noAssignGroupId, getPriority());
+            cw.addCommand(selectVehicleType);
+            cw.addCommand(assign);
+            addCommand(cw);
+
             super.run(army);
         }
     }
@@ -69,6 +81,7 @@ public class CommandCreateArmy extends Command {
             }
 
             army.getForm().recalc(army.getVehicles());
+            army.addCommand(new CommandScale(30));
             setState(CommandStates.Complete);
             return true;
         }

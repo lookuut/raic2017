@@ -26,8 +26,8 @@ public class CommandSiegeFacility extends Command {
         }
 
         TargetPoint point = new TargetPoint();
-        point.maxDamageValue = 100;
         point.vector = targetVec;
+
         setParentCommand(new CommandMove(targetVec));
     }
 

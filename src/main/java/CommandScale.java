@@ -5,14 +5,24 @@ import java.util.function.Consumer;
 public class CommandScale extends Command {
     private Integer scaleDurability;
     private Point2D scalePoint;
+    private double factor;
+
     public CommandScale(Integer scaleDurability) {
         this.scaleDurability = scaleDurability;
         this.scalePoint = null;
+        factor = CustomParams.armyScaleFactor;
     }
 
     public CommandScale(Integer scaleDurability, Point2D scalePoint) {
         this.scaleDurability = scaleDurability;
         this.scalePoint = scalePoint;
+        factor = CustomParams.armyScaleFactor;
+    }
+
+    public CommandScale(Integer scaleDurability, Point2D scalePoint, double factor) {
+        this.scaleDurability = scaleDurability;
+        this.scalePoint = scalePoint;
+        this.factor = factor;
     }
 
 
@@ -33,10 +43,12 @@ public class CommandScale extends Command {
                     MyStrategy.move.setY(scalePoint.getY());
                 }
 
-                MyStrategy.move.setFactor(CustomParams.armyScaleFactor);
+                MyStrategy.move.setFactor(factor);
             };
 
-            addCommand(new CommandWrapper(commandScale, this, CustomParams.runImmediatelyTick, army.getGroupId()));
+            CommandWrapper cw = new CommandWrapper( this, CustomParams.runImmediatelyTick, army.getGroupId(), getPriority());
+            cw.addCommand(commandScale);
+            addCommand(cw);
 
             super.run(army);
         }

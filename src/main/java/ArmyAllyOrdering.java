@@ -148,7 +148,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
             }
         }
 
-        return sumPPFields.searchPath(this, command.getTargetVector().add(getForm().getAvgPoint()), trackMap, target);
+        return sumPPFields.searchPath(this, command.getTargetVector(), trackMap, target);
     }
 
 }

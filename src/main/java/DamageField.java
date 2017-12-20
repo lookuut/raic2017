@@ -54,9 +54,16 @@ public class DamageField {
         }
         for (VehicleType type : VehicleType.values()) {
             if (vehicleDamageByType.containsKey(type)) {
-                vehicleDamageByType.
-                        get(type).
-                        addLinearPPValue(x, y, (factor * SmartVehicle.getEnemyDamage(type, vehicle.getType()) / counterAttack.apply(type)) * operator, addedPoints);
+                if (vehicle.isTerrain()) {
+                    vehicleDamageByType.
+                            get(type).
+                            addLinearPPValue(x, y, (factor * SmartVehicle.getEnemyDamage(type, vehicle.getType()) / counterAttack.apply(type)) * operator, addedPoints);
+                } else {
+                    vehicleDamageByType.
+                            get(type).
+                            addAerialPPValue(x, y, (factor * SmartVehicle.getEnemyDamage(type, vehicle.getType()) / counterAttack.apply(type)) * operator, addedPoints);
+                }
+
             }
         }
     }

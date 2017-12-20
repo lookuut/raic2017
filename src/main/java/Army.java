@@ -1,3 +1,4 @@
+import model.Vehicle;
 import model.VehicleType;
 
 import java.util.*;
@@ -5,6 +6,8 @@ import java.util.*;
 public class Army {
 
     private Map<Long, SmartVehicle> vehicles;
+    private Map<VehicleType, List<SmartVehicle>> vehiclesByType;
+
     private ArmyForm form;
     private Integer lastModificateTick = -1;
     private HashMap<VehicleType, Integer> vehicleTypes;
@@ -17,6 +20,7 @@ public class Army {
         vehicles = new HashMap<>();
         form = new ArmyForm();
         vehicleTypes = new HashMap<>();
+        vehiclesByType = new HashMap<>();
     }
 
 
@@ -33,6 +37,11 @@ public class Army {
             count += vehicleTypes.get(vehicle.getType());
         }
 
+        if (!vehiclesByType.containsKey(vehicle.getType())) {
+            vehiclesByType.put(vehicle.getType(), new ArrayList<>());
+        }
+
+        vehiclesByType.get(vehicle.getType()).add(vehicle);
         vehicleTypes.put(vehicle.getType(), count);
         getForm().updateEdgesVehicles(vehicle);
         maxVisionRange = Math.max(maxVisionRange, vehicle.getMinVisionRange());
@@ -63,10 +72,6 @@ public class Army {
 
     public Long getVehicleCount() {
         return vehicles.entrySet().stream().filter(entry -> entry.getValue().getDurability() > 0).count();
-    }
-
-    public float percentOfDeathVehicles() {
-        return (float)vehicles.entrySet().stream().filter(entry -> entry.getValue().getDurability() == 0).count() / vehicles.size();
     }
 
     public ArmyForm getForm() {
@@ -143,5 +148,29 @@ public class Army {
 
     public boolean isAerial () {
         return getVehiclesType().contains(VehicleType.HELICOPTER) || getVehiclesType().contains(VehicleType.FIGHTER);
+    }
+
+    public boolean isTerrain() {
+        return !isAerial();
+    }
+
+    public double getMinSpeed() {
+        double minSpeed = 10;
+        for (VehicleType type : getVehiclesType()) {
+            double factor = 1;
+            if (SmartVehicle.isTerrain(type)) {
+                factor = MyStrategy.game.getSwampTerrainSpeedFactor();
+            }
+
+            if (vehiclesByType.get(type).get(0).getMaxSpeed() * factor < minSpeed) {
+                minSpeed = vehiclesByType.get(type).get(0).getMaxSpeed() * factor;
+            }
+        }
+
+        return minSpeed;
+    }
+
+    public Map<VehicleType, List<SmartVehicle>> getVehiclesByType () {
+        return this.vehiclesByType;
     }
 }

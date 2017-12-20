@@ -21,10 +21,15 @@ public class CommandCompact extends Command {
 
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {
+        if (!army.isArmyAlive()) {
+            return;
+        }
+
         if (!army.isNeedToCompact()) {
             complete();
             return;
         }
+
         army.getForm().recalc(army.getVehicles());
         Point2D centre = army.getForm().getAvgPoint();
         Point2D maxVec = army.getForm().getMaxDistanceVec(centre);

@@ -69,6 +69,7 @@ public class BattleField {
             Integer lastVehicleY = vehicleBattleFieldCell.getY();
 
             MyStrategy.enemyField.removeFromCellVehicle(lastVehicleX, lastVehicleY, MyStrategy.getVehiclePrevState(vehicle.getId()));
+
         }
 
         if (vehicle.getDurability() > 0 && ((vehicleBattleFieldCell == null || (vehicleBattleFieldCell != null && vehicleBattleFieldCell != battleFieldCell))
@@ -162,5 +163,23 @@ public class BattleField {
                 }
             }
         }
+    }
+
+    public BattleFieldCell searchEnemiesInRaious(int radious, Point2D point) {
+        for (int i = -radious; i <= radious; i++) {
+            for (int j = -radious; j <= radious; j++) {
+                if (i * i + j * j <= radious * radious &&
+                        point.getIntX() + i >= 0 &&
+                        point.getIntX() + i < getWidth() &&
+                        point.getIntY() + j >= 0 &&
+                        point.getIntY() + j < getHeight()) {
+
+                    if (getBattleFieldCell(point.getIntX() + i, point.getIntY() + j).getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
+                        return getBattleFieldCell(point.getIntX() + i, point.getIntY() + j);
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

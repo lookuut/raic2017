@@ -47,7 +47,11 @@ public class EnemyField {
         PPFieldEnemy damageField = new PPFieldEnemy(getWidth(), getHeight());
 
         for (VehicleType type : types) {
-            damageField.sumField(enemyDamageField.getVehicleTypeDamageField(type));
+            if (type == VehicleType.ARRV) {
+                damageField.sumField(enemyDamageField.getVehicleTypeDamageField(VehicleType.TANK));
+            } else {
+                damageField.sumField(enemyDamageField.getVehicleTypeDamageField(type));
+            }
         }
 
         return damageField;

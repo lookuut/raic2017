@@ -105,6 +105,11 @@ public class SmartVehicle  {
         this.point.setY(vehicle.getY());
     }
 
+    public boolean isMoving() {
+        SmartVehicle prevVehicleState = strategy.getPreviousVehiclesStates().get(getId());
+        return prevVehicleState != null && prevVehicleState.getPoint().distance(getPoint()) > 0;
+    }
+
     public int getMaxDurability () {
         return maxDurability;
     }
@@ -341,10 +346,24 @@ public class SmartVehicle  {
      */
 
     public Integer getVehiclePointAtTick(Point2D direction) throws Exception {
+        Point2D startPoint = getPoint().clone();
         Point2D targetPoint = getPoint().add(direction);
+
+        if (direction.getY() < 0) {
+            startPoint = targetPoint.clone();
+            targetPoint = getPoint().clone();
+            direction = direction.multiply(-1);
+        }
+
+        startPoint.setX(Math.max(startPoint.getX(), 0));
+        startPoint.setY(Math.max(startPoint.getY(), 0));
+
+        startPoint.setX(Math.min(startPoint.getX(), MyStrategy.world.getWidth() - 1));
+        startPoint.setY(Math.min(startPoint.getY(), MyStrategy.world.getHeight() - 1));
+
         int propose = (int)MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount();
 
-        Point2D voxelStartPoint = getPoint().multiply(1/(double)propose);
+        Point2D voxelStartPoint = startPoint.multiply(1/(double)propose);
 
         Point2D voxelEndPoint = targetPoint.multiply(1/(double)propose);
 
@@ -354,32 +373,39 @@ public class SmartVehicle  {
         Integer stepX = propose * (direction.getX() < 0  ? -1 : 1);
         Integer stepY = propose * (direction.getY() < 0  ? -1 : 1);
 
-        Point2D previousPoint = getPoint();
+        Point2D previousPoint = startPoint;
 
         double maxWidth = MyStrategy.world.getWidth();
         double maxHeight = MyStrategy.world.getHeight();
         double tickSum = 0;
+        double speed;
         while (
-                (
-                        Math.floor(tStartX / propose) < Math.floor(voxelEndPoint.getX())
-                            ||
-                        Math.floor(tStartY / propose) < Math.floor(voxelEndPoint.getY())
+                ((
+                        stepX > 0 && Math.floor((tStartX + stepX) / propose) <= Math.floor(voxelEndPoint.getX())
+                        ||
+                        stepY > 0 && Math.floor((tStartY + stepY) / propose) <= Math.floor(voxelEndPoint.getY())
                 )
+                ||
+                (
+                        stepX < 0 && Math.floor((tStartX + stepX) / propose) > Math.floor(voxelEndPoint.getX())
+                        ||
+                        stepY < 0 && Math.floor((tStartY + stepY) / propose) > Math.floor(voxelEndPoint.getY())
+                ))
                     &&
-                        (tStartX + stepX >= 0 && tStartY + stepY >= 0
-                                &&
-                                tStartX + stepX < maxWidth && tStartY + stepY < maxHeight)
+                (tStartX + stepX >= 0 && tStartY + stepY >= 0
+                &&
+                tStartX + stepX < maxWidth && tStartY + stepY < maxHeight)
                 ) {
 
-            Point2D horIntersectPoint = Point2D.lineIntersect(getPoint(), targetPoint, new Point2D(0, tStartY + stepY) , new Point2D(maxWidth, tStartY + stepY ));
-            Point2D verIntersectPoint = Point2D.lineIntersect(getPoint(), targetPoint, new Point2D(tStartX + stepX, 0) , new Point2D(tStartX + stepX, maxHeight));
+            Point2D horIntersectPoint = Point2D.lineIntersect(startPoint, targetPoint, new Point2D(0, tStartY + stepY) , new Point2D(maxWidth, tStartY + stepY ));
+            Point2D verIntersectPoint = Point2D.lineIntersect(startPoint, targetPoint, new Point2D(tStartX + stepX, 0) , new Point2D(tStartX + stepX, maxHeight));
             Point2D intersectPoint = targetPoint;
 
             if (horIntersectPoint == null && verIntersectPoint == null) {
                 throw new Exception("Cant intersect lines found");
             }
             //@TODO workaround
-            double speed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
+            speed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
             if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.magnitude() < horIntersectPoint.magnitude())) {
                 tStartX += stepX;
                 intersectPoint = verIntersectPoint;
@@ -391,10 +417,10 @@ public class SmartVehicle  {
             tickSum += previousPoint.subtract(intersectPoint).magnitude() / speed;
             previousPoint = intersectPoint;
         }
-        double speed = (getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose));
+        speed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);;
         tickSum += previousPoint.subtract(targetPoint).magnitude() / speed;
 
-        return (int)Math.round(tickSum);
+        return (int)Math.ceil(tickSum);
     }
 
     /**
@@ -402,6 +428,7 @@ public class SmartVehicle  {
      * @return
      */
     public Point2D getVehiclePointAtTick(Point2D direction, Integer tick)  throws  Exception {
+        Point2D startPoint = getPoint();
         Point2D targetPoint = direction.multiply(MyStrategy.world.getWidth()).add(getPoint());
         int propose = (int)MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount();
 
@@ -409,24 +436,31 @@ public class SmartVehicle  {
 
         Point2D voxelEndPoint = targetPoint.multiply(1/(double)propose);
 
-        Integer tStartX = (int)Math.floor(voxelStartPoint.getX()) * propose;
-        Integer tStartY = (int)Math.floor(voxelStartPoint.getY()) * propose;
 
         Integer stepX = propose * (direction.getX() < 0  ? -1 : 1);
         Integer stepY = propose * (direction.getY() < 0  ? -1 : 1);
 
-        Point2D previousPoint = getPoint();
+        Integer tStartX = (stepX >= 0 ?(int)Math.floor(voxelStartPoint.getX()) : (int)Math.ceil(voxelStartPoint.getX())) * propose;
+        Integer tStartY = (stepY >= 0 ?(int)Math.floor(voxelStartPoint.getY()) : (int)Math.ceil(voxelStartPoint.getY())) * propose;
+
+        Point2D previousPoint = startPoint;
 
         double maxWidth = MyStrategy.world.getWidth();
         double maxHeight = MyStrategy.world.getHeight();
         double tickSum = 0;
 
         while (
-                (
-                        Math.floor(tStartX / propose) < Math.floor(voxelEndPoint.getX())
+                ((
+                        stepX > 0 && Math.floor((tStartX + stepX) / propose) < Math.floor(voxelEndPoint.getX())
                                 ||
-                                Math.floor(tStartY / propose) < Math.floor(voxelEndPoint.getY())
+                                stepY > 0 && Math.floor((tStartY + stepY) / propose) < Math.floor(voxelEndPoint.getY())
                 )
+                ||
+                (
+                        stepX < 0 && Math.floor((tStartX + stepX) / propose) > Math.floor(voxelEndPoint.getX())
+                                ||
+                                stepY < 0 && Math.floor((tStartY + stepY) / propose) > Math.floor(voxelEndPoint.getY())
+                ))
                         &&
                         (tStartX + stepX >= 0 && tStartY + stepY >= 0
                                 &&
@@ -440,11 +474,13 @@ public class SmartVehicle  {
             if (horIntersectPoint == null && verIntersectPoint == null) {
                 throw new Exception("Cant intersect lines found");
             }
-            double cellSpeed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
-            if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.magnitude() < horIntersectPoint.magnitude())) {
+            int x = stepX >= 0 ? tStartX / propose : (tStartX + stepX) / propose;
+            int y = stepY >= 0 ? tStartY / propose : (tStartY + stepY) / propose;
+            double cellSpeed = getMaxSpeed() * getEnviromentSpeedFactor(x, y);
+            if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.subtract(startPoint).magnitude() < horIntersectPoint.subtract(startPoint).magnitude())) {
                 tStartX += stepX;
                 intersectPoint = verIntersectPoint;
-            } else if (verIntersectPoint == null || (horIntersectPoint != null && horIntersectPoint.magnitude() <= verIntersectPoint.magnitude())) {
+            } else if (verIntersectPoint == null || (horIntersectPoint != null && horIntersectPoint.subtract(startPoint).magnitude() <= verIntersectPoint.subtract(startPoint).magnitude())) {
                 tStartY += stepY;
                 intersectPoint = horIntersectPoint;
             }

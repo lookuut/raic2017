@@ -18,29 +18,26 @@ public class ArmyDivisions {
         armyByType = new HashMap<>();
     }
 
-    public Integer addArmy(Square square, VehicleType type, TerrainPPField terrainPPField, WeatherPPField weatherPPField) throws Exception {
-        if (!armyByType.containsKey(type)) {
-            armyByType.put(type , new HashSet<>());
+
+    public Integer addArmy(Square square,Set<VehicleType> types) throws Exception {
+
+        for (VehicleType type : types) {
+            if (!armyByType.containsKey(type)) {
+                armyByType.put(type , new HashSet<>());
+            }
         }
 
         Integer armyId = armyLastId.incrementAndGet();
 
-        ArmyAllyOrdering army = new ArmyAllyOrdering(armyId, MyStrategy.battleField, terrainPPField, weatherPPField);
+        ArmyAllyOrdering army = new ArmyAllyOrdering(armyId, MyStrategy.battleField, Commander.getTerrainPPField(), Commander.getWeatherPPField());
         setEmptyBehaviourTree(army);
 
-        armyByType.get(type).add(armyId);
-        Commander.addTask(new CommanderTask(army, new CommandCreateArmy(square, type)));
-
-        Integer priority = armyId + 5;
-        //@TODO configured options, brain it
-        if (type == VehicleType.FIGHTER) {
-            priority = 1;
-        }
-        if (type == VehicleType.HELICOPTER) {
-            priority = 2;
+        for (VehicleType type : types) {
+            armyByType.get(type).add(armyId);
         }
 
-        CommandQueue.getInstance().addPriority(armyId, priority);
+        Commander.addTask(new CommanderTask(army, new CommandCreateArmy(square, (types.size() == 1 ? types.iterator().next() : null))));
+
         return armyId;
     }
 
@@ -50,7 +47,7 @@ public class ArmyDivisions {
 
 
         BTreeNode isGotoHealCond = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal() && armyLocal.isAerial() && armyByType.get(VehicleType.ARRV).size() > 0),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal() && armyLocal.isAerial() && armyByType.containsKey(VehicleType.ARRV) && armyByType.get(VehicleType.ARRV).size() > 0),
                 army
         );
 
@@ -64,7 +61,7 @@ public class ArmyDivisions {
         isNeedToCompact.addChildNode(new BTreeAction(() -> new CommandCompact()));
 
         BTreeNode isHaveEnemyCond = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> army.isHaveEnemy()),
+                (Predicate<ArmyAlly>)((armyLocal) -> army.isHaveEnemyAround(CustomParams.safetyDistance)),
                 army
         );
         isNeedToCompact.addChildNode(isHaveEnemyCond);
@@ -76,7 +73,14 @@ public class ArmyDivisions {
         );
         isHaveEnemyCond.addChildNode(isHaveFacility);
         isHaveFacility.addChildNode(new BTreeAction(() -> new CommandSiegeFacility()));
-        isHaveFacility.addChildNode(new BTreeAction(() -> new CommandDefence()));
+
+        BTreeNode isHaveEnemyInAllMap = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> army.isHaveEnemy()),
+                army
+        );
+        isHaveFacility.addChildNode(isHaveEnemyInAllMap);
+        isHaveEnemyInAllMap.addChildNode(new BTreeAction(() -> new CommandAttack()));
+        isHaveEnemyInAllMap.addChildNode(new BTreeAction(() -> new CommandDefence()));
 
         bTree.addRoot(isGotoHealCond);
         army.setBehaviourTree(bTree);

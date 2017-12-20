@@ -1,8 +1,12 @@
-import sun.awt.geom.AreaOp;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
+
+
+enum CommandPriority {
+    High, Middle, Low
+}
 
 enum CommandStates {
     New, Run, Canceled, Failed, Complete, Hold
@@ -10,6 +14,7 @@ enum CommandStates {
 
 abstract public class Command {
 
+    private CommandPriority priority;
     private CommandStates state;
     private Queue<CommandWrapper> queue;
     private Integer runTickIndex;
@@ -20,6 +25,7 @@ abstract public class Command {
         queue = new LinkedList<>();
         parentCommand = null;
         runTickIndex = -1;
+        priority = CommandPriority.Low;
     }
 
     public CommandStates getState() {
@@ -115,5 +121,12 @@ abstract public class Command {
 
     public void addCommand(CommandWrapper command) {
         queue.add(command);
+    }
+    public CommandPriority getPriority () {
+        return priority;
+    }
+
+    public void setPriority(CommandPriority priority) {
+        this.priority = priority;
     }
 }

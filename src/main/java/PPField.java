@@ -59,6 +59,26 @@ public class PPField {
         }
     }
 
+    public void addAerialPPValue(int x, int y, double factor, Set<Point2D> exceptPoints) {
+
+        for (int j = -CustomParams.maxLinearPPRange; j <= CustomParams.maxLinearPPRange; j++) {
+            for (int i = -CustomParams.maxLinearPPRange; i <= CustomParams.maxLinearPPRange; i++) {
+                if (x + i >= 0 &&
+                        x + i < getWidth() &&
+                        y + j >= 0 &&
+                        y + j < getHeight() &&
+                        i * i + j * j <= CustomParams.maxLinearPPRange * CustomParams.maxLinearPPRange &&
+                        !exceptPoints.contains(new Point2D(x + i, y + j))
+                        )
+                {
+                    float divide = (float)((1 + Math.abs(j) + Math.abs(i)));
+                    float value = factor >= 0 ? (float)Math.floor(factor / divide) : (float)Math.ceil(factor / divide);
+                    addFactor(x + i, y + j, value);
+                }
+            }
+        }
+    }
+
     public void addExponentionalFactor(int x, int y, double factor, Set<Point2D> exceptPoints) {
         for (int j = -CustomParams.maxLinearPPRange; j <= CustomParams.maxLinearPPRange; j++) {
             for (int i = -CustomParams.maxLinearPPRange; i <= CustomParams.maxLinearPPRange; i++) {
@@ -227,14 +247,20 @@ public class PPField {
 
     public void addSteps(Map<Integer, Step> steps) {
         steps.entrySet().forEach(mapEntry -> {
-            addFactor(mapEntry.getValue().getPoint(), mapEntry.getValue().getPower());
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    Point2D point = mapEntry.getValue().getPoint();
+                    if (point.getIntX() + i >= 0 && point.getIntX() + i < getWidth() &&
+                            point.getIntY() + j >= 0 && point.getIntY() + j < getHeight()) {
+                        addFactor(point.getIntX() + i, point.getIntY() + j, mapEntry.getValue().getPower());
+                    }
+                }
+            }
         });
     }
 
-    public Point2D searchPath(ArmyAlly army, Point2D targetPoint, SortedMap<Integer, Map<Integer, Step>> trackMap, TargetPoint target) throws Exception {
+    public Point2D searchPath(ArmyAlly army, Point2D pathVector, SortedMap<Integer, Map<Integer, Step>> trackMap, TargetPoint target) throws Exception {
         Point2D startPoint = army.getForm().getAvgPoint();
-
-        Point2D pathVector = targetPoint.subtract(startPoint);
 
         if (pathVector.magnitude() > CustomParams.pathSegmentLenght) {
             pathVector = pathVector.multiply(2.5 * CustomParams.pathSegmentLenght / pathVector.magnitude());
@@ -328,41 +354,49 @@ public class PPField {
         for (double path = pathInterval; path < lenght; path += pathInterval) {
             Point2D intervalVec = pathVector.multiply(path / lenght);
 
-            if (terrainTrack != null && terrainTrack.size() > 0) {
+            if (terrainTrack != null) {
+                Set<Point2D> alreadyAddedCells = new HashSet<>();
+                for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
 
-                for (Step step : terrainTrack.values()) {
-                    Point2D stepPoint = step.getPoint();
+                    Point2D stepPoint = vehicle.getPoint();
                     stepPoint = stepPoint.multiply(proposeX);
                     Point2D cellAvgPoint = stepPoint.add(new Point2D(proposeX / 2, proposeY / 2));
                     Point2D sumPoint = cellAvgPoint.add(intervalVec);
 
                     sumPoint = sumPoint.multiply(1 / (double)proposeX);
+                    Point2D addPoint = new Point2D((int)Math.floor(sumPoint.getX()), (int)Math.floor(sumPoint.getY()));
 
-                    int x = (int)sumPoint.getX();
-                    int y = (int)sumPoint.getY();
-                    if (x >= getWidth() || y >= getHeight() || x < 0 || y < 0) {
+                    if (addPoint.getX() >= getWidth() || addPoint.getY() >= getHeight() || addPoint.getX() < 0 || addPoint.getY() < 0) {
                         break;
                     }
-                    army.getTrack().addStep(tick , new Step(new Point2D((int)sumPoint.getX(), (int)sumPoint.getY()) , step.getPower()), VehicleType.TANK);
+                    if (!alreadyAddedCells.contains(addPoint)) {
+                        alreadyAddedCells.add(addPoint);
+                        army.getTrack().addStep(tick , new Step(addPoint , CustomParams.allyUnitPPFactor), VehicleType.TANK);
+                    }
                 }
             }
 
-            if (aerialTrack != null && aerialTrack.size() > 0) {
+            if (aerialTrack != null) {
+                Set<Point2D> alreadyAddedCells = new HashSet<>();
 
-                for (Step step : aerialTrack.values()) {
-                    Point2D stepPoint = step.getPoint();
+                for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
+                    Point2D stepPoint = vehicle.getPoint();
                     stepPoint = stepPoint.multiply(proposeX);
                     Point2D cellAvgPoint = stepPoint.add(new Point2D(proposeX / 2, proposeY / 2));
                     Point2D sumPoint = cellAvgPoint.add(intervalVec);
 
                     sumPoint = sumPoint.multiply(1 / (double)proposeX);
 
-                    int x = (int)sumPoint.getX();
-                    int y = (int)sumPoint.getY();
-                    if (x >= getWidth() || y >= getHeight() || x < 0 || y < 0) {
+                    Point2D addPoint = new Point2D((int)Math.floor(sumPoint.getX()), (int)Math.floor(sumPoint.getY()));
+
+                    if (addPoint.getX() >= getWidth() || addPoint.getY() >= getHeight() || addPoint.getX() < 0 || addPoint.getY() < 0) {
                         break;
                     }
-                    army.getTrack().addStep(tick , new Step(new Point2D((int)sumPoint.getX(), (int)sumPoint.getY()) , step.getPower()), VehicleType.FIGHTER);
+
+                    if (!alreadyAddedCells.contains(addPoint)) {
+                        alreadyAddedCells.add(addPoint);
+                        army.getTrack().addStep(tick , new Step(addPoint , CustomParams.allyUnitPPFactor), VehicleType.FIGHTER);
+                    }
                 }
             }
             tick += 1;
@@ -373,6 +407,19 @@ public class PPField {
         int propose = (int)MyStrategy.world.getWidth() / getWidth();
 
         Point2D direction = endPoint.subtract(startPoint);
+        if (direction.getY() < 0) {
+            direction = direction.multiply(-1);
+            Point2D temp = startPoint.clone();
+            startPoint = endPoint.clone();
+            endPoint = temp;
+        }
+
+        startPoint.setX(Math.max(startPoint.getX(), 0));
+        startPoint.setY(Math.max(startPoint.getY(), 0));
+
+        startPoint.setX(Math.min(startPoint.getX(), MyStrategy.world.getWidth() - 1));
+        startPoint.setY(Math.min(startPoint.getY(), MyStrategy.world.getHeight() - 1));
+
         Point2D voxelStartPoint = startPoint.multiply(1/(double)propose);
 
         Point2D voxelEndPoint = endPoint.multiply(1/(double)propose);
@@ -387,26 +434,12 @@ public class PPField {
         double maxHeight = MyStrategy.world.getHeight();
         double factorSum = getFactor((int)Math.floor(tStartX / propose), (int)Math.floor(tStartY / propose));
         Integer intersectCellsCount = 1;
-        if (
-                (
-                        Math.floor(voxelEndPoint.getY()) != Math.floor(voxelStartPoint.getY()) ||
-                        Math.floor(voxelEndPoint.getX()) != Math.floor(voxelStartPoint.getX())
-                ) &&
-                        Math.floor(voxelEndPoint.getX()) >= 0 && Math.floor(voxelEndPoint.getY()) >= 0
-                        &&
-                        Math.floor(voxelEndPoint.getX()) < getWidth() && Math.floor(voxelEndPoint.getY()) < getHeight()
-
-                ) {
-
-            factorSum += getFactor((int)Math.floor(voxelEndPoint.getX()), (int)Math.floor(voxelEndPoint.getY()));
-            intersectCellsCount++;
-        }
 
         while (
                 ((
-                stepX > 0 && Math.floor((tStartX + stepX) / propose) < Math.floor(voxelEndPoint.getX())
+                stepX > 0 && Math.floor((tStartX) / propose) < Math.floor(voxelEndPoint.getX())
                         ||
-                stepY > 0 && Math.floor((tStartY + stepY) / propose) < Math.floor(voxelEndPoint.getY())
+                stepY > 0 && Math.floor((tStartY) / propose) < Math.floor(voxelEndPoint.getY())
                 )
                         ||
                 (

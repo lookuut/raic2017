@@ -40,25 +40,22 @@ public class CommandHeal extends Command {
 
         TargetPoint target = new TargetPoint();
         target.vector = minDistArmy.getForm().getAvgPoint().subtract(army.getForm().getAvgPoint());
-        target.maxDamageValue = 200.0f;
 
         if (target.vector.magnitude() < CustomParams.onHealerEps) {
+            army.addCommand(new CommandWait(200));
             complete();
             return;
         }
 
-        setParentCommand(new CommandMove(target));
+        CommandMove move = new CommandMove(target);
+        move.setPriority(CommandPriority.High);
+
+        setParentCommand(move);
     }
 
     @Override
     public boolean check (ArmyAllyOrdering army) {
-        boolean checkResult = super.check(army);
-
-        if (checkResult) {
-            army.addCommand(new CommandWait(200));
-        }
-
-        return checkResult;
+        return super.check(army);
     }
     @Override
     public void pinned(){
