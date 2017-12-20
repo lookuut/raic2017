@@ -24,51 +24,19 @@ class FormTask {
         }
 
         state = 1;
-        boolean isVehiclesStop = true;
-        boolean isComeToPoint = true;
-        Point2D minLeftAngle = selectedVehicles.get(0).getPoint().clone();
-        Point2D maxRightAngle = selectedVehicles.get(0).getPoint().clone();
+
         for (SmartVehicle vehicle : selectedVehicles) {
             if (vehicle.getDurability() > 0) {
                 double xDelta = Math.abs(vehicle.getPoint().getX() - finalDestination.get(vehicle.getId()).getX());
                 double yDelta = Math.abs(vehicle.getPoint().getY() - finalDestination.get(vehicle.getId()).getY());
 
                 if (xDelta > 0.00001 || yDelta > 0.00001) {
-                    isComeToPoint = false;
                     return false;
-                    /*
-                    if (vehicle.isMoving()) {
-                        isVehiclesStop = false;
-                    }*/
-
-                }
-
-                if (minLeftAngle.getX() > vehicle.getPoint().getX()) {
-                    minLeftAngle.setX(vehicle.getPoint().getX());
-                }
-                if (minLeftAngle.getY() > vehicle.getPoint().getY()) {
-                    minLeftAngle.setY(vehicle.getPoint().getY());
-                }
-
-                if (maxRightAngle.getX() < vehicle.getPoint().getX()) {
-                    maxRightAngle.setX(vehicle.getPoint().getX());
-                }
-                if (maxRightAngle.getY() < vehicle.getPoint().getY()) {
-                    maxRightAngle.setY(vehicle.getPoint().getY());
                 }
             }
         }
 
-        if (isVehiclesStop && !isComeToPoint &&
-                (markVehicle.getPoint().getY() != finalDestination.get(markVehicle.getId()).getY() || markVehicle.getPoint().getX() != finalDestination.get(markVehicle.getId()).getX())) {
-            Square square = new Square(minLeftAngle, maxRightAngle);
-            form.move(
-                    square,
-                    selectedVehicles.get(0).getType(), markVehicle ,
-                    new Point2D( finalDestination.get(markVehicle.getId()).getX() - markVehicle.getPoint().getX(),
-                            finalDestination.get(markVehicle.getId()).getY() - markVehicle.getY()));
-        }
-        return isComeToPoint;
+        return true;
     }
 }
 
@@ -182,6 +150,10 @@ public class TerrainArmiesForm {
                 continue;
             }
 
+            if (expansionCompleteVehicleType.contains(entry.getKey())) {
+                continue;
+            }
+
             if (Math.floor((entry.getValue().getPoint().getY() - 20) / armyHeight) == Math.floor((armiesFormStartPoint.getY() - 20) / armyHeight)) {
                 continue;
             }
@@ -229,8 +201,8 @@ public class TerrainArmiesForm {
         setStartPoint();
         isCompleteToMoved();
 
-        int maxX = 0;
-        int maxY = 0;
+        int maxX = -1;
+        int maxY = -1;
         VehicleType maxXYVehileType = null;
         SmartVehicle vehile = null;
         for (Map.Entry<VehicleType, SmartVehicle> entry : vehicleTypeAngle.entrySet()) {
