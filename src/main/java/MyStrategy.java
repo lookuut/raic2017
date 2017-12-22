@@ -40,8 +40,8 @@ public final class MyStrategy implements Strategy {
         this.move = move;
 
         if (this.battleField == null) {
-            commander = Commander.getInstance();
             battleField = new BattleField(CustomParams.tileCellSize);
+            commander = Commander.getInstance();
             enemyField = new EnemyField(battleField);
 
             //what is this shit ?

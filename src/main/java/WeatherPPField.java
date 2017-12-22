@@ -19,9 +19,16 @@ public class WeatherPPField extends  PPField{
     }
 
     public void addWeatherMap(WeatherType[][] map) {
+        int propose = (getWidth() / map.length);
+
         for (int i = 0; i < getHeight(); i++) {
             for (int j = 0; j < getWidth(); j++) {
-                addFactor(j, i, weatherToPP(map[i][j]));
+                if (i == 0 || j == 0 || i == getHeight() - 1 || j == getWidth() - 1) {
+                    addFactor(j, i , CustomParams.allyUnitPPFactor);
+                }
+                int localY = i / propose;
+                int localX = j / propose;
+                addFactor(j, i , weatherToPP(map[localY][localX]));
             }
         }
 

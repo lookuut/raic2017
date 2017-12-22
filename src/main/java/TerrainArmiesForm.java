@@ -53,6 +53,7 @@ public class TerrainArmiesForm {
     private Map<VehicleType, Integer> armyCounter = new HashMap<>();
     private Set<VehicleType> expansionCompleteVehicleType = new HashSet<>();
     private ArmyDivisions divisions;
+    private List<Integer> busyVerticals = new ArrayList<>();
 
     public TerrainArmiesForm(ArmyDivisions divisions) {
         this.divisions = divisions;
@@ -157,37 +158,34 @@ public class TerrainArmiesForm {
             if (Math.floor((entry.getValue().getPoint().getY() - 20) / armyHeight) == Math.floor((armiesFormStartPoint.getY() - 20) / armyHeight)) {
                 continue;
             }
+            short haveOnTop = 0;
 
-            boolean isHaveOnTop = false;
             boolean isHaveOnLeft = false;
             for (SmartVehicle vehicle : vehicleTypeAngle.values()) {
-                if (vehicle != entry.getValue()
-                        &&
-                        Math.ceil((vehicle.getPoint().getX() - 20) / armyWidth) == Math.ceil((entry.getValue().getPoint().getX() - 20) / armyWidth)
-                        &&
-                        Math.ceil(vehicle.getPoint().getY() / armyHeight) >= Math.ceil(entry.getValue().getPoint().getY() / armyHeight)
-                        ) {
-                    isHaveOnTop = true;
-                }
+                if (vehicle != entry.getValue()) {
+                    if ((
+                            Math.ceil((vehicle.getPoint().getX() - 20) / armyWidth) >= Math.ceil((entry.getValue().getPoint().getX() - 20) / armyWidth)
+                    ) && Math.ceil(vehicle.getPoint().getY() / armyHeight) >= Math.ceil(entry.getValue().getPoint().getY() / armyHeight)) {
+                        haveOnTop++;
+                    }
 
-                if (vehicle != entry.getValue()
-                        &&
-                        vehicle.getPoint().getY() < armiesFormStartPoint.getY() - 2
-                        &&
-                        Math.ceil(vehicle.getPoint().getX() / armyWidth) > Math.ceil(entry.getValue().getPoint().getX() / armyWidth)
-                        ) {
+                    if (vehicle.getPoint().getY() < armiesFormStartPoint.getY() - 2
+                            &&
+                            Math.ceil(vehicle.getPoint().getX() / armyWidth) > Math.ceil(entry.getValue().getPoint().getX() / armyWidth)
+                            ) {
 
-                    isHaveOnLeft = true;
+                        isHaveOnLeft = true;
+                    }
                 }
             }
 
             Square square = new Square(entry.getValue().getPoint().subtract(new Point2D(2, 0)), entry.getValue().getPoint().add(new Point2D(armyWidth + 2, armyHeight + 2)));
 
-            if (isHaveOnTop == false && Math.floor(armiesFormStartPoint.getY() / armyHeight) != Math.floor(entry.getValue().getPoint().getY() / armyHeight)) {
+            if (haveOnTop == 0 && Math.floor(armiesFormStartPoint.getY() / armyHeight) != Math.floor(entry.getValue().getPoint().getY() / armyHeight)) {
                 Point2D moveVector = new Point2D(0, armiesFormStartPoint.getY() - entry.getValue().getPoint().getY());
                 move(square, entry.getKey(), entry.getValue(), moveVector);
-            } else if (isHaveOnTop && isHaveOnLeft == false){
-                Point2D moveVector = new Point2D(armyWidth + 10, 0);
+            } else if (haveOnTop > 0 && isHaveOnLeft == false){
+                Point2D moveVector = new Point2D(haveOnTop * (armyWidth + 10), 0);
                 move(square, entry.getKey(), entry.getValue(), moveVector);
             }
         }
@@ -209,11 +207,19 @@ public class TerrainArmiesForm {
             if (!expansionedTypes.contains(entry.getKey()) && !tasks.containsKey(vehile)) {
                 int x = (int)Math.floor((entry.getValue().getPoint().getX()) / armyWidth);
                 int y = (int)Math.floor((entry.getValue().getPoint().getY()) / armyHeight);
+
                 if (y > maxY && x >= maxX) {
                     maxY = y;
                     maxXYVehileType = entry.getKey();
                     vehile = entry.getValue();
                 }
+            }
+        }
+
+        for (Map.Entry<VehicleType, SmartVehicle> entry : vehicleTypeAngle.entrySet()) {
+            if ((int)Math.ceil(entry.getValue().getPoint().getY()/ armyHeight) == 2 && entry.getValue().getX() != armiesFormStartPoint.getX()) {
+                currentExpansionVehicle.put(entry.getValue().getType(), vehicleTypeAngle.get(entry.getValue().getType()));
+                expansionedTypes.add(entry.getValue().getType());
             }
         }
 
@@ -224,6 +230,7 @@ public class TerrainArmiesForm {
         }
 
         for (VehicleType type : expansionedTypes) {
+
             expansion(type);
         }
 
@@ -251,8 +258,8 @@ public class TerrainArmiesForm {
             for (int i = 0; i < 5; i++) {
                 try {
                     Square square = new Square(
-                            new Point2D(pointStart.getX() - 2, pointStart.getY() + armyHeight * i),
-                            new Point2D(pointStart.getX() + armyWidth + 2, pointStart.getY() + armyHeight * (i + 1)));
+                            new Point2D(pointStart.getX() - 2, pointStart.getY() + armyHeight * i - 2),
+                            new Point2D(pointStart.getX() + armyWidth + 2, pointStart.getY() + armyHeight * (i + 1) + 2));
                     divisions.addArmy(square, expansionedTypes);
                 } catch (Exception e) {
                     e.printStackTrace();

@@ -133,9 +133,6 @@ public class PPField {
         operateField(localField, 1);
     }
 
-    public static PPField sumField(PPField field1, PPField field2) {
-        return PPField.sumField(field1, field2, 1);
-    }
     public static PPField sumField(PPField field1, PPField field2, int operate) {
         PPField sum = new PPField(field1.getWidth(), field1.getHeight());
 

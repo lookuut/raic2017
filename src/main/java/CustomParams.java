@@ -2,9 +2,8 @@ public class CustomParams {
     //path search
     public static float allyUnitPPFactor = 1000000;
     public static int pathFinderSectorCount = 24;
-    public static int pathSegmentLenght = 30;
+    public static int pathSegmentLenght = 80;
 
-    public static float borderFactor = 1000;
     //search safety point sector count
     public static int searchSafetyZoneSectorCount = 12;
     public static int safetyDistance = 160;

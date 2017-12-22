@@ -34,8 +34,8 @@ class Commander {
         nuclearAttackDefence = new CommandNuclearDefence();
         tasksQueue = new LinkedList<>();
 
-        int ppFieldX = (int)(MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount());
-        int ppFieldY = (int)(MyStrategy.world.getHeight() / MyStrategy.game.getTerrainWeatherMapRowCount());
+        int ppFieldX = MyStrategy.battleField.getWidth();
+        int ppFieldY = MyStrategy.battleField.getHeight();
 
         terrainPPField = new TerrainPPField(ppFieldX, ppFieldY);
         terrainPPField.addTerrainMap(MyStrategy.world.getTerrainByCellXY());
@@ -86,7 +86,7 @@ class Commander {
                 if (entry.getValue().size() > CustomParams.minVehiclesCountInArmy) {
                     Square vehicleTypeSquare = noArmySquaereMap.get(entry.getKey());
 
-                    if (entry.getKey() == VehicleType.HELICOPTER) {
+                    if (entry.getKey() == VehicleType.HELICOPTER && false) {
                         double centreX = (vehicleTypeSquare.getRightTopAngle().getX() - vehicleTypeSquare.getLeftBottomAngle().getX()) / 2;
                         double centreY = (vehicleTypeSquare.getRightTopAngle().getY() - vehicleTypeSquare.getLeftBottomAngle().getY()) / 2;
                         Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY);
@@ -96,7 +96,7 @@ class Commander {
 
                         armySquare = new Square(new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY()), vehicleTypeSquare.getRightTopAngle());
                         divisions.addArmy(armySquare, new HashSet(Arrays.asList(entry.getKey())));
-                    } else if (entry.getKey() == VehicleType.FIGHTER) {
+                    } else if (entry.getKey() == VehicleType.FIGHTER || entry.getKey() == VehicleType.HELICOPTER) {
                         divisions.addArmy(vehicleTypeSquare, new HashSet(Arrays.asList(entry.getKey())));
                     }
                     noArmySquaereMap.remove(entry.getKey());

@@ -13,11 +13,6 @@ public class CommandCreateArmy extends Command {
         this.vehicleType = vehicleType;
     }
 
-    public CommandCreateArmy(Square square) {
-        this.square = square;
-        this.vehicleType = null;
-    }
-
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {}
 
@@ -29,15 +24,6 @@ public class CommandCreateArmy extends Command {
 
             army.setLastModificateTick(MyStrategy.world.getTickIndex());
             army.getTrack().addStep(MyStrategy.world.getTickIndex(), new Step(army.getBattleField().pointTransform(vehicle.getPoint()), CustomParams.allyUnitPPFactor), vehicle.getType());
-            //remove vehicle from static maps
-
-            /*
-            Point2D vehicleTransformedPoint = Commander.getTerrainPPField().getTransformedPoint(vehicle.getPoint());
-            if (vehicle.isTerrain()) {
-                Commander.getTerrainPPField().addFactor(vehicleTransformedPoint, -CustomParams.allyUnitPPFactor);
-            } else {
-                Commander.getWeatherPPField().addFactor(vehicleTransformedPoint, -CustomParams.allyUnitPPFactor);
-            }*/
         }
     }
 
