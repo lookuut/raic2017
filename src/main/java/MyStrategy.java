@@ -127,7 +127,7 @@ public final class MyStrategy implements Strategy {
 
                 commander.addNoArmyVehicle(smartVehicle);
                 commander.result(smartVehicle);
-                commander.armyFormsResult(smartVehicle);
+                //commander.armyFormsResult(smartVehicle);
 
                 battleField.addVehicle(smartVehicle);
                 updateVehiclesInArmies.accept(smartVehicle);
@@ -147,7 +147,7 @@ public final class MyStrategy implements Strategy {
                     smartVehicle.vehicleUpdate(vehicleUpdate);
 
                     commander.result(smartVehicle);
-                    commander.armyFormsResult(smartVehicle);
+                    //commander.armyFormsResult(smartVehicle);
                     battleField.addVehicle(smartVehicle);
                     updateVehiclesInArmies.accept(smartVehicle);
                 } catch (Exception e) {

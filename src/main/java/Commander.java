@@ -20,7 +20,7 @@ class Commander {
     private static TerrainPPField terrainPPField;
     private static WeatherPPField weatherPPField;
 
-    private TerrainArmiesForm terrainArmiesForm;
+    //private TerrainArmiesForm terrainArmiesForm;
 
     /**
      * @param strategy
@@ -43,7 +43,7 @@ class Commander {
         weatherPPField = new WeatherPPField(ppFieldX, ppFieldY);
         weatherPPField.addWeatherMap(MyStrategy.getWeatherMap());
 
-        terrainArmiesForm = new TerrainArmiesForm(divisions);
+        //terrainArmiesForm = new TerrainArmiesForm(divisions);
     }
 
     private void checkAttackNuclear() throws Exception {
@@ -58,7 +58,7 @@ class Commander {
 
     public void logic () throws Exception {
         constructArmies();
-        terrainArmiesForm.searchExpansionArmy();
+        //terrainArmiesForm.searchExpansionArmy();
         checkAttackNuclear();
         nuclearAttack();
         MyStrategy.commanderFacility.orderCreateVehicle();
@@ -96,9 +96,14 @@ class Commander {
 
                         armySquare = new Square(new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY()), vehicleTypeSquare.getRightTopAngle());
                         divisions.addArmy(armySquare, new HashSet(Arrays.asList(entry.getKey())));
-                    } else if (entry.getKey() == VehicleType.FIGHTER || entry.getKey() == VehicleType.HELICOPTER) {
+                    } else if (
+                        entry.getKey() == VehicleType.FIGHTER || 
+                        entry.getKey() == VehicleType.HELICOPTER || 
+                        entry.getKey() == VehicleType.TANK || 
+                        entry.getKey() == VehicleType.IFV || 
+                        entry.getKey() == VehicleType.ARRV) {
                         divisions.addArmy(vehicleTypeSquare, new HashSet(Arrays.asList(entry.getKey())));
-                    }
+                    } 
                     noArmySquaereMap.remove(entry.getKey());
                     noArmyVehicles.get(entry.getKey()).clear();
                 }
@@ -185,7 +190,7 @@ class Commander {
                     square.addPoint(vehicle.getRightTopAngle());
                 }
             }
-            terrainArmiesForm.addNewVehicle(vehicle);
+            //terrainArmiesForm.addNewVehicle(vehicle);
             List<SmartVehicle> vehicleList = noArmyVehicles.get(vehicle.getType());
             vehicleList.add(vehicle);
         }
@@ -215,10 +220,10 @@ class Commander {
     public static WeatherPPField getWeatherPPField () {
         return weatherPPField;
     }
-
+    /*
     public void armyFormsResult(SmartVehicle vehicle) {
-        terrainArmiesForm.updateVehicle(vehicle);
-    }
+        //terrainArmiesForm.updateVehicle(vehicle);
+    }*/
 
     public boolean isThereEnemyAround(double distance) {
         for (ArmyAllyOrdering army : divisions.getArmies().values()) {
