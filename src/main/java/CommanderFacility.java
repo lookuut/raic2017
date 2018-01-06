@@ -4,6 +4,7 @@ import model.VehicleType;
 
 import java.util.HashMap;
 import java.util.Set;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Function;
@@ -26,7 +27,7 @@ public class CommanderFacility {
                 if (facility.getOwnerPlayerId() == MyStrategy.player.getId() &&
                         facility.getProductionProgress() == 0 &&
                         facility.getType() == FacilityType.VEHICLE_FACTORY) {
-                    CommandCreateVehicle createVehicle = new CommandCreateVehicle(facility.getId(), VehicleType.HELICOPTER);
+                    CommandCreateVehicle createVehicle = new CommandCreateVehicle(facility.getId(), VehicleType.TANK);
                     createVehicle.run(null);
                 }
             }
@@ -69,12 +70,11 @@ public class CommanderFacility {
             return armiesGotoFacility.get(army);
         }
 
-        Function<Set<SmartFacility>, SmartFacility> getMinDistanceFacility = (facilities) -> {
+        Function<Collection<SmartFacility>, SmartFacility> getMinDistanceFacility = (facilities) -> {
             double minDistance = Double.MAX_VALUE;
             SmartFacility minDistFacility = null;
             for (SmartFacility facility : facilities) {
-                if (facility.getGoingToFacilityArmies().size() < CustomParams.maxGotoSiegeArmyCount &&
-                        facility.getOwnerPlayerId() != MyStrategy.player.getId()) {
+                if (facility.getGoingToFacilityArmies().size() == 0 && facility.getOwnerPlayerId() != MyStrategy.player.getId()) {
                     Point2D facilityCentre = facility.getFacilityCentre();
                     double distance = facilityCentre.distance(army.getForm().getAvgPoint());
                     if (distance < minDistance) {
@@ -85,21 +85,11 @@ public class CommanderFacility {
             }
             return minDistFacility;
         };
-        SmartFacility minDistFacility = null;
 
-        FacilityType priorityFacilityType = FacilityType.CONTROL_CENTER;
-        if (armiesGotoFacility.values().stream().filter(facility -> facility.getType() == FacilityType.CONTROL_CENTER).count() * 2 >= armiesGotoFacility.size()) {
-            priorityFacilityType = FacilityType.VEHICLE_FACTORY;
-        }
-
-        if (facilitiesByTypes.containsKey(priorityFacilityType) ) {
-            minDistFacility = getMinDistanceFacility.apply(facilitiesByTypes.get(priorityFacilityType));
-        }
-        if (facilitiesByTypes.containsKey(priorityFacilityType) && minDistFacility == null) {
-            minDistFacility = getMinDistanceFacility.apply(facilitiesByTypes.get(priorityFacilityType));
-        }
+        SmartFacility minDistFacility = getMinDistanceFacility.apply(facilities.values());
 
         if (minDistFacility != null) {
+            minDistFacility.addGoingToFacilityArmy(army);
             armiesGotoFacility.put(army, minDistFacility);
         }
 

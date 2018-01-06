@@ -17,7 +17,7 @@ public class CommandSiegeFacility extends Command {
             complete();
             return;
         }
-        facility.addGoingToFacilityArmy(army);
+        
         Point2D targetVec = facility.getFacilityCentre().subtract(army.getForm().getAvgPoint());
 
         if (targetVec.magnitude() < CustomParams.onFacilityEps && facility.getOwnerPlayerId() == MyStrategy.player.getId()) {

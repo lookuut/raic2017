@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 
 public class BattleField {
 
@@ -11,8 +13,9 @@ public class BattleField {
 
     protected int pFieldWidth;
     protected int pFieldHeight;
-    private List<Army> enemyArmies;
-    private Integer enemyArmiesCalcTick = -1;
+    
+    private Map<Long, List<Army>> armies;
+    private int armiesDefineTick;
 
     //temporary code remove it before upload
     private Integer cellSize;
@@ -30,7 +33,9 @@ public class BattleField {
                 this.battleField[y][x] = new BattleFieldCell(x,y);
             }
         }
-        enemyArmies = new ArrayList<>();
+        armies = new HashMap<>();
+        armies.put(MyStrategy.getEnemyPlayerId(), new ArrayList<>());
+        armies.put(MyStrategy.player.getId(), new ArrayList<>());
     }
 
     public Point2D pointTransform(Point2D point) {
@@ -101,7 +106,12 @@ public class BattleField {
 
     public Army getTargetArmy(ArmyAlly allyArmy) {
         Set<VehicleType> allyTypes = allyArmy.getVehiclesType();
-        List<Army> enemyArmies = MyStrategy.battleField.defineEnemiesArmy();
+        MyStrategy.battleField.defineArmies();
+        List<Army> enemyArmies = getEnemyArmies();
+        
+        System.out.println(">>>>>>>>>>>>>>>>>>>>>>");
+        System.out.println(enemyArmies);
+
         Army targetArmy = null;
         for (Army enemyArmy : enemyArmies) {
             for (VehicleType enemyArmyType : enemyArmy.getVehiclesType()) {
@@ -120,6 +130,56 @@ public class BattleField {
         return targetArmy;
     }
 
+    public void defineArmies() {
+
+        if (armiesDefineTick == MyStrategy.world.getTickIndex()) {
+            return;
+        }
+
+        Set<Point2D> visitedCells = new HashSet();
+        
+        Army allyArmy = new Army();
+        Army enemyArmy = new Army();
+        
+        for (int j = 0; j < getHeight(); j++) {
+            for (int i = 0; i < getWidth(); i++) {
+                Point2D point = new Point2D(i,j);
+
+                if (!visitedCells.contains(point)) {
+
+                    if (battleField[j][i].getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0 
+                        || 
+                        battleField[j][i].getVehicles(MyStrategy.player.getId()).size() > 0
+                        ) {
+                        
+                        recursiveDeepSearchEnemies(point, visitedCells, enemyArmy, allyArmy);
+                        
+                        if (allyArmy.getVehicles().size() > 0) {
+                            armies.get(MyStrategy.player.getId()).add(allyArmy);
+                            allyArmy = new Army();
+                        }
+
+                        if (enemyArmy.getVehicles().size() > 0) {
+                            armies.get(MyStrategy.getEnemyPlayerId()).add(enemyArmy);
+                            enemyArmy = new Army();
+                        }
+                    }
+                }
+            }
+        }
+
+        armiesDefineTick = MyStrategy.world.getTickIndex();
+    }
+
+    public List<Army> getEnemyArmies() {
+        return armies.get(MyStrategy.getEnemyPlayerId());
+    }
+
+    public List<Army> getAllyArmies() {
+        return armies.get(MyStrategy.player.getId());
+    }
+
+    /*
     public List<Army> defineEnemiesArmy() {
 
         if (enemyArmiesCalcTick == MyStrategy.world.getTickIndex()) {
@@ -144,9 +204,9 @@ public class BattleField {
             }
         }
         return enemyArmies;
-    }
+    }*/
 
-    public void recursiveDeepSearchEnemies(Point2D point, Set<Point2D> visitedCells, Army enemyArmy) {
+    public void recursiveDeepSearchEnemies(Point2D point, Set<Point2D> visitedCells, Army enemyArmy, Army allyArmy) {
         for (int j = -1; j <= 1  && (point.getIntY() + j) < getHeight(); j++) {
             for (int i = -1; i <= 1 && (point.getIntX() + i) < getWidth(); i++) {
                 if (point.getIntY() + j < 0 || point.getIntX() + i < 0) {
@@ -155,11 +215,18 @@ public class BattleField {
                 Point2D visitedPoint = new Point2D(point.getIntX() + i, point.getIntY() + j);
                 BattleFieldCell cell = getBattleFieldCell(visitedPoint);
 
-                if (!visitedCells.contains(visitedPoint) &&
-                        cell.getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
-                    cell.getVehicles(MyStrategy.getEnemyPlayerId()).values().forEach(vehicle -> enemyArmy.addVehicle(vehicle));
-                    visitedCells.add(visitedPoint);
-                    recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy);
+                if (!visitedCells.contains(visitedPoint)) {
+                    if (cell.getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
+                        cell.getVehicles(MyStrategy.getEnemyPlayerId()).values().forEach(vehicle -> enemyArmy.addVehicle(vehicle));
+                        visitedCells.add(visitedPoint);
+                        recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy, allyArmy);
+                    }
+
+                    if (cell.getVehicles(MyStrategy.player.getId()).size() > 0) {
+                        cell.getVehicles(MyStrategy.player.getId()).values().forEach(vehicle -> allyArmy.addVehicle(vehicle));
+                        visitedCells.add(visitedPoint);
+                        recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy, allyArmy);
+                    }
                 }
             }
         }

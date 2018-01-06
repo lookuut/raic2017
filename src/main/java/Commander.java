@@ -81,22 +81,12 @@ class Commander {
     }
 
     public void constructArmies() {
+        
         for (Map.Entry<VehicleType, List<SmartVehicle>> entry : noArmyVehicles.entrySet()) {
             try {
                 if (entry.getValue().size() > CustomParams.minVehiclesCountInArmy) {
                     Square vehicleTypeSquare = noArmySquaereMap.get(entry.getKey());
-
-                    if (entry.getKey() == VehicleType.HELICOPTER && false) {
-                        double centreX = (vehicleTypeSquare.getRightTopAngle().getX() - vehicleTypeSquare.getLeftBottomAngle().getX()) / 2;
-                        double centreY = (vehicleTypeSquare.getRightTopAngle().getY() - vehicleTypeSquare.getLeftBottomAngle().getY()) / 2;
-                        Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY);
-
-                        Square armySquare = new Square(vehicleTypeSquare.getLeftBottomAngle(), centrePoint.add(new Point2D(0, centreY)));
-                        divisions.addArmy(armySquare, new HashSet(Arrays.asList(entry.getKey())));
-
-                        armySquare = new Square(new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY()), vehicleTypeSquare.getRightTopAngle());
-                        divisions.addArmy(armySquare, new HashSet(Arrays.asList(entry.getKey())));
-                    } else if (
+                    if (
                         entry.getKey() == VehicleType.FIGHTER || 
                         entry.getKey() == VehicleType.HELICOPTER || 
                         entry.getKey() == VehicleType.TANK || 
@@ -110,6 +100,17 @@ class Commander {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    public void clusteringArmies() {
+        MyStrategy.battleField.defineArmies();
+        List<Army> allyArmies = MyStrategy.battleField.getAllyArmies();
+        if (allyArmies.size() == divisions.getArmies().size()) {
+            return;
+        }
+
+        for (Army army : divisions.getArmies().values()) {
         }
     }
 
@@ -220,10 +221,6 @@ class Commander {
     public static WeatherPPField getWeatherPPField () {
         return weatherPPField;
     }
-    /*
-    public void armyFormsResult(SmartVehicle vehicle) {
-        //terrainArmiesForm.updateVehicle(vehicle);
-    }*/
 
     public boolean isThereEnemyAround(double distance) {
         for (ArmyAllyOrdering army : divisions.getArmies().values()) {
