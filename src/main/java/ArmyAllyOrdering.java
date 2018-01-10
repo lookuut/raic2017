@@ -30,6 +30,14 @@ public class ArmyAllyOrdering extends ArmyAlly {
         commandQueue.addLast(command);
     }
 
+    public void setFirstCommand(Command command) {
+        commandQueue.addFirst(command);
+    }
+
+    public Deque<Command> getCommandQueue() {
+        return commandQueue;
+    }
+
     public Command pollCommand() {
 
         if (commandQueue.size() == 0) {
@@ -113,7 +121,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
         Map<Integer, Step> lastTerrainSteps = new HashMap<>();
 
         MyStrategy.commander.getDivisions().getArmyList().forEach(army -> {
-            if (army.getGroupId() != getGroupId() && army.isArmyAlive()) {
+            if (army.getGroupId() != getGroupId() && army.isAlive()) {
                 if (army.getLastModificateTick() < army.getTrack().getLastAerialTick()) {
                     movingAerialArmyTrack.addTrack(army.getTrack(), army.getTrack().getLastAerialTick());
                 } else {

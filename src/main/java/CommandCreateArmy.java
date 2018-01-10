@@ -17,7 +17,7 @@ public class CommandCreateArmy extends Command {
     public void prepare(ArmyAllyOrdering army) throws Exception {}
 
     public void result(ArmyAllyOrdering army, SmartVehicle vehicle) {
-        if (vehicle.getSelected() && !vehicle.isHaveArmy(army) && vehicle.getArmySet().size() == 0 && isRun()) {
+        if (vehicle.getSelected() && !vehicle.isHaveArmy(army) && vehicle.getArmy() == null && isRun()) {
             vehicle.addArmy(army);
             army.addVehicle(vehicle);
             vehicle.addArmy(army);

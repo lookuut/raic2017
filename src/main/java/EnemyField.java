@@ -179,6 +179,7 @@ public class EnemyField {
 
 
     public SortedSet<NuclearAttackPoint> getNuclearAttackPointsRating() {
+
         boolean recalcRating = false;
         if (nuclearAttackPointsRating.size() == 0) {
             recalcRating = true;
@@ -189,68 +190,22 @@ public class EnemyField {
         }
 
         if (recalcRating) {
-            recalcNuclearAttackPointsRating();
+
+            MyStrategy.battleField.defineArmies();
+            List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
+            nuclearAttackPointsRating.clear();
+            int enemyVehiclesCount = MyStrategy.getEnemyVehicles().size();
+
+            for (Army army : enemyArmies) {
+                if (army.getVehicleCount() / (float)enemyVehiclesCount > CustomParams.minEnemyPercentageToNuclearAttack) {
+                    nuclearAttackPointsRating.add(new NuclearAttackPoint(army));
+                }
+            }
+
             lastUpdateNuclearAttackRatingTick = MyStrategy.world.getTickIndex();
         }
 
         return nuclearAttackPointsRating;
-    }
-
-    private void recalcNuclearAttackPointsRating() {
-        nuclearAttackPointsRating.clear();
-        float prevValue = 0;
-        HashSet<Integer> visitedCells = new HashSet<>();
-        int radius = (int)Math.ceil(MyStrategy.game.getTacticalNuclearStrikeRadius() * getWidth() / MyStrategy.world.getWidth());
-        for (int y = 0; y < enemyField.getHeight(); y++) {
-            for (int x = 0; x < enemyField.getWidth(); x++) {
-
-                if (!visitedCells.contains(y * enemyField.getWidth() + x)) {
-
-                    if ((enemyField.getFactor(x, y) < prevValue || (enemyField.getFactor(x, y) > 0 && x == (getWidth() - 1)))) {
-                        float maxValueInCircle = 0;
-                        int maxValueX = 0;
-                        int maxValueY = 0;
-                        List<Integer> maxValueVisitedCells = null;
-                        for (int j = -radius; j <= radius && y + j < enemyField.getHeight(); j++) {
-                            for (int i = -radius; i <= radius && x + i < enemyField.getWidth(); i++) {
-                                int localX = x + i;
-                                int localY = y + j;
-
-                                if (i * i + j * j <= radius * radius && localX >= 0 && localY >= 0 && !visitedCells.contains(localY * enemyField.getWidth() + localX)) {
-                                    List<Integer> localVisitedCells = new ArrayList<>();
-                                    float maxValueInCircleLocal = enemyField.sumFactorInPointRadious(new Point2D(localX, localY), radius, localVisitedCells);
-                                    if (maxValueInCircleLocal > maxValueInCircle) {
-                                        maxValueInCircle = maxValueInCircleLocal;
-                                        maxValueX = localX;
-                                        maxValueY = localY;
-                                        maxValueVisitedCells = localVisitedCells;
-                                    }
-                                }
-                            }
-                        }
-                        if (maxValueInCircle > 0) {
-                            visitedCells.addAll(maxValueVisitedCells);
-                            nuclearAttackPointsRating.add(new NuclearAttackPoint(enemyField.getWorldPoint(new Point2D(maxValueX, maxValueY)), maxValueInCircle, enemyField.getWidth()));
-                        }
-                    }
-
-                    prevValue = enemyField.getFactor(x, y);
-                }
-            }
-        }
-
-
-        if (nuclearAttackPointsRating.size() > CustomParams.nuclearAttackRatingItemCount) {// cut tail
-            Iterator it = nuclearAttackPointsRating.iterator();
-            Integer count = 0;
-            NuclearAttackPoint point = null;
-            while (it.hasNext() && count < CustomParams.nuclearAttackRatingItemCount) {
-                point = (NuclearAttackPoint)it.next();
-                count++;
-            }
-
-            nuclearAttackPointsRating.tailSet(point).clear();
-        }
     }
 
     public void print() {

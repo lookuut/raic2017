@@ -124,6 +124,15 @@ public class ArmyForm {
         return false;
     }
 
+    public boolean isPointInVisionRange(Point2D point) {
+        for (SmartVehicle vehicle : edgesVehicles.values()) {
+            if (vehicle.getDurability() > 0 && vehicle.getPoint().distance(point) <= vehicle.getActualVisionRange()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Map<Point2D, SmartVehicle> getEdgesVehicles () {
         return edgesVehicles;
     }
@@ -142,5 +151,34 @@ public class ArmyForm {
         }
 
         return maxDistancePoint.subtract(fromPoint);
+    }
+
+    public boolean isDamagedByNuclearAttack(Point2D nuclearAttackTarget) {
+        for (SmartVehicle vehicle : edgesVehicles.values()) {
+            if (vehicle.getDurability() > 0) {
+                if (vehicle.getPoint().subtract(nuclearAttackTarget).magnitude() <= MyStrategy.game.getTacticalNuclearStrikeRadius()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public Point2D getEdgesVehiclesCenter() {
+        int edgesVehicleCount = (int)edgesVehicles.values().stream().filter(vehicle -> vehicle.getDurability() > 0).count();
+        Point2D avgPoint = new Point2D(0,0);
+
+        getEdgesVehicles().values().stream().
+                filter(vehicle -> vehicle.getDurability() > 0).
+                forEach(vehicle -> {
+                    avgPoint.setX(vehicle.getPoint().getX() + avgPoint.getX());
+                    avgPoint.setY(vehicle.getPoint().getY() + avgPoint.getY());
+                });
+
+        avgPoint.setX(avgPoint.getX() / edgesVehicleCount);
+        avgPoint.setY(avgPoint.getY() / edgesVehicleCount);
+
+        return avgPoint;
     }
 }

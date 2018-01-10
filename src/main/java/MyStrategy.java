@@ -22,15 +22,19 @@ public final class MyStrategy implements Strategy {
 
     static protected HashMap<Long, SmartVehicle> previousVehiclesStates;
     private static  HashMap<Long, SmartVehicle> vehicles;
+    private static HashMap<Long, SmartVehicle> enemyVehicles;
 
 
     protected ArmyDamageField armyDamageField;
     public static  Commander commander;
+    private long strategyTimeSum;
 
     public MyStrategy() {
         this.previousVehiclesStates = new HashMap();
         this.vehicles = new HashMap<>();
+        this.enemyVehicles = new HashMap<>();
         this.commanderFacility = new CommanderFacility();
+        strategyTimeSum = 0;
     }
 
     protected void init(Player me, World world, Game game, Move move) throws Exception {
@@ -69,6 +73,7 @@ public final class MyStrategy implements Strategy {
 
     @Override
     public void move(Player me, World world, Game game, Move move) {
+        long startTime = System.currentTimeMillis();
         try {
             this.init(me, world, game, move);
             this.updateWorld(world);
@@ -81,7 +86,13 @@ public final class MyStrategy implements Strategy {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            System.out.println("Out of tick " + world.getTickIndex() + " commands count " + player.getRemainingActionCooldownTicks());
+            strategyTimeSum += System.currentTimeMillis() - startTime;
+            String log = String.format("Tick %d, commands count %d, tick mills %d, seconds sum %d",
+                    world.getTickIndex(),
+                    me.getRemainingActionCooldownTicks(),
+                    System.currentTimeMillis() - startTime,
+                    strategyTimeSum/1000);
+            System.out.println(log);
         }
     }
 
@@ -103,11 +114,11 @@ public final class MyStrategy implements Strategy {
 
         Consumer<SmartVehicle> updateVehiclesInArmies = (vehicle) -> {
             for (ArmyAllyOrdering army : armies) {
-                if (army.isArmyAlive() && !vehicle.isAlly()) {
+                if (army.isAlive() && !vehicle.isAlly()) {
                     army.setEnemy(vehicle);
                 }
 
-                if (army.isArmyAlive()) {
+                if (army.isAlive()) {
                     army.result(vehicle);
                 }
             }
@@ -125,9 +136,12 @@ public final class MyStrategy implements Strategy {
                     smartVehicle.vehicleUpdate(vehicle);
                 }
 
+                if (smartVehicle.getPlayerId() == MyStrategy.getEnemyPlayerId()) {
+                    enemyVehicles.put(smartVehicle.getId() , smartVehicle);
+                }
+
                 commander.addNoArmyVehicle(smartVehicle);
                 commander.result(smartVehicle);
-                //commander.armyFormsResult(smartVehicle);
 
                 battleField.addVehicle(smartVehicle);
                 updateVehiclesInArmies.accept(smartVehicle);
@@ -146,10 +160,22 @@ public final class MyStrategy implements Strategy {
 
                     smartVehicle.vehicleUpdate(vehicleUpdate);
 
+                    if (smartVehicle.getPlayerId() == MyStrategy.getEnemyPlayerId()) {
+                        enemyVehicles.put(smartVehicle.getId() , smartVehicle);
+                    }
+
                     commander.result(smartVehicle);
-                    //commander.armyFormsResult(smartVehicle);
+
                     battleField.addVehicle(smartVehicle);
                     updateVehiclesInArmies.accept(smartVehicle);
+
+                    if (smartVehicle.getDurability() == 0) {
+                        vehicles.remove(smartVehicle.getId());
+                        if (enemyVehicles.containsKey(smartVehicle.getId())) {
+                            enemyVehicles.remove(smartVehicle.getId());
+                        }
+                    }
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -266,5 +292,9 @@ public final class MyStrategy implements Strategy {
 
     public static Map<Long, SmartVehicle> getVehicles() {
         return vehicles;
+    }
+
+    public static Map<Long, SmartVehicle> getEnemyVehicles() {
+        return enemyVehicles;
     }
 }

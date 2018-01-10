@@ -86,22 +86,23 @@ public class ArmyAlly extends Army {
         return targetEnemyMap.size() > 0;
     }
 
+    private boolean isHaveEnemyAroundLastState;
     public boolean isHaveEnemyAround (double safetyDistance) {
         if (MyStrategy.world.getTickIndex() % 10 == 0) {
-            int safetyDist = (int)Math.ceil(2 * safetyDistance * (MyStrategy.battleField.getWidth() / MyStrategy.world.getWidth()));
-            int counter = 0;
+            isHaveEnemyAroundLastState = false;
+            int safetyDist = (int)Math.ceil(safetyDistance * (MyStrategy.battleField.getWidth() / MyStrategy.world.getWidth()));
             for (SmartVehicle vehicle : getForm().getEdgesVehicles().values()) {
-                if (vehicle.getDurability() > 0 && counter % 2 == 0) {
+                if (vehicle.getDurability() > 0) {
                     Point2D transformedPoint = MyStrategy.battleField.pointTransform(vehicle.getPoint());
                     if (battleField.searchEnemiesInRaious(safetyDist, transformedPoint) != null) {
-                        return true;
+                        isHaveEnemyAroundLastState = true;
+                        break;
                     }
                 }
-                counter++;
             }
         }
 
-        return false;
+        return isHaveEnemyAroundLastState;
     }
 
     public void setLastCompactTick(Integer tick) {

@@ -21,7 +21,7 @@ public class CommandCompact extends Command {
 
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {
-        if (!army.isArmyAlive()) {
+        if (!army.isAlive()) {
             return;
         }
 

@@ -1,6 +1,3 @@
-import model.VehicleType;
-
-import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -62,7 +59,10 @@ public class BattleFieldCell {
     }
 
     public void remove(SmartVehicle vehicle) {
-        vehicles[playerIdToIndex.apply(vehicle.getPlayerId())].remove(vehicle.getId());
+        if (vehicles[playerIdToIndex.apply(vehicle.getPlayerId())].containsKey(vehicle.getId())) {
+            vehicles[playerIdToIndex.apply(vehicle.getPlayerId())].remove(vehicle.getId());
+        }
+
         recalculationMaxMin(playerIdToIndex.apply(vehicle.getPlayerId()));
     }
 
@@ -78,22 +78,6 @@ public class BattleFieldCell {
 
     public Integer getY() {
         return y;
-    }
-
-    public double getMaxX(Integer pid) {
-        return minMaxXY[pid][max_x];
-    }
-
-    public double getMaxY(Integer pid) {
-        return minMaxXY[pid][max_y];
-    }
-
-    public double getMinX(Integer pid) {
-        return minMaxXY[pid][min_x];
-    }
-
-    public double getMinY(Integer pid) {
-        return minMaxXY[pid][min_y];
     }
 
     public boolean isHaveVehicles (Integer playerIndex) {

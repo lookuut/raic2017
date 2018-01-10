@@ -1,9 +1,13 @@
 import java.util.function.Predicate;
 
-public class BTreeNodeCondition<E> extends BTreeNode<E> {
+public class BTreeNodeCondition<E> extends BTreeBinaryNode {
     protected Predicate<E> condition;
 
     protected E e;
+
+    public BTreeNodeCondition(E e) {
+        this.e = e;
+    }
 
     public BTreeNodeCondition(Predicate<E> condition, E e) {
         super();
@@ -19,9 +23,9 @@ public class BTreeNodeCondition<E> extends BTreeNode<E> {
 
     public BTreeNode getChild() {
         if (condition.test(this.e)) {
-            return this.childNodes.get(0);
+            return this.getTrueNode();
         } else {
-            return this.childNodes.get(1);
+            return this.getFalseNode();
         }
     }
 

@@ -43,51 +43,77 @@ public class ArmyDivisions {
 
     public void setEmptyBehaviourTree(ArmyAllyOrdering army) {
         BehaviourTree<ArmyAlly> bTree = new BehaviourTree<>();
-        //CONDITION: if army have aerial and have ARRV armies and need to heal, then go to heal
+
+        //CONDITION: nuclear attack cond
+        BTreeNode isCanNuclearAttack = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> Commander.getInstance().isCanNuclearAttack(armyLocal)) ,
+                army
+        );
+
+        //CONDITION: goto heal ?
         BTreeNode isGotoHealCond = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal() && armyLocal.isAerial() && armyByType.containsKey(VehicleType.ARRV) && armyByType.get(VehicleType.ARRV).size() > 0),
                 army
-        );
-        //ACTION: HEAL Command
-        isGotoHealCond.addChildNode(new BTreeAction(() -> new CommandHeal(this)));
-
+        );;
         //CONDITION: is need compact?
         BTreeNode isNeedToCompact = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isNeedToCompact()),
                 army
         );
-        isGotoHealCond.addChildNode(isNeedToCompact);
-        //ACTION: commact self
-        isNeedToCompact.addChildNode(new BTreeAction(() -> new CommandCompact()));
+
         //CONDITION: is have enemy around
         BTreeNode isHaveEnemyCond = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> army.isHaveEnemyAround(CustomParams.safetyDistance)),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isHaveEnemyAround(CustomParams.safetyDistance)),
                 army
         );
-        isNeedToCompact.addChildNode(isHaveEnemyCond);
-        //ACTION: if have enemy attack them
-        isHaveEnemyCond.addChildNode(new BTreeAction(() -> new CommandAttack()));
 
         //CONDITION: if army terrain and have facilities to siege
         BTreeNode isHaveFacility = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> !army.isAerial() && MyStrategy.isHaveFacilities()),
+                (Predicate<ArmyAlly>)((armyLocal) -> !armyLocal.isAerial() && MyStrategy.isHaveFacilities()),
                 army
         );
-        isHaveEnemyCond.addChildNode(isHaveFacility);
-        //ACTION: go to siege facility
-        isHaveFacility.addChildNode(new BTreeAction(() -> new CommandSiegeFacility()));
+
         //CONDITION: if have enemy in all map
         BTreeNode isHaveEnemyInAllMap = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> army.isHaveEnemy()),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isHaveEnemy()),
                 army
         );
-        isHaveFacility.addChildNode(isHaveEnemyInAllMap);
-        //ACTION: then attack enemy
-        isHaveEnemyInAllMap.addChildNode(new BTreeAction(() -> new CommandAttack()));
-        //ACTION: else defence
-        isHaveEnemyInAllMap.addChildNode(new BTreeAction(() -> new CommandDefence()));
 
-        bTree.addRoot(isGotoHealCond);
+        //CONDITION: if have enemy in all map
+        BTreeNode caAttackEnemy = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isHaveEnemy()),
+                army
+        );;
+
+        //actions
+        BTreeNode actionHeal = new BTreeAction(() -> new CommandHeal(this));
+        BTreeNode actionNuclearAttack = new BTreeAction(() -> new CommandNuclearAttack());
+        BTreeNode actionCompact = new BTreeAction(() -> new CommandCompact());
+        BTreeNode actionAttack = new BTreeAction(() -> new CommandAttack());
+        BTreeNode actionSiegeFacility = new BTreeAction(() -> new CommandSiegeFacility());
+        BTreeNode actionCommandDefence  = new BTreeAction(() -> new CommandDefence());
+
+
+        isHaveEnemyCond.setTrueNode(isGotoHealCond);
+            isGotoHealCond.setTrueNode(actionHeal);
+            isGotoHealCond.setFalseNode(isCanNuclearAttack);
+                isCanNuclearAttack.setTrueNode(actionNuclearAttack);
+                isCanNuclearAttack.setFalseNode(caAttackEnemy);
+                    caAttackEnemy.setTrueNode(actionAttack);
+                    caAttackEnemy.setFalseNode(actionCommandDefence);
+
+        isHaveEnemyCond.setFalseNode(isNeedToCompact);
+
+            isNeedToCompact.setTrueNode(actionCompact);
+            isNeedToCompact.setFalseNode(isHaveFacility);
+
+                isHaveFacility.setTrueNode(actionSiegeFacility);
+                isHaveFacility.setFalseNode(isHaveEnemyInAllMap);
+
+                    isHaveEnemyInAllMap.setTrueNode(actionAttack);
+                    isHaveEnemyInAllMap.setFalseNode(actionCommandDefence);
+
+        bTree.addRoot(isHaveEnemyCond);
         army.setBehaviourTree(bTree);
     }
 
@@ -104,7 +130,7 @@ public class ArmyDivisions {
         if (armyKeys == null || armyKeys.size() == 0) {
             return null;
         }
-        return armyList.entrySet().stream().filter(entry -> armyKeys.contains(entry.getKey()) && entry.getValue().isArmyAlive()).map(entry -> entry.getValue()).collect(Collectors.toList());
+        return armyList.entrySet().stream().filter(entry -> armyKeys.contains(entry.getKey()) && entry.getValue().isAlive()).map(entry -> entry.getValue()).collect(Collectors.toList());
     }
 
     public void removeArmy(ArmyAllyOrdering army) {

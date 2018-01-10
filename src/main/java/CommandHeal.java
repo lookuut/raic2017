@@ -24,7 +24,7 @@ public class CommandHeal extends Command {
         double minDistance = Double.MAX_VALUE;
         ArmyAllyOrdering minDistArmy = null;
         for (ArmyAllyOrdering arrvArmy : armies) {
-            if (arrvArmy.isArmyAlive()) {
+            if (arrvArmy.isAlive()) {
                 arrvArmy.getForm().recalc(arrvArmy.getVehicles());
                 double distance = arrvArmy.getForm().getAvgPoint().distance(army.getForm().getAvgPoint());
                 if (distance < minDistance) {

@@ -1,4 +1,3 @@
-import model.Vehicle;
 import model.VehicleType;
 
 import java.util.*;
@@ -6,6 +5,9 @@ import java.util.*;
 public class Army {
 
     private Map<Long, SmartVehicle> vehicles;
+    private int durabilitySum;
+    private int durabilitySumRecalcTick;
+
     private Map<VehicleType, List<SmartVehicle>> vehiclesByType;
 
     private ArmyForm form;
@@ -21,6 +23,8 @@ public class Army {
         form = new ArmyForm();
         vehicleTypes = new HashMap<>();
         vehiclesByType = new HashMap<>();
+        durabilitySum = 0;
+        durabilitySumRecalcTick = -1;
     }
 
 
@@ -29,10 +33,13 @@ public class Army {
     }
 
     public void addVehicle (SmartVehicle vehicle) {
+        //set last modificated of army tick
         setLastModificateTick(MyStrategy.world.getTickIndex());
-        form.addPoint(vehicle.getPoint());
-        this.putVehicle(vehicle);
+        //put vehicle to update army form
+        putVehicle(vehicle);
+
         Integer count = 1;
+        //update vehicles types
         if (vehicleTypes.containsKey(vehicle.getType())) {
             count += vehicleTypes.get(vehicle.getType());
         }
@@ -44,7 +51,22 @@ public class Army {
         vehiclesByType.get(vehicle.getType()).add(vehicle);
         vehicleTypes.put(vehicle.getType(), count);
         getForm().updateEdgesVehicles(vehicle);
+
+        //update max vision range of army
         maxVisionRange = Math.max(maxVisionRange, vehicle.getMinVisionRange());
+    }
+
+    public int getDurabilitySum () {
+        if (durabilitySumRecalcTick == MyStrategy.world.getTickIndex()) {
+            return durabilitySum;
+        }
+
+        durabilitySum = getVehicles().values().stream().mapToInt(SmartVehicle::getDurability).sum();
+        return durabilitySum;
+    }
+
+    public double getAvgArmyDurabiluty() {
+        return getDurabilitySum() / getVehicleCount();
     }
 
     public void putVehicle(SmartVehicle vehicle) {
@@ -78,7 +100,16 @@ public class Army {
         return form;
     }
 
-    public boolean isArmyAlive () {
+    public boolean isMoving() {
+        for (SmartVehicle vehicle : getForm().getEdgesVehicles().values()) {
+            if (vehicle.isMoving()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isAlive() {
         return getVehicleCount() > 0;
     }
 
@@ -90,24 +121,22 @@ public class Army {
     }
 
     public SmartVehicle getGunnerVehicle(Point2D target) {
-        double minDistance = Double.MAX_VALUE;
-        double afterMinDistance = Double.MAX_VALUE;
-        SmartVehicle afterMinDistanceVehicle = getVehicles().values().stream().findFirst().get();
+        double maxDistance = 0.f;
+        SmartVehicle gunnerVehicle = null;
 
         for (SmartVehicle vehicle : getVehicles().values()) {
-            if (vehicle.getDurability() >= CustomParams.gunnerMinDurability) {
-                double distance = target.subtract(vehicle.getPoint()).magnitude();
-                if (distance < minDistance) {
-                    minDistance = distance;
-                } else {
-                    if (distance < afterMinDistance) {
-                        afterMinDistanceVehicle = vehicle;
-                        afterMinDistance = distance;
-                    }
+            if (vehicle.getDurability() > 0) {
+                double distance = vehicle.distanceToPoint(target.getX(), target.getY());
+
+                if (distance <= vehicle.getActualVisionRange() && distance > maxDistance) {
+                    gunnerVehicle = vehicle;
+                    maxDistance = distance;
                 }
             }
         }
-        return afterMinDistanceVehicle;
+
+        double visionRange = gunnerVehicle.getActualVisionRange();
+        return gunnerVehicle;
     }
 
     public SmartVehicle[] getNearestVehicle(Point2D[] points) {
@@ -169,6 +198,19 @@ public class Army {
 
         return minSpeed;
     }
+
+    public double getSpeed() {
+        double speed = 0.0;
+        for (VehicleType type : getVehiclesType()) {
+
+            if (speed < vehiclesByType.get(type).get(0).getMaxSpeed()) {
+                speed = vehiclesByType.get(type).get(0).getMaxSpeed();
+            }
+        }
+
+        return speed;
+    }
+
 
     public Map<VehicleType, List<SmartVehicle>> getVehiclesByType () {
         return this.vehiclesByType;

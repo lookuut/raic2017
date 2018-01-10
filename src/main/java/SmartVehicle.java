@@ -35,9 +35,8 @@ public class SmartVehicle  {
     protected MyStrategy strategy;
 
     protected BattleFieldCell battleFieldCell;
-    protected HashSet<ArmyAllyOrdering> armySet;
     // null if vehicle is not in any army;
-    protected Army army;
+    protected ArmyAllyOrdering army;
 
     protected Point2D leftBottomAngle;
     protected Point2D rightTopAngle;
@@ -75,8 +74,6 @@ public class SmartVehicle  {
         this.point = new Point2D(vehicle.getX(), vehicle.getY());
         this.leftBottomAngle = new Point2D(vehicle.getX() - vehicle.getRadius(),  vehicle.getY() - vehicle.getRadius());
         this.rightTopAngle = new Point2D(vehicle.getX() + vehicle.getRadius(),  vehicle.getY() + vehicle.getRadius());
-
-        armySet = new HashSet();
     }
 
 
@@ -216,7 +213,7 @@ public class SmartVehicle  {
     }
 
     public boolean isVisiblePoint (double x, double y) {
-        return distanceToPoint(x,y) < this.visionRange;
+        return distanceToPoint(x,y) < getActualVisionRange();
     }
 
     public boolean isAlly() {
@@ -327,15 +324,15 @@ public class SmartVehicle  {
     }
 
     public void addArmy(ArmyAllyOrdering army) {
-        armySet.add(army);
+        this.army = army;
     }
 
     public boolean isHaveArmy(ArmyAllyOrdering army) {
-        return armySet.contains(army);
+        return this.army == army;
     }
 
-    public HashSet<ArmyAllyOrdering> getArmySet () {
-        return armySet;
+    public ArmyAllyOrdering getArmy() {
+        return army;
     }
 
     /**
@@ -532,16 +529,16 @@ public class SmartVehicle  {
         if (isAerial()) {
             WeatherType[][] weather = MyStrategy.getWeatherMap();
 
-            if (weather[y][x] == WeatherType.CLOUD ) {
+            if (weather[x][y] == WeatherType.CLOUD ) {
                 factor = MyStrategy.game.getCloudWeatherVisionFactor();
-            } else if (weather[y][x] == WeatherType.RAIN) {
+            } else if (weather[x][y] == WeatherType.RAIN) {
                 factor = MyStrategy.game.getRainWeatherVisionFactor() ;
             }
         } else {
             TerrainType[][] terrain = MyStrategy.getTerrainMap();
-            if (terrain[y][x] == TerrainType.FOREST ) {
+            if (terrain[x][y] == TerrainType.FOREST ) {
                 factor = MyStrategy.game.getForestTerrainVisionFactor();
-            } else if (terrain[y][x] == TerrainType.SWAMP) {
+            } else if (terrain[x][y] == TerrainType.SWAMP) {
                 factor = MyStrategy.game.getSwampTerrainVisionFactor();
             }
             return getVisionRange() * factor;
@@ -555,13 +552,6 @@ public class SmartVehicle  {
             return MyStrategy.game.getForestTerrainVisionFactor() * getVisionRange();
         }
         return MyStrategy.game.getRainWeatherVisionFactor() * getVisionRange();
-    }
-
-    public double getMinSpeed() {
-        if (isTerrain()) {
-            return MyStrategy.game.getSwampTerrainSpeedFactor() * getMaxSpeed();
-        }
-        return MyStrategy.game.getRainWeatherSpeedFactor() * getMaxSpeed();
     }
 
     public double getAttackRange(boolean enemyIsAerial) {

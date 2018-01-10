@@ -45,7 +45,8 @@ public class BattleField {
     public void addVehicle(SmartVehicle vehicle) {
 
         if (vehicle.isAlly() && (vehicle.getDurability() == 0 || vehicle.isVehicleMoved())) {
-            for (ArmyAllyOrdering army : vehicle.getArmySet()) {
+            ArmyAllyOrdering army = vehicle.getArmy();
+            if (army != null) {
                 Command command = army.getRunningCommand();
                 if (command != null) {
                     army.getRunningCommand().processing(vehicle);
@@ -77,9 +78,19 @@ public class BattleField {
 
         }
 
-        if (vehicle.getDurability() > 0 && ((vehicleBattleFieldCell == null || (vehicleBattleFieldCell != null && vehicleBattleFieldCell != battleFieldCell))
-                || vehicle.isDurabilityChanched()
-                || vehicle.isAttackCooldownChanched())) {
+        if (vehicle.getDurability() == 0) {
+            vehicleBattleFieldCell.remove(vehicle);
+        }
+
+        if (vehicle.getDurability() > 0 &&
+                (
+                        (
+                                vehicleBattleFieldCell == null || (vehicleBattleFieldCell != null && vehicleBattleFieldCell != battleFieldCell)
+                        )
+                    || vehicle.isDurabilityChanched()
+                    || vehicle.isAttackCooldownChanched()
+                )
+                ) {
             battleFieldCell.addVehicle(vehicle);
             MyStrategy.enemyField.addVehicleToCell(battleFieldX, battleFieldY, vehicle);
         }
@@ -140,7 +151,10 @@ public class BattleField {
         
         Army allyArmy = new Army();
         Army enemyArmy = new Army();
-        
+
+        armies.get(MyStrategy.getEnemyPlayerId()).clear();
+        armies.get(MyStrategy.player.getId()).clear();
+
         for (int j = 0; j < getHeight(); j++) {
             for (int i = 0; i < getWidth(); i++) {
                 Point2D point = new Point2D(i,j);
@@ -179,57 +193,38 @@ public class BattleField {
         return armies.get(MyStrategy.player.getId());
     }
 
-    /*
-    public List<Army> defineEnemiesArmy() {
+    public void recursiveDeepSearchEnemies(Point2D center, Set<Point2D> visitedCells, Army enemyArmy, Army allyArmy) {
 
-        if (enemyArmiesCalcTick == MyStrategy.world.getTickIndex()) {
-            return enemyArmies;
-        }
+        Point2D[] points = new Point2D[5];
+        points[0] = new Point2D(0,-1);
+        points[1] = new Point2D(-1,0);
+        points[2] = new Point2D(1,0);
+        points[3] = new Point2D(0,1);
+        points[4] = new Point2D(0,0);
 
-        Set<Point2D> visitedCells = new HashSet();
-        enemyArmies = new ArrayList();
-        for (int j = 0; j < getHeight(); j++) {
-            for (int i = 0; i < getWidth(); i++) {
-                Point2D point = new Point2D(i,j);
-                if (battleField[j][i].getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
-                    if (!visitedCells.contains(point)) {
-                        Army enemyArmy = new Army();
-                        recursiveDeepSearchEnemies(point, visitedCells, enemyArmy);
-                        enemyArmies.add(enemyArmy);
-                        if (enemyArmies.size() > CustomParams.enemyArmiesMaxSize) {
-                            break;
-                        }
-                    }
+        for (Point2D point : points) {
+            Point2D visitedPoint = center.add(point);
+            if (visitedPoint.getY() < 0 || visitedPoint.getX() < 0 || visitedPoint.getX() >= getWidth() || visitedPoint.getY() >= getHeight()) {
+                continue;
+            }
+
+            BattleFieldCell cell = getBattleFieldCell(visitedPoint);
+
+            if (!visitedCells.contains(visitedPoint)) {
+                if (cell.getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
+                    cell.getVehicles(MyStrategy.getEnemyPlayerId()).values().forEach(vehicle -> enemyArmy.addVehicle(vehicle));
+                    visitedCells.add(visitedPoint);
+                    recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy, allyArmy);
+                }
+
+                if (cell.getVehicles(MyStrategy.player.getId()).size() > 0) {
+                    cell.getVehicles(MyStrategy.player.getId()).values().forEach(vehicle -> allyArmy.addVehicle(vehicle));
+                    visitedCells.add(visitedPoint);
+                    recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy, allyArmy);
                 }
             }
         }
-        return enemyArmies;
-    }*/
 
-    public void recursiveDeepSearchEnemies(Point2D point, Set<Point2D> visitedCells, Army enemyArmy, Army allyArmy) {
-        for (int j = -1; j <= 1  && (point.getIntY() + j) < getHeight(); j++) {
-            for (int i = -1; i <= 1 && (point.getIntX() + i) < getWidth(); i++) {
-                if (point.getIntY() + j < 0 || point.getIntX() + i < 0) {
-                    continue;
-                }
-                Point2D visitedPoint = new Point2D(point.getIntX() + i, point.getIntY() + j);
-                BattleFieldCell cell = getBattleFieldCell(visitedPoint);
-
-                if (!visitedCells.contains(visitedPoint)) {
-                    if (cell.getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
-                        cell.getVehicles(MyStrategy.getEnemyPlayerId()).values().forEach(vehicle -> enemyArmy.addVehicle(vehicle));
-                        visitedCells.add(visitedPoint);
-                        recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy, allyArmy);
-                    }
-
-                    if (cell.getVehicles(MyStrategy.player.getId()).size() > 0) {
-                        cell.getVehicles(MyStrategy.player.getId()).values().forEach(vehicle -> allyArmy.addVehicle(vehicle));
-                        visitedCells.add(visitedPoint);
-                        recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy, allyArmy);
-                    }
-                }
-            }
-        }
     }
 
     public BattleFieldCell searchEnemiesInRaious(int radious, Point2D point) {

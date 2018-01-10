@@ -10,8 +10,6 @@ class Commander {
     protected BehaviourTree<ArmyAlly> behaviourTree;
     protected Queue<BTreeAction> activeActions;
 
-    private static CommandNuclearAttack nuclearAttack;
-
     private Map<VehicleType, List<SmartVehicle>> noArmyVehicles;
     private Map<VehicleType, Square> noArmySquaereMap;
     private CommandNuclearDefence nuclearAttackDefence;
@@ -23,7 +21,7 @@ class Commander {
     //private TerrainArmiesForm terrainArmiesForm;
 
     /**
-     * @param strategy
+     *
      */
     private Commander() {
         divisions = new ArmyDivisions();
@@ -58,7 +56,6 @@ class Commander {
 
     public void logic () throws Exception {
         constructArmies();
-        //terrainArmiesForm.searchExpansionArmy();
         checkAttackNuclear();
         nuclearAttack();
         MyStrategy.commanderFacility.orderCreateVehicle();
@@ -74,7 +71,7 @@ class Commander {
 
         //run divisions logic
         for (ArmyAllyOrdering army : divisions.getArmyList()) {
-            if (army.isArmyAlive()) {
+            if (army.isAlive()) {
                 army.run();
             }
         }
@@ -87,10 +84,10 @@ class Commander {
                 if (entry.getValue().size() > CustomParams.minVehiclesCountInArmy) {
                     Square vehicleTypeSquare = noArmySquaereMap.get(entry.getKey());
                     if (
-                        entry.getKey() == VehicleType.FIGHTER || 
+                        entry.getKey() == VehicleType.FIGHTER ||
                         entry.getKey() == VehicleType.HELICOPTER || 
-                        entry.getKey() == VehicleType.TANK || 
-                        entry.getKey() == VehicleType.IFV || 
+                        entry.getKey() == VehicleType.TANK ||
+                        entry.getKey() == VehicleType.IFV ||
                         entry.getKey() == VehicleType.ARRV) {
                         divisions.addArmy(vehicleTypeSquare, new HashSet(Arrays.asList(entry.getKey())));
                     } 
@@ -103,24 +100,13 @@ class Commander {
         }
     }
 
-    public void clusteringArmies() {
-        MyStrategy.battleField.defineArmies();
-        List<Army> allyArmies = MyStrategy.battleField.getAllyArmies();
-        if (allyArmies.size() == divisions.getArmies().size()) {
-            return;
-        }
-
-        for (Army army : divisions.getArmies().values()) {
-        }
-    }
-
     public void check () {
 
         Iterator<Map.Entry<Integer, ArmyAllyOrdering>> iter = divisions.getArmies().entrySet().iterator();
         while (iter.hasNext()) {
             Map.Entry<Integer, ArmyAllyOrdering> entry = iter.next();
             ArmyAllyOrdering army = entry.getValue();
-            if (!army.isArmyAlive()) {//@TODO boolshit
+            if (!army.isAlive()) {//@TODO boolshit
                 divisions.removeArmy(army);
                 iter.remove();
             } else if (army.isRun()) {
@@ -133,44 +119,74 @@ class Commander {
         return divisions;
     }
 
+    private ArmyAllyOrdering nuclearAttackArmy;
+    private Point2D nuclearAttackTarget;
+
+    public boolean isCanNuclearAttack (Army army) {
+        return army == nuclearAttackArmy && MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0;
+    }
+
+    public Point2D getNuclearAttackTarget() {
+        return nuclearAttackTarget;
+    }
+
+    public boolean isHaveEnemyAround () {
+        for (ArmyAllyOrdering army : divisions.getArmyList()) {
+            if (army.isHaveEnemyAround(CustomParams.safetyDistance)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void nuclearAttack () {
         try {
 
-            if (isDelayNuclearAttack() || MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() > 0 || divisions.getArmies().size() == 0) {
+            if (MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() > 0) {
                 return;
             }
 
-            for (NuclearAttackPoint attackPoint : MyStrategy.enemyField.getNuclearAttackPointsRating()) {
+            if (divisions.getArmies().size() == 0) {
+                return;
+            }
+
+            if (!isHaveEnemyAround()) {
+                return;
+            }
+
+            double minTime = Double.MAX_VALUE;
+            ArmyAllyOrdering minTimeArmy = null;
+            Point2D minTimeNuclearTarget = null;
+            SortedSet<NuclearAttackPoint> nuclearAttackPointSortedSet = MyStrategy.enemyField.getNuclearAttackPointsRating();
+
+            for (NuclearAttackPoint point : nuclearAttackPointSortedSet) {
                 for (ArmyAllyOrdering army : divisions.getArmyList()) {
-                    if (army.getForm().isPointInDistance(attackPoint.getPoint(), MyStrategy.game.getTacticalNuclearStrikeRadius())) {//point in allow distance need cabum
-                        SmartVehicle vehicle = army.getGunnerVehicle(attackPoint.getPoint());
-                        Point2D fromPoint = vehicle.getPoint();
-                        Point2D targetVector = attackPoint.getPoint().subtract(fromPoint);
-
-                        double visionRange = vehicle.getMinVisionRange();
-
-                        if (army.getRunningCommand() instanceof  CommandMove) {
-                            CommandMove command = ((CommandMove) army.getRunningCommand());
-                            Point2D moveTargetVector = command.getTargetVector();
-                            double angle = moveTargetVector.angle(targetVector);
-                            if (angle >= 90 && angle < 270) {
-                                fromPoint = vehicle.getVehiclePointAtTick(moveTargetVector.normalize(), Math.min(MyStrategy.game.getTacticalNuclearStrikeDelay(),command.getMaxRunnableTick()));
-                            }
-                        }
-
-                        Point2D targetPoint = attackPoint.getPoint();
-                        Point2D targetPointDirection = attackPoint.getPoint().subtract(fromPoint);
-
-                        if (targetPointDirection.magnitude() > visionRange) {
-                            targetPoint = targetPointDirection.multiply(visionRange / targetPointDirection.magnitude()).add(fromPoint);
-                        }
-
-                        nuclearAttack = new CommandNuclearAttack(vehicle, targetPoint);
-                        nuclearAttack.run(army);
-                        break;
+                    double distance = army.getForm().getEdgesVehiclesCenter().subtract(point.getPoint()).magnitude();
+                    if (minTime > distance / army.getSpeed()) {
+                        minTime = distance / army.getSpeed();
+                        minTimeArmy = army;
+                        minTimeNuclearTarget = point.getPoint();
                     }
                 }
             }
+
+            nuclearAttackTarget = minTimeNuclearTarget;
+            nuclearAttackArmy = minTimeArmy;
+
+
+            if (nuclearAttackArmy.getRunningCommand() instanceof CommandAttack) {
+                nuclearAttackArmy.getRunningCommand().setState(CommandStates.Complete);
+            }
+
+            if (nuclearAttackArmy.getForm().isPointInVisionRange(getNuclearAttackTarget()) &&
+                    nuclearAttackArmy.getRunningCommand() instanceof CommandMove/* &&
+                    !nuclearAttackArmy.getForm().isDamagedByNuclearAttack(getNuclearAttackTarget())*/) {
+
+                nuclearAttackArmy.getRunningCommand().setState(CommandStates.Complete);
+                nuclearAttackArmy.addCommand(new CommandStop());
+            }
+
         } catch (Exception e)  {
             e.printStackTrace();
         }
@@ -191,19 +207,12 @@ class Commander {
                     square.addPoint(vehicle.getRightTopAngle());
                 }
             }
-            //terrainArmiesForm.addNewVehicle(vehicle);
+
             List<SmartVehicle> vehicleList = noArmyVehicles.get(vehicle.getType());
             vehicleList.add(vehicle);
         }
     }
 
-    static public boolean isDelayNuclearAttack () {
-        if (Commander.nuclearAttack == null || Commander.nuclearAttack.isFinished()) {
-            return false;
-        }
-
-        return Commander.nuclearAttack.check(null);
-    }
 
     public static void addTask(CommanderTask task) {
         tasksQueue.add(task);
