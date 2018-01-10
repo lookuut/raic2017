@@ -1,4 +1,6 @@
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 public class PPFieldEnemy extends PPField {
 
@@ -111,11 +113,11 @@ public class PPFieldEnemy extends PPField {
     public double getPointRadiousFactorSum(Point2D point, int radious) {
         double factor = 0;
         int count = 0;
-        for (int y = point.getIntY() - radious; y <= radious && y < getHeight(); y++) {
+        for (int y = point.getIntY() - radious; y <= (point.getIntY() + radious) && y < getHeight(); y++) {
             if (y < 0) {
                 continue;
             }
-            for (int x = point.getIntX() - radious; x <= radious && x < getWidth(); x++) {
+            for (int x = point.getIntX() - radious; x <= (point.getIntX() + radious) && x < getWidth(); x++) {
                 if (x >= 0) {
                     factor += getFactor(x, y);
                     count++;
@@ -124,6 +126,41 @@ public class PPFieldEnemy extends PPField {
         }
 
         return factor/ (double)count;
+    }
+
+    public List<PPFieldPoint> getEdgesValueInRadious(Point2D center, int radious) {
+
+        double minFactor = Double.POSITIVE_INFINITY;
+        double maxFactor = Double.NEGATIVE_INFINITY;
+
+        Point2D maxFactorPoint = null;
+        Point2D minFactorPoint = null;
+
+        for (int y = center.getIntY() - radious; y <= (center.getIntY() + radious) && y < getHeight(); y++) {
+            if (y < 0) {
+                continue;
+            }
+            for (int x = center.getIntX() - radious; x <= (center.getIntX() + radious) && x < getWidth(); x++) {
+                if (x >= 0) {
+                    if (maxFactor < getFactor(x, y)) {
+                        maxFactor = getFactor(x, y);
+                        maxFactorPoint = new Point2D(x,y);
+                    }
+
+                    if (minFactor > getFactor(x, y)) {
+                        minFactor = getFactor(x, y);
+                        minFactorPoint = new Point2D(x,y);
+                    }
+                }
+            }
+        }
+
+        List<PPFieldPoint> result = new ArrayList<>();
+
+        result.add(new PPFieldPoint(minFactorPoint, minFactor));
+        result.add(new PPFieldPoint(maxFactorPoint, maxFactor));
+
+        return result;
     }
 }
 

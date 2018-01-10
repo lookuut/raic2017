@@ -210,6 +210,73 @@ public class Army {
         return speed;
     }
 
+    public List<PPFieldPoint> getEdgeValues(PPFieldEnemy damageField) {
+
+        double minFactor = Double.POSITIVE_INFINITY;
+        double maxFactor = Double.NEGATIVE_INFINITY;
+
+        Point2D maxFactorPoint = null;
+        Point2D minFactorPoint = null;
+
+        Collection<SmartVehicle> edgesVehicles = getForm().getEdgesVehicles().values();
+        Set<Point2D> visitedCells = new HashSet<>();
+
+        Point2D centerPoint = getForm().getEdgesVehiclesCenter();
+
+        for (SmartVehicle vehicle : edgesVehicles) {
+            Point2D transformPoint = damageField.getTransformedPoint(vehicle.getPoint());
+            for (int y = -1; y <= 1; y++) {
+                for (int x = -1; x <= 1; x++) {
+                    Point2D point = new Point2D(transformPoint.getIntX() + x, transformPoint.getIntY() + y);
+
+                    if (point.getIntX() >= 0 && point.getIntX() < damageField.getWidth() &&
+                            point.getIntY() >= 0 && point.getIntY() < damageField.getHeight() &&
+                            !visitedCells.contains(point)) {
+
+                        if (maxFactor < damageField.getFactor(point)) {
+                            maxFactor = damageField.getFactor(point);
+                            maxFactorPoint = point;
+                        }
+
+                        if (minFactor > damageField.getFactor(point)) {
+                            minFactor = damageField.getFactor(point);
+                            minFactorPoint = point;
+                        }
+                    }
+                }
+            }
+        }
+
+        Point2D transformPoint = damageField.getTransformedPoint(centerPoint);
+
+        for (int y = -1; y <= 1; y++) {
+            for (int x = -1; x <= 1; x++) {
+                Point2D point = new Point2D(transformPoint.getIntX() + x, transformPoint.getIntY() + y);
+
+                if (point.getIntX() >= 0 && point.getIntX() < damageField.getWidth() &&
+                        point.getIntY() >= 0 && point.getIntY() < damageField.getHeight() &&
+                        !visitedCells.contains(point)) {
+
+                    if (maxFactor < damageField.getFactor(point)) {
+                        maxFactor = damageField.getFactor(point);
+                        maxFactorPoint = point;
+                    }
+
+                    if (minFactor > damageField.getFactor(point)) {
+                        minFactor = damageField.getFactor(point);
+                        minFactorPoint = point;
+                    }
+                }
+            }
+        }
+
+        List<PPFieldPoint> result = new ArrayList<>();
+
+        result.add(new PPFieldPoint(minFactorPoint, minFactor));
+        result.add(new PPFieldPoint(maxFactorPoint, maxFactor));
+
+        return result;
+    }
 
     public Map<VehicleType, List<SmartVehicle>> getVehiclesByType () {
         return this.vehiclesByType;

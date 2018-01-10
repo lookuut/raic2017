@@ -110,42 +110,10 @@ public class EnemyField {
         Point2D armyTransformedCentre = new Point2D(Math.round(armyCenter.getX() / propose), Math.round(armyCenter.getY() / propose));
         PPFieldEnemy damageField = getDamageField(types);
 
-        Function<Integer, Point2D> xAxisFunction = (y) -> {
-            try {
-                for (int x = 1; x <= intDangerRadoius; x++) {
-                    for (VehicleType type : types) {
 
-                        if (armyTransformedCentre.getIntX() + x < getWidth() && damageField.getFactor(armyTransformedCentre.getIntX() + x, y) > 0) {
-                            return damageField.getWorldPoint(new Point2D(armyTransformedCentre.getIntX() + x, y));
-                        }
-
-                        if (armyTransformedCentre.getIntX() - x >= 0 && damageField.getFactor(armyTransformedCentre.getIntX() - x, y) > 0) {
-                            return damageField.getWorldPoint(new Point2D(armyTransformedCentre.getIntX() - x, y));
-                        }
-                    }
-                }
-            } catch (ArrayIndexOutOfBoundsException e) {
-                e.printStackTrace();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return null;
-        };
-
-        for (int y = 0; y <= intDangerRadoius; y++) {
-            if (armyTransformedCentre.getIntY() + y < getHeight() && armyTransformedCentre.getIntY() + y >= 0) {
-                Point2D point = xAxisFunction.apply(armyTransformedCentre.getIntY() + y);
-                if (point != null) {
-                    return point;
-                }
-            }
-
-            if (armyTransformedCentre.getIntY() - y >= 0 && armyTransformedCentre.getIntY() - y < getHeight()) {
-                Point2D point = xAxisFunction.apply(armyTransformedCentre.getIntY() - y);
-                if (point != null) {
-                    return point;
-                }
-            }
+        List<PPFieldPoint> edges = damageField.getEdgesValueInRadious(armyTransformedCentre, intDangerRadoius);
+        if (edges.get(1).point != null && damageField.getFactor(edges.get(1).point) > 0) {
+            return damageField.getWorldPoint(edges.get(1).point);
         }
 
         return null;

@@ -24,7 +24,7 @@ public class CommandNuclearAttack extends Command {
 
             if (!army.getForm().isPointInVisionRange(targetPoint)) {
                 army.getForm().recalc(army.getVehicles());
-                army.addCommand(new CommandMove(targetPoint.subtract(army.getForm().getAvgPoint())));
+                army.addCommand(new CommandMove(targetPoint.subtract(army.getForm().getAvgPoint()), false));
                 setState(CommandStates.Complete);
                 return;
             }

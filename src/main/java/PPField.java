@@ -171,6 +171,10 @@ public class PPField {
         return point.multiply(getWidth() /MyStrategy.world.getWidth());
     }
 
+    public int transformLenght (double worldLenght) {
+        return (int)Math.ceil(worldLenght * getWidth() / MyStrategy.world.getWidth());
+    }
+
     public void print() {
         //System.out.println(Arrays.deepToString(field).replaceAll("],", "]," + System.getProperty("line.separator")));
         printCuttedFloats(100);

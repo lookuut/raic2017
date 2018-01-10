@@ -61,6 +61,10 @@ public class ArmyDivisions {
                 army
         );
 
+        BTreeNode isNeedToBeforeAttackCompact = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isNeedToCompact()),
+                army
+        );
         //CONDITION: is have enemy around
         BTreeNode isHaveEnemyCond = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isHaveEnemyAround(CustomParams.safetyDistance)),
@@ -80,8 +84,8 @@ public class ArmyDivisions {
         );
 
         //CONDITION: if have enemy in all map
-        BTreeNode caAttackEnemy = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isHaveEnemy()),
+        BTreeNode canAttackEnemy = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.mightWinEnemy()),
                 army
         );;
 
@@ -98,9 +102,12 @@ public class ArmyDivisions {
             isGotoHealCond.setTrueNode(actionHeal);
             isGotoHealCond.setFalseNode(isCanNuclearAttack);
                 isCanNuclearAttack.setTrueNode(actionNuclearAttack);
-                isCanNuclearAttack.setFalseNode(caAttackEnemy);
-                    caAttackEnemy.setTrueNode(actionAttack);
-                    caAttackEnemy.setFalseNode(actionCommandDefence);
+                isCanNuclearAttack.setFalseNode(canAttackEnemy);
+
+                    canAttackEnemy.setTrueNode(isNeedToBeforeAttackCompact);
+                        isNeedToBeforeAttackCompact.setTrueNode(actionCompact);
+                        isNeedToBeforeAttackCompact.setFalseNode(actionAttack);
+                    canAttackEnemy.setFalseNode(actionCommandDefence);
 
         isHaveEnemyCond.setFalseNode(isNeedToCompact);
 

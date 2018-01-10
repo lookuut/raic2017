@@ -579,11 +579,11 @@ public class SmartVehicle  {
             return true;
         }
 
-        if (allyType == VehicleType.HELICOPTER && (enemyType == VehicleType.ARRV || enemyType == VehicleType.TANK || enemyType == VehicleType.HELICOPTER || enemyType == VehicleType.IFV))  {
+        if (allyType == VehicleType.HELICOPTER && (enemyType == VehicleType.FIGHTER || enemyType == VehicleType.ARRV || enemyType == VehicleType.TANK || enemyType == VehicleType.HELICOPTER || enemyType == VehicleType.IFV))  {
             return true;
         }
 
-        if (allyType == VehicleType.IFV && (enemyType == VehicleType.HELICOPTER || enemyType == VehicleType.FIGHTER || enemyType == VehicleType.IFV || enemyType == VehicleType.ARRV))  {
+        if (allyType == VehicleType.IFV && (enemyType == VehicleType.HELICOPTER || enemyType == VehicleType.FIGHTER || enemyType == VehicleType.IFV || enemyType == VehicleType.ARRV || enemyType == VehicleType.TANK))  {
             return true;
         }
 

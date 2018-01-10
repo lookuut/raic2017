@@ -45,7 +45,39 @@ public class ArmyAlly extends Army {
         try {
             target = new TargetPoint();
 
-            Army targetArmy = MyStrategy.battleField.getTargetArmy(this);
+            PPFieldEnemy damageField = getDamageField();
+            double allyArmyMinFactor = getEdgeValues(damageField).get(0).value;
+
+            MyStrategy.battleField.defineArmies();
+            List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
+
+            double minDistance = Double.MAX_VALUE;
+            double minFactor = Double.MAX_VALUE;
+            Army targetArmy = null;
+            Army minFactorArmy = null;
+            for (Army enemyArmy : enemyArmies) {
+                for (VehicleType enemyVehicleType : enemyArmy.getVehiclesType()) {
+                    if (SmartVehicle.isTargetVehicleType(getVehiclesType().iterator().next(), enemyVehicleType)){
+                        List<PPFieldPoint> enemyEdges = enemyArmy.getEdgeValues(damageField);
+                        double distance = enemyArmy.getForm().getEdgesVehiclesCenter().subtract(getForm().getAvgPoint()).magnitude();
+                        if (allyArmyMinFactor + enemyEdges.get(1).value < 0) {//can win this enemy
+                            if (minDistance > distance) {
+                                targetArmy = enemyArmy;
+                                minDistance = distance;
+                            }
+                            if (allyArmyMinFactor + enemyEdges.get(1).value < minFactor) {
+                                minFactor = allyArmyMinFactor + enemyEdges.get(1).value;
+                                minFactorArmy = enemyArmy;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (isAerial() && minFactorArmy != null) {
+                targetArmy = minFactorArmy;
+            }
 
             if (targetArmy == null) {//no army to kill, just scan map
                 return null;
@@ -80,6 +112,13 @@ public class ArmyAlly extends Army {
                 }
             }
         }
+    }
+
+    public boolean mightWinEnemy () {
+        PPFieldEnemy damageField = getDamageField();
+        List<PPFieldPoint> edges = getEdgeValues(damageField);
+
+        return edges.get(0).value + edges.get(1).value < 0;
     }
 
     public boolean isHaveEnemy () {

@@ -1,3 +1,4 @@
+import java.util.List;
 
 public class CommandAttack extends Command {
 
@@ -11,8 +12,8 @@ public class CommandAttack extends Command {
         army.getForm().recalc(army.getVehicles());
         target = army.searchNearestEnemy();
 
-
         if (target == null) {//no enemy for vehicle
+            army.addCommand(new CommandDefence());
             complete();
             return;
         }
@@ -46,19 +47,13 @@ public class CommandAttack extends Command {
 
         PPFieldEnemy damageField = army.getDamageField();
 
-        for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
-            if (vehicle.getDurability() > 0) {
-                Point2D moveDirection = target.vector.normalize().multiply(CustomParams.tileCellSize);
-                Point2D transformedVehcilePoint = damageField.getTransformedPoint(vehicle.getPoint().add(moveDirection));
-                if (transformedVehcilePoint.getX() < damageField.getWidth() && transformedVehcilePoint.getY() < damageField.getHeight() &&
-                        transformedVehcilePoint.getX() >= 0 && transformedVehcilePoint.getY() >= 0 &&
-                        damageField.getFactor(transformedVehcilePoint) >= 0) {//fuck this shit run forest run
+        List<PPFieldPoint> edges = damageField.getEdgesValueInRadious(
+                damageField.getTransformedPoint(army.getForm().getEdgesVehiclesCenter()),
+                damageField.transformLenght(CustomParams.dangerRadious));
 
-                    army.addCommand(new CommandDefence());
-                    complete();
-                    break;
-                }
-            }
+        if (edges.get(0).value + edges.get(1).value > 0) {
+            complete();
+            army.addCommand(new CommandDefence());
         }
 
         return super.check(army);
