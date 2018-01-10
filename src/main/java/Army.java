@@ -77,12 +77,10 @@ public class Army {
     }
 
     public void removeVehicle(SmartVehicle vehicle) {
-        vehicles.remove(vehicle);
+        vehicles.remove(vehicle.getId());
         vehicleTypes.put(vehicle.getType(), vehicleTypes.get(vehicle.getType()) - 1);
         getForm().removeVehicle(vehicles, vehicle);
     }
-
-
 
     public boolean containVehicle(Long vehicleId) {
         return vehicles.containsKey(vehicleId);
@@ -92,8 +90,9 @@ public class Army {
         return vehicleTypes.keySet();
     }
 
-    public Long getVehicleCount() {
-        return vehicles.entrySet().stream().filter(entry -> entry.getValue().getDurability() > 0).count();
+    public int getVehicleCount() {
+        return vehicles.size();
+        //return vehicles.entrySet().stream().filter(entry -> entry.getValue().getDurability() > 0).count();
     }
 
     public ArmyForm getForm() {

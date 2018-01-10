@@ -92,9 +92,9 @@ public class CommandQueue {
                         runningCommands.getCommand().pinned();
                         incrementGroupCounter(runningCommands);
                         incrementCommandCounter();
-                        System.out.println("Running armyId " + runningCommands.getArmyId());
+                        //System.out.println("Running armyId " + runningCommands.getArmyId());
                     } else {
-                        System.out.println("======================>");
+                        //System.out.println("======================>");
                     }
                 }
             }

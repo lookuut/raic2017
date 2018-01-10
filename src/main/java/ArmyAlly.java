@@ -114,7 +114,7 @@ public class ArmyAlly extends Army {
             return false;
         }
 
-        Long vehicleCount = getVehicleCount();
+        int vehicleCount = getVehicleCount();
         Map<Point2D, SmartVehicle> edgesVehicles = getForm().getEdgesVehicles();
 
         double maxDistance = 0;

@@ -75,6 +75,10 @@ public class ArmyAllyOrdering extends ArmyAlly {
     }
 
     public void result(SmartVehicle vehicle) {
+        if (vehicle.getDurability() == 0 && getVehicles().containsKey(vehicle.getId())) {
+            removeVehicle(vehicle);
+        }
+
         if (runningCommand == null) {
             return;
         }
@@ -83,15 +87,10 @@ public class ArmyAllyOrdering extends ArmyAlly {
             runningCommand.result(this, vehicle);
         }
 
-
         if (containVehicle(vehicle.getId())) {
-            if ((vehicle.isVehicleMoved() ||  vehicle.getDurability() == 0)) {
+            if (vehicle.isVehicleMoved() && vehicle.getDurability() > 0) {
                 putVehicle(vehicle);
                 getTrack().addStep(MyStrategy.world.getTickIndex(), new Step(battleField.pointTransform(vehicle.getPoint()), CustomParams.allyUnitPPFactor), vehicle.getType());
-
-                if (vehicle.getDurability() == 0) {
-                    removeVehicle(vehicle);
-                }
             }
             setLastModificateTick(MyStrategy.world.getTickIndex());
         }

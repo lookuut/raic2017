@@ -119,9 +119,6 @@ public class BattleField {
         Set<VehicleType> allyTypes = allyArmy.getVehiclesType();
         MyStrategy.battleField.defineArmies();
         List<Army> enemyArmies = getEnemyArmies();
-        
-        System.out.println(">>>>>>>>>>>>>>>>>>>>>>");
-        System.out.println(enemyArmies);
 
         Army targetArmy = null;
         for (Army enemyArmy : enemyArmies) {

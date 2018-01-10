@@ -70,32 +70,6 @@ public class ArmyForm {
         return getMaxPoint().subtract(getMinPoint());
     }
 
-
-    public Point2D[] getEdgePoints(Point2D directionPoint) {
-        Point2D[] edges = new Point2D[3];
-        if ((directionPoint.getX() >= avgPoint.getX() && directionPoint.getY() > avgPoint.getY())
-                ||
-                (directionPoint.getX() <= avgPoint.getX() && directionPoint.getY() < avgPoint.getY())) {
-            edges[0] = new Point2D(minPoint.getX(), maxPoint.getY());
-            edges[1] = new Point2D(maxPoint.getX(), minPoint.getY());
-        } else {
-            edges[0] = maxPoint.clone();
-            edges[1] = minPoint.clone();
-        }
-
-        if (directionPoint.getX() >= avgPoint.getX() && directionPoint.getY() >= avgPoint.getY()) {
-            edges[2] = maxPoint.clone();
-        } else if (directionPoint.getX() < avgPoint.getX() && directionPoint.getY() < avgPoint.getY()) {
-            edges[2] = minPoint.clone();
-        } else if (directionPoint.getX() < avgPoint.getX() && directionPoint.getY() >= avgPoint.getY()) {
-            edges[2] = new Point2D(minPoint.getX(), maxPoint.getY());
-        } else if (directionPoint.getX() >= avgPoint.getX() && directionPoint.getY() < avgPoint.getY()) {
-            edges[2] = new Point2D(maxPoint.getX(), minPoint.getY());
-        }
-
-        return edges;
-    }
-
     public void updateEdgesVehicles(SmartVehicle vehicle) {
         for (Point2D edgePoint : MyStrategy.getBorderPointList()) {
             if (!edgesVehicles.containsKey(edgePoint) || vehicle.getPoint().distance(edgePoint) < edgesVehicles.get(edgePoint).getPoint().distance(edgePoint)) {

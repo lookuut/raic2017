@@ -58,6 +58,7 @@ class Commander {
         constructArmies();
         checkAttackNuclear();
         nuclearAttack();
+
         MyStrategy.commanderFacility.orderCreateVehicle();
 
         while (tasksQueue.size() > 0) {

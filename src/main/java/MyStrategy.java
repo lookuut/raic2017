@@ -23,7 +23,7 @@ public final class MyStrategy implements Strategy {
     static protected HashMap<Long, SmartVehicle> previousVehiclesStates;
     private static  HashMap<Long, SmartVehicle> vehicles;
     private static HashMap<Long, SmartVehicle> enemyVehicles;
-
+    public static Profiler profiler;
 
     protected ArmyDamageField armyDamageField;
     public static  Commander commander;
@@ -35,6 +35,7 @@ public final class MyStrategy implements Strategy {
         this.enemyVehicles = new HashMap<>();
         this.commanderFacility = new CommanderFacility();
         strategyTimeSum = 0;
+        profiler = new Profiler();
     }
 
     protected void init(Player me, World world, Game game, Move move) throws Exception {
@@ -145,7 +146,6 @@ public final class MyStrategy implements Strategy {
 
                 battleField.addVehicle(smartVehicle);
                 updateVehiclesInArmies.accept(smartVehicle);
-
             });
 
         Arrays.stream(
