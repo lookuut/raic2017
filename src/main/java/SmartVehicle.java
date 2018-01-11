@@ -148,6 +148,10 @@ public class SmartVehicle  {
         return point;
     }
 
+    public void setPoint(Point2D point) {
+        this.point = point;
+    }
+
     public double getGroundAttackRange () {
         return groundAttackRange;
     }
@@ -346,11 +350,11 @@ public class SmartVehicle  {
         Point2D startPoint = getPoint().clone();
         Point2D targetPoint = getPoint().add(direction);
 
-        if (direction.getY() < 0) {
-            startPoint = targetPoint.clone();
-            targetPoint = getPoint().clone();
-            direction = direction.multiply(-1);
-        }
+        targetPoint.setX(Math.max(targetPoint.getX(),0 ));
+        targetPoint.setY(Math.max(targetPoint.getY(),0 ));
+
+        targetPoint.setX(Math.min(targetPoint.getX(), MyStrategy.world.getWidth() - 1));
+        targetPoint.setY(Math.min(targetPoint.getY(), MyStrategy.world.getHeight() - 1));
 
         startPoint.setX(Math.max(startPoint.getX(), 0));
         startPoint.setY(Math.max(startPoint.getY(), 0));
@@ -364,11 +368,11 @@ public class SmartVehicle  {
 
         Point2D voxelEndPoint = targetPoint.multiply(1/(double)propose);
 
-        Integer tStartX = (int)Math.floor(voxelStartPoint.getX()) * propose;
-        Integer tStartY = (int)Math.floor(voxelStartPoint.getY()) * propose;
-
         Integer stepX = propose * (direction.getX() < 0  ? -1 : 1);
         Integer stepY = propose * (direction.getY() < 0  ? -1 : 1);
+
+        Integer tStartX = (stepX >= 0 ?(int)Math.floor(voxelStartPoint.getX()) : (int)Math.ceil(voxelStartPoint.getX())) * propose;
+        Integer tStartY = (stepY >= 0 ?(int)Math.floor(voxelStartPoint.getY()) : (int)Math.ceil(voxelStartPoint.getY())) * propose;
 
         Point2D previousPoint = startPoint;
 
@@ -402,11 +406,21 @@ public class SmartVehicle  {
                 throw new Exception("Cant intersect lines found");
             }
             //@TODO workaround
+            if (tStartX / propose >= MyStrategy.game.getTerrainWeatherMapColumnCount() ||
+                    tStartY / propose >= MyStrategy.game.getTerrainWeatherMapRowCount() ||
+                    tStartX / propose < 0 ||
+                    tStartY / propose < 0) {
+                break;
+            }
             speed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);
-            if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.magnitude() < horIntersectPoint.magnitude())) {
+            if (horIntersectPoint != null && verIntersectPoint != null && horIntersectPoint.magnitude() == verIntersectPoint.magnitude()) {
+                tStartX += stepX;
+                tStartY += stepY;
+                intersectPoint = verIntersectPoint;
+            } else if (horIntersectPoint == null || (verIntersectPoint != null && verIntersectPoint.subtract(startPoint).magnitude() < horIntersectPoint.subtract(startPoint).magnitude())) {
                 tStartX += stepX;
                 intersectPoint = verIntersectPoint;
-            } else if (verIntersectPoint == null || (horIntersectPoint != null && horIntersectPoint.magnitude() <= verIntersectPoint.magnitude())) {
+            } else if (verIntersectPoint == null || (horIntersectPoint != null && verIntersectPoint.subtract(startPoint).magnitude() >= horIntersectPoint.subtract(startPoint).magnitude())) {
                 tStartY += stepY;
                 intersectPoint = horIntersectPoint;
             }
@@ -414,8 +428,14 @@ public class SmartVehicle  {
             tickSum += previousPoint.subtract(intersectPoint).magnitude() / speed;
             previousPoint = intersectPoint;
         }
-        speed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);;
-        tickSum += previousPoint.subtract(targetPoint).magnitude() / speed;
+
+        int x = tStartX / propose;
+        int y = tStartY / propose;
+
+        if (x >= 0 && x < MyStrategy.game.getTerrainWeatherMapColumnCount() && y >= 0 && y < MyStrategy.game.getTerrainWeatherMapRowCount()) {
+            speed = getMaxSpeed() * getEnviromentSpeedFactor(tStartX / propose, tStartY / propose);;
+            tickSum += previousPoint.subtract(targetPoint).magnitude() / speed;
+        }
 
         return (int)Math.ceil(tickSum);
     }

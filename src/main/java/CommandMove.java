@@ -76,12 +76,7 @@ public class CommandMove extends Command {
 
                     Integer maxRunnableTick = 0;
                     for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
-                        if (vehicle.getDurability() > 0) {
-                            Integer vehicleRunableTick = Math.max(vehicle.getVehiclePointAtTick(target.vector), 1);
-                            if (maxRunnableTick < vehicleRunableTick) {
-                                maxRunnableTick = vehicleRunableTick;
-                            }
-                        }
+                        maxRunnableTick = Math.max(vehicle.getVehiclePointAtTick(target.vector), maxRunnableTick);
                     }
 
                     this.maxRunnableTick = maxRunnableTick;

@@ -97,6 +97,27 @@ public final class MyStrategy implements Strategy {
         }
     }
 
+    public void testGetVehiclePointAtTick (SmartVehicle vehicle) {
+        try {
+
+
+            vehicle.setPoint(new Point2D(512, 512));
+            Point2D pathVector = new Point2D(-120, 0);
+
+            for (int angleSector = 0; angleSector < CustomParams.pathFinderSectorCount; angleSector++) {
+
+                double angle = (angleSector % 2 == 1 ? -1 : 1) * angleSector * (2 * Math.PI) / CustomParams.pathFinderSectorCount;
+                Point2D turnedPathVector = pathVector.turn(angle);
+                int tick = vehicle.getVehiclePointAtTick(turnedPathVector);
+                System.out.println(tick);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            System.out.println("dawdadw");
+        }
+    }
 
     public void updateWorld(World world) {
         updateVehicles(world);

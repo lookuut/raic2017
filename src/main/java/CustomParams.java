@@ -4,6 +4,7 @@ public class CustomParams {
     public static int pathFinderSectorCount = 24;
     public static int pathSegmentLenght = 80;
     public static int minPathFactor = 30;
+    public static double minDamageDelta = 10;
     //search safety point sector count
     public static int searchSafetyZoneSectorCount = 12;
     public static int safetyDistance = 200;

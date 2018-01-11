@@ -54,10 +54,11 @@ public class ArmyAlly extends Army {
             double minDistance = Double.MAX_VALUE;
             Point2D minDistancePoint = null;
             double minDistanceFactor = 0;
+            Army minDistanceArmy = null;
 
             double minFactor = Double.MAX_VALUE;
             Point2D minFactorPoint = null;
-
+            Army minFactorArmy = null;
             for (Army enemyArmy : enemyArmies) {
                 for (VehicleType enemyVehicleType : enemyArmy.getVehiclesType()) {
                     if (SmartVehicle.isTargetVehicleType(getVehiclesType().iterator().next(), enemyVehicleType)){
@@ -68,6 +69,7 @@ public class ArmyAlly extends Army {
                                 if (edgeVehicleDamageFactor < minFactor) {
                                     minFactor = edgeVehicleDamageFactor;
                                     minFactorPoint = enemyEdgeVehicle.getPoint();
+                                    minFactorArmy = enemyArmy;
                                 }
 
                                 double distance = enemyEdgeVehicle.getPoint().subtract(getForm().getAvgPoint()).magnitude();
@@ -76,6 +78,7 @@ public class ArmyAlly extends Army {
                                     minDistance = distance;
                                     minDistancePoint = enemyEdgeVehicle.getPoint();
                                     minDistanceFactor = edgeVehicleDamageFactor;
+                                    minDistanceArmy = enemyArmy;
                                 }
                             }
                         }
@@ -86,9 +89,11 @@ public class ArmyAlly extends Army {
             if (isAerial() && minFactorPoint != null) {
                 target.vector = minFactorPoint.subtract(getForm().getAvgPoint());
                 target.maxDamageValue = minFactor;
+                target.targetArmy = minFactorArmy;
             } else if (minDistancePoint != null) {
                 target.vector = minDistancePoint.subtract(getForm().getAvgPoint());
                 target.maxDamageValue = minDistanceFactor;
+                target.targetArmy = minDistanceArmy;
             } else {
                 return null;
             }

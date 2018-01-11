@@ -80,7 +80,7 @@ class Commander {
         
         for (Map.Entry<VehicleType, List<SmartVehicle>> entry : noArmyVehicles.entrySet()) {
             try {
-                if (entry.getValue().size() > CustomParams.minVehiclesCountInArmy) {
+                if (entry.getValue().size() >= CustomParams.minVehiclesCountInArmy) {
                     Square vehicleTypeSquare = noArmySquaereMap.get(entry.getKey());
                     if (
                         entry.getKey() == VehicleType.FIGHTER ||

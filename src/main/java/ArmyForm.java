@@ -1,5 +1,7 @@
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ArmyForm {
@@ -168,5 +170,26 @@ public class ArmyForm {
         avgPoint.setY(avgPoint.getY() / edgesVehicleCount);
 
         return avgPoint;
+    }
+
+    public List<Point2D> getNearestEdgesPoints(ArmyForm enemyArmyForm) {
+
+        Point2D minDistanceAllyPoint = null;
+        Point2D minDistanceEnemyPoint = null;
+        double minDistance = Double.MAX_VALUE;
+        for (SmartVehicle vehicle : getEdgesVehicles().values()) {
+            for (SmartVehicle enemyVehicle : enemyArmyForm.getEdgesVehicles().values()) {
+                double distance = vehicle.getPoint().subtract(enemyVehicle.getPoint()).magnitude();
+                if (distance < minDistance) {
+                    minDistanceAllyPoint = vehicle.getPoint();
+                    minDistanceEnemyPoint = enemyVehicle.getPoint();
+                }
+            }
+        }
+
+        List<Point2D> result = new ArrayList<>();
+        result.add(minDistanceAllyPoint);
+        result.add(minDistanceEnemyPoint);
+        return result;
     }
 }

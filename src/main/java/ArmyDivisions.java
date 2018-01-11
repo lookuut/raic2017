@@ -113,6 +113,7 @@ public class ArmyDivisions {
                     isCanNuclearAttack.setFalseNode(isNeedToBeforeAttackCompact);
                         isNeedToBeforeAttackCompact.setTrueNode(actionCompact);
                         isNeedToBeforeAttackCompact.setFalseNode(actionAttack);
+
                 isHaveEnemyWeakness.setFalseNode(actionCommandDefence);
             isHaveEnemyCond.setFalseNode(isNeedToCompact);
 

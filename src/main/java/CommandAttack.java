@@ -1,9 +1,14 @@
+import java.util.ArrayList;
+import java.util.List;
 
 public class CommandAttack extends Command {
 
     private TargetPoint target;
+    private double movingEndDamageSum;
+    private List<Point2D> movingEndCells;
 
     public CommandAttack () {
+        movingEndCells = new ArrayList<>();
     }
 
     @Override
@@ -39,13 +44,47 @@ public class CommandAttack extends Command {
             move.setPriority(CommandPriority.High);
         }
 
+        for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
+            Point2D transformedPoint = army.getDamageField().getTransformedPoint(vehicle.getPoint().add(target.vector));
+            if (Math.floor(transformedPoint.getX()) < 0) {
+                transformedPoint.setX(0.0);
+            }
+            if (Math.floor(transformedPoint.getY()) < 0) {
+                transformedPoint.setY(0.0);
+            }
+
+            if (Math.floor(transformedPoint.getX()) >= army.getDamageField().getWidth()) {
+                transformedPoint.setX(army.getDamageField().getWidth() - 1);
+            }
+
+            if (Math.floor(transformedPoint.getY()) >= army.getDamageField().getHeight()) {
+                transformedPoint.setY(army.getDamageField().getHeight() - 1);
+            }
+
+            movingEndCells.add(transformedPoint);
+            movingEndDamageSum += army.getDamageField().getFactor(transformedPoint);
+        }
+
         setParentCommand(move);
     }
 
     public boolean check(ArmyAllyOrdering army) {
+
         if (!army.haveEnemyWeakness()) {
             army.addCommand(new CommandDefence());
             complete();
+        } else if (army.isHaveEnemyAround(CustomParams.safetyDistance)) {
+            PPFieldEnemy damageField = army.getDamageField();
+            double movingEndDamageSum = 0;
+
+            for (Point2D point2D : movingEndCells) {
+                movingEndDamageSum += damageField.getFactor(point2D);
+            }
+
+            if (movingEndDamageSum > 0 && movingEndDamageSum > this.movingEndDamageSum + Math.abs(movingEndDamageSum) * 0.3) {
+                army.addCommand(new CommandDefence());
+                complete();
+            }
         }
 
         return super.check(army);
