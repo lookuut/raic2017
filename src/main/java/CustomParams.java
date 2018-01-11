@@ -10,7 +10,6 @@ public class CustomParams {
     public static int dangerRadious = 160;
 
     public static float armyScaleFactor = 0.1F;
-    public static int enemyArmiesMaxSize = 20;
 
     public static int maxLinearPPRange = 8;
     public static int noAssignGroupId = 0;
@@ -23,7 +22,7 @@ public class CustomParams {
 
     //armies config
     public static double compactAngle = Math.PI / 4;
-    public static int minVehiclesCountInArmy = 25;
+    public static int minVehiclesCountInArmy = 50;
     public static int maxVehiclesCountInArmy = 25;
     public static double maxSizeVehicleInArmy = 1.0;//for scale
 
