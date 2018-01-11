@@ -1,4 +1,3 @@
-import java.util.List;
 
 public class CommandAttack extends Command {
 
@@ -44,16 +43,9 @@ public class CommandAttack extends Command {
     }
 
     public boolean check(ArmyAllyOrdering army) {
-
-        PPFieldEnemy damageField = army.getDamageField();
-
-        List<PPFieldPoint> edges = damageField.getEdgesValueInRadious(
-                damageField.getTransformedPoint(army.getForm().getEdgesVehiclesCenter()),
-                damageField.transformLenght(CustomParams.dangerRadious));
-
-        if (edges.get(0).value + edges.get(1).value > 0) {
-            complete();
+        if (!army.haveEnemyWeakness()) {
             army.addCommand(new CommandDefence());
+            complete();
         }
 
         return super.check(army);
@@ -78,7 +70,7 @@ public class CommandAttack extends Command {
                 if ((angle < 180 / 6 && angle > -180 / 6) || (angle > (2 * 180 - 180 / 6) && angle < (2 * 180 + 180 / 6))) { //enemy running
                     //@TODO do something to catch them
                 } else if ((angle < 180 + 180 / 6 && angle > 180  - 180 / 6)) {
-
+                    /*
                     if (army.isAerial()) {
                         CommandScale scale = new CommandScale(10);
                         CommandRotate rotate1 = new CommandRotate(Math.PI / 2, army.getForm().getAvgPoint() , 20);
@@ -91,7 +83,7 @@ public class CommandAttack extends Command {
                         army.addCommand(scale);
                         army.addCommand(rotate1);
                         army.addCommand(rotate2);
-                    }
+                    }*/
                     complete();
                 }
             }

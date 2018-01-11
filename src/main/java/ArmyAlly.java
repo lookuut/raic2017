@@ -52,38 +52,46 @@ public class ArmyAlly extends Army {
             List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
 
             double minDistance = Double.MAX_VALUE;
+            Point2D minDistancePoint = null;
+            double minDistanceFactor = 0;
+
             double minFactor = Double.MAX_VALUE;
-            Army targetArmy = null;
-            Army minFactorArmy = null;
+            Point2D minFactorPoint = null;
+
             for (Army enemyArmy : enemyArmies) {
                 for (VehicleType enemyVehicleType : enemyArmy.getVehiclesType()) {
                     if (SmartVehicle.isTargetVehicleType(getVehiclesType().iterator().next(), enemyVehicleType)){
-                        List<PPFieldPoint> enemyEdges = enemyArmy.getEdgeValues(damageField);
-                        double distance = enemyArmy.getForm().getEdgesVehiclesCenter().subtract(getForm().getAvgPoint()).magnitude();
-                        if (allyArmyMinFactor + enemyEdges.get(1).value < 0) {//can win this enemy
-                            if (minDistance > distance) {
-                                targetArmy = enemyArmy;
-                                minDistance = distance;
-                            }
-                            if (allyArmyMinFactor + enemyEdges.get(1).value < minFactor) {
-                                minFactor = allyArmyMinFactor + enemyEdges.get(1).value;
-                                minFactorArmy = enemyArmy;
+
+                        for (SmartVehicle enemyEdgeVehicle : enemyArmy.getForm().getEdgesVehicles().values()) {
+                            double edgeVehicleDamageFactor = damageField.getFactor(damageField.getTransformedPoint(enemyEdgeVehicle.getPoint()));
+                            if (allyArmyMinFactor + edgeVehicleDamageFactor < 0) {
+                                if (edgeVehicleDamageFactor < minFactor) {
+                                    minFactor = edgeVehicleDamageFactor;
+                                    minFactorPoint = enemyEdgeVehicle.getPoint();
+                                }
+
+                                double distance = enemyEdgeVehicle.getPoint().subtract(getForm().getAvgPoint()).magnitude();
+
+                                if (minDistance > distance) {
+                                    minDistance = distance;
+                                    minDistancePoint = enemyEdgeVehicle.getPoint();
+                                    minDistanceFactor = edgeVehicleDamageFactor;
+                                }
                             }
                         }
-                        break;
                     }
                 }
             }
 
-            if (isAerial() && minFactorArmy != null) {
-                targetArmy = minFactorArmy;
-            }
-
-            if (targetArmy == null) {//no army to kill, just scan map
+            if (isAerial() && minFactorPoint != null) {
+                target.vector = minFactorPoint.subtract(getForm().getAvgPoint());
+                target.maxDamageValue = minFactor;
+            } else if (minDistancePoint != null) {
+                target.vector = minDistancePoint.subtract(getForm().getAvgPoint());
+                target.maxDamageValue = minDistanceFactor;
+            } else {
                 return null;
             }
-            targetArmy.getForm().recalc(targetArmy.getVehicles());
-            target.vector = targetArmy.getForm().getAvgPoint().subtract(getForm().getAvgPoint());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -114,11 +122,41 @@ public class ArmyAlly extends Army {
         }
     }
 
-    public boolean mightWinEnemy () {
-        PPFieldEnemy damageField = getDamageField();
-        List<PPFieldPoint> edges = getEdgeValues(damageField);
+    public boolean haveEnemyWeakness() {
+        MyStrategy.battleField.defineArmies();
+        List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
 
-        return edges.get(0).value + edges.get(1).value < 0;
+        PPFieldEnemy damageField = getDamageField();
+
+        Point2D armyCenter = getForm().getEdgesVehiclesCenter();
+
+        double minEnemyDamageFactor = Double.MAX_VALUE;
+        boolean isHaveEnemyAround = false;
+        for (Army enemyArmy : enemyArmies) {
+            if (enemyArmy.getForm().getEdgesVehiclesCenter().subtract(armyCenter).magnitude() <= CustomParams.safetyDistance) {
+                for (SmartVehicle enemyVehicle : enemyArmy.getForm().getEdgesVehicles().values()) {
+                    double enemyDamageFactor = damageField.getFactor(damageField.getTransformedPoint(enemyVehicle.getPoint()));
+                    if (enemyDamageFactor < minEnemyDamageFactor) {
+                        minEnemyDamageFactor = enemyDamageFactor;
+                        isHaveEnemyAround = true;
+                    }
+                }
+            }
+        }
+
+        if (!isHaveEnemyAround) {
+            return true;
+        }
+
+        double maxAllyDamageFactor = Double.MAX_VALUE;
+        for (SmartVehicle allyVehicle : getForm().getEdgesVehicles().values()) {
+            double allyDamageFactor = damageField.getFactor(damageField.getTransformedPoint(allyVehicle.getPoint()));
+            if (maxAllyDamageFactor > allyDamageFactor) {
+                maxAllyDamageFactor = allyDamageFactor;
+            }
+        }
+
+        return maxAllyDamageFactor + minEnemyDamageFactor < 0;
     }
 
     public boolean isHaveEnemy () {
@@ -133,7 +171,7 @@ public class ArmyAlly extends Army {
             for (SmartVehicle vehicle : getForm().getEdgesVehicles().values()) {
                 if (vehicle.getDurability() > 0) {
                     Point2D transformedPoint = MyStrategy.battleField.pointTransform(vehicle.getPoint());
-                    if (battleField.searchEnemiesInRaious(safetyDist, transformedPoint) != null) {
+                    if (battleField.searchEnemiesInRaious(safetyDist, transformedPoint, getVehiclesType()) != null) {
                         isHaveEnemyAroundLastState = true;
                         break;
                     }
@@ -171,16 +209,5 @@ public class ArmyAlly extends Army {
         }
 
         return maxDistance / (double)vehicleCount >= CustomParams.maxSizeVehicleInArmy;
-    }
-
-    private Integer recalcPPFieldTick = -1;
-    private PPFieldEnemy damageField;
-
-    public PPFieldEnemy getDamageField() {
-        if (recalcPPFieldTick == MyStrategy.world.getTickIndex()) {
-            return damageField;
-        }
-        damageField = MyStrategy.enemyField.getDamageField(getVehiclesType());
-        return damageField;
     }
 }

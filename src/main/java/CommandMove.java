@@ -14,7 +14,7 @@ public class CommandMove extends Command {
         super();
         target = new TargetPoint();
         target.vector = targetVector;
-        target.maxDamageValue = 0;
+        target.maxDamageValue = null;
     }
 
     public CommandMove(Point2D targetVector, boolean withPathFinder) {
@@ -22,7 +22,7 @@ public class CommandMove extends Command {
         this.withPathFinder = withPathFinder;
         target = new TargetPoint();
         target.vector = targetVector;
-        target.maxDamageValue = 0;
+        target.maxDamageValue = null;
     }
 
     public CommandMove(TargetPoint target){

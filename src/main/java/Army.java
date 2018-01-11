@@ -281,4 +281,15 @@ public class Army {
     public Map<VehicleType, List<SmartVehicle>> getVehiclesByType () {
         return this.vehiclesByType;
     }
+
+    private Integer recalcPPFieldTick = -1;
+    private PPFieldEnemy damageField;
+
+    public PPFieldEnemy getDamageField() {
+        if (recalcPPFieldTick == MyStrategy.world.getTickIndex()) {
+            return damageField;
+        }
+        damageField = MyStrategy.enemyField.getDamageField(getVehiclesType());
+        return damageField;
+    }
 }

@@ -191,6 +191,22 @@ public class PPField {
         }
     }
 
+    public Point2D getMinValuePoint() {
+        Point2D minValuePoint = null;
+        double minValue = Double.MAX_VALUE;
+        for (int x = 0; x < getWidth(); x++) {
+            for (int y = 0; y < getHeight(); y++) {
+                if (minValue > getFactor(x, y)) {
+                    minValue = getFactor(x, y);
+                    minValuePoint = new Point2D(x,y);
+                }
+            }
+        }
+
+        return getWorldPoint(minValuePoint);
+
+    }
+
     public List<Point2D> getMinValueCells() {
         List<Point2D> minValueList = new ArrayList<>();
 
@@ -318,7 +334,7 @@ public class PPField {
                 minPathJourneyTick = pathJourneyTick;
             }
 
-            if (factor < target.maxDamageValue || factor < 500) {//@TODO workaround boolshit
+            if ((target.maxDamageValue != null && factor <= target.maxDamageValue) || factor <= CustomParams.minPathFactor) {
                 minPathFactor = factor;
                 minPathVector = turnedPathVector;
                 minPathJourneyTick = pathJourneyTick;

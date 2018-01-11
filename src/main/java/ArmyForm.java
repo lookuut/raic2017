@@ -111,6 +111,20 @@ public class ArmyForm {
         return edgesVehicles;
     }
 
+    public double getMinDamageFactor(Army army) {
+        PPFieldEnemy damageField = army.getDamageField();
+
+        double minFactor = Double.NEGATIVE_INFINITY;
+        for (SmartVehicle vehicle : getEdgesVehicles().values()) {
+            double factor = damageField.getFactor(damageField.getTransformedPoint(vehicle.getPoint()));
+            if (minFactor < factor) {
+                minFactor = factor;
+            }
+        }
+
+        return minFactor;
+    }
+
     public Point2D getMaxDistanceVec(Point2D fromPoint) {
         Point2D maxDistancePoint = null;
         double maxDist = 0;

@@ -1,3 +1,4 @@
+import java.util.List;
 
 public class CommandDefence extends Command {
     public CommandDefence () {
@@ -21,14 +22,39 @@ public class CommandDefence extends Command {
 
             return;
         }
+        PPFieldEnemy damageField = army.getDamageField();
 
-        point = MyStrategy.enemyField.searchNearestSafetyPoint(army.getVehiclesType(), army.getForm().getAvgPoint(), point);
+        army.getForm().recalc(army.getVehicles());
+        double allyArmyDamageFactor = damageField.getFactor(damageField.getTransformedPoint(army.getForm().getAvgPoint()));
 
-        if (point == null) {
+        MyStrategy.battleField.defineArmies();
+        List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
+        Army dangerArmy = null;
+
+        for (Army enemyArmy : enemyArmies) {
+            if (enemyArmy.getForm().getEdgesVehiclesCenter().subtract(army.getForm().getAvgPoint()).magnitude() <= CustomParams.safetyDistance + CustomParams.safetyDistance / 2) {
+                double enemyDamageFactor = damageField.getFactor(damageField.getTransformedPoint(enemyArmy.getForm().getEdgesVehiclesCenter()));
+                if (allyArmyDamageFactor + enemyDamageFactor > 0)  { //run forrest run from this guy, he can defeat us
+                    dangerArmy = enemyArmy;
+                    break;
+                }
+            }
+        }
+
+        if (dangerArmy == null) {//no dangerous army around, relax
+            complete();
+            return;
+        }
+
+        PPFieldEnemy enemyPPField = dangerArmy.getDamageField();
+        Point2D safetyPoint = enemyPPField.getMinValuePoint();
+
+        if (safetyPoint == null) {
             throw new Exception("Mistake call defence");
         }
 
-        setParentCommand(new CommandMove(point.subtract(army.getForm().getAvgPoint())));
+        complete();
+        army.addCommand(new CommandMove(safetyPoint.subtract(army.getForm().getAvgPoint())));
     }
 
     public void pinned() {

@@ -144,6 +144,10 @@ public class BattleField {
             return;
         }
 
+        if (MyStrategy.world.getTickIndex() - armiesDefineTick < CustomParams.enemyArmiesDefineInterval) {
+            return;
+        }
+
         Set<Point2D> visitedCells = new HashSet();
         
         Army allyArmy = new Army();
@@ -224,7 +228,7 @@ public class BattleField {
 
     }
 
-    public BattleFieldCell searchEnemiesInRaious(int radious, Point2D point) {
+    public BattleFieldCell searchEnemiesInRaious(int radious, Point2D point, Set<VehicleType> vehiclesTypes) {
         for (int i = -radious; i <= radious; i++) {
             for (int j = -radious; j <= radious; j++) {
                 if (i * i + j * j <= radious * radious &&
@@ -233,8 +237,13 @@ public class BattleField {
                         point.getIntY() + j >= 0 &&
                         point.getIntY() + j < getHeight()) {
 
-                    if (getBattleFieldCell(point.getIntX() + i, point.getIntY() + j).getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
-                        return getBattleFieldCell(point.getIntX() + i, point.getIntY() + j);
+                    for (VehicleType vehicleType : vehiclesTypes) {
+                        if (getBattleFieldCell(point.getIntX() + i, point.getIntY() + j).getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
+                            VehicleType enemyVehicleType = getBattleFieldCell(point.getIntX() + i, point.getIntY() + j).getVehicles(MyStrategy.getEnemyPlayerId()).values().iterator().next().getType();
+                            if (SmartVehicle.isTargetVehicleType(vehicleType, enemyVehicleType)) {
+                                return getBattleFieldCell(point.getIntX() + i, point.getIntY() + j);
+                            }
+                        }
                     }
                 }
             }

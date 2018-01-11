@@ -42,11 +42,11 @@ public class CommandHeal extends Command {
         target.vector = minDistArmy.getForm().getAvgPoint().subtract(army.getForm().getAvgPoint());
 
         if (target.vector.magnitude() < CustomParams.onHealerEps) {
-            army.addCommand(new CommandWait(200));
+            army.addCommand(new CommandWait(CustomParams.healTimeout));
             complete();
             return;
         }
-
+        target.maxDamageValue = army.getForm().getMinDamageFactor(army) * (-1);
         CommandMove move = new CommandMove(target);
         move.setPriority(CommandPriority.High);
 

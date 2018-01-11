@@ -18,8 +18,6 @@ class Commander {
     private static TerrainPPField terrainPPField;
     private static WeatherPPField weatherPPField;
 
-    //private TerrainArmiesForm terrainArmiesForm;
-
     /**
      *
      */
@@ -85,11 +83,11 @@ class Commander {
                 if (entry.getValue().size() > CustomParams.minVehiclesCountInArmy) {
                     Square vehicleTypeSquare = noArmySquaereMap.get(entry.getKey());
                     if (
-                        //entry.getKey() == VehicleType.FIGHTER ||
-                        entry.getKey() == VehicleType.HELICOPTER// ||
-                        //entry.getKey() == VehicleType.TANK ||
-                        //entry.getKey() == VehicleType.IFV ||
-                        /*entry.getKey() == VehicleType.ARRV*/) {
+                        entry.getKey() == VehicleType.FIGHTER ||
+                        entry.getKey() == VehicleType.HELICOPTER ||
+                        entry.getKey() == VehicleType.TANK ||
+                        entry.getKey() == VehicleType.IFV ||
+                        entry.getKey() == VehicleType.ARRV) {
                         divisions.addArmy(vehicleTypeSquare, new HashSet(Arrays.asList(entry.getKey())));
                     } 
                     noArmySquaereMap.remove(entry.getKey());

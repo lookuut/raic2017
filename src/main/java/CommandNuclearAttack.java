@@ -23,19 +23,15 @@ public class CommandNuclearAttack extends Command {
         if (isNew()) {
 
             if (!army.getForm().isPointInVisionRange(targetPoint)) {
+                TargetPoint targetPoint = new TargetPoint();
+                targetPoint.vector = this.targetPoint.subtract(army.getForm().getAvgPoint());
+                targetPoint.maxDamageValue = army.getForm().getMinDamageFactor(army) * (-1);
+
                 army.getForm().recalc(army.getVehicles());
-                army.addCommand(new CommandMove(targetPoint.subtract(army.getForm().getAvgPoint()), false));
+                army.addCommand(new CommandMove(targetPoint));
                 setState(CommandStates.Complete);
                 return;
             }
-
-            /*
-            if (army.getForm().isDamagedByNuclearAttack(Commander.getInstance().getNuclearAttackTarget())) {
-                army.getForm().recalc(army.getVehicles());
-                army.addCommand(new CommandMove(army.getForm().getAvgPoint().subtract(targetPoint)));
-                setState(CommandStates.Complete);
-                return;
-            }*/
 
             Consumer<Command> nuclearAttack = (command) -> {
                 MyStrategy.move.setAction(ActionType.TACTICAL_NUCLEAR_STRIKE);
