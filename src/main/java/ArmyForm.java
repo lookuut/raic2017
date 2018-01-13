@@ -100,6 +100,15 @@ public class ArmyForm {
         return false;
     }
 
+    public boolean isPointInNuclearAttackRadious(Point2D point) {
+        for (SmartVehicle vehicle : edgesVehicles.values()) {
+            if (vehicle.getDurability() > 0 && vehicle.getPoint().distance(point) <= vehicle.getActualVisionRange() + MyStrategy.game.getTacticalNuclearStrikeRadius()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isPointInVisionRange(Point2D point) {
         for (SmartVehicle vehicle : edgesVehicles.values()) {
             if (vehicle.getDurability() > 0 && vehicle.getPoint().distance(point) <= vehicle.getActualVisionRange()) {

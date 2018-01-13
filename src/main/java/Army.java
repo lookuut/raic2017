@@ -4,37 +4,85 @@ import java.util.*;
 
 public class Army {
 
+    /**
+     * @var vehicles in army
+     */
     private Map<Long, SmartVehicle> vehicles;
-    private int durabilitySum;
-    private int durabilitySumRecalcTick;
 
+    /**
+     * @var vehicles in army durability sum
+     */
+    private int durability;
+
+    /**
+     * @var durability update tick
+     */
+    private int durabilityUpdateTick;
+
+    /**
+     * @var vehicles in army by vehicle type
+     */
     private Map<VehicleType, List<SmartVehicle>> vehiclesByType;
 
+    /**
+     * @desc army form
+     */
     private ArmyForm form;
-    private Integer lastModificateTick = -1;
+
+    /**
+     * @var last update tick
+     */
+    private Integer lastUpdateTick;
+
+    /**
+     * @var vehicles type count
+     */
     private HashMap<VehicleType, Integer> vehicleTypes;
+
+    /**
+     * @var army max vision range
+     */
     private double maxVisionRange;
 
-    protected HashMap<Integer, BattleFieldCell> battleFieldCellMap;
+    /**
+     * @var update damage field tick
+     */
+    private Integer updateDamageFieldTick;
+
+    /**
+     * @var PP damage field
+     */
+    private PPFieldEnemy damageField;
+
 
     public Army() {
-        battleFieldCellMap = new HashMap<>();
-        vehicles = new HashMap<>();
         form = new ArmyForm();
+
+        vehicles = new HashMap<>();
         vehicleTypes = new HashMap<>();
         vehiclesByType = new HashMap<>();
-        durabilitySum = 0;
-        durabilitySumRecalcTick = -1;
+
+        durability = 0;
+        durabilityUpdateTick = 0;
+        updateDamageFieldTick = 0;
+        lastUpdateTick = 0;
     }
 
-
+    /**
+     * @desc get army vehicles
+     * @return map of vehicles, where keys are identifiers of vehicle
+     */
     public Map<Long, SmartVehicle> getVehicles() {
         return vehicles;
     }
 
+    /**
+     * @desc add vehicle to army
+     * @param vehicle
+     */
     public void addVehicle (SmartVehicle vehicle) {
         //set last modificated of army tick
-        setLastModificateTick(MyStrategy.world.getTickIndex());
+        setLastUpdateTick(MyStrategy.world.getTickIndex());
         //put vehicle to update army form
         putVehicle(vehicle);
 
@@ -56,17 +104,22 @@ public class Army {
         maxVisionRange = Math.max(maxVisionRange, vehicle.getMinVisionRange());
     }
 
-    public int getDurabilitySum () {
-        if (durabilitySumRecalcTick == MyStrategy.world.getTickIndex()) {
-            return durabilitySum;
+    public int getDurability() {
+        if (durabilityUpdateTick == MyStrategy.world.getTickIndex()) {
+            return durability;
         }
 
-        durabilitySum = getVehicles().values().stream().mapToInt(SmartVehicle::getDurability).sum();
-        return durabilitySum;
+        durability = getVehicles().
+                    values().
+                    stream().
+                    mapToInt(SmartVehicle::getDurability).
+                    sum();
+
+        return durability;
     }
 
-    public double getAvgArmyDurabiluty() {
-        return getDurabilitySum() / getVehicleCount();
+    public double averageDurability() {
+        return getDurability() / getVehicleCount();
     }
 
     public void putVehicle(SmartVehicle vehicle) {
@@ -91,37 +144,23 @@ public class Army {
     }
 
     public int getVehicleCount() {
-        return vehicles.size();
-        //return vehicles.entrySet().stream().filter(entry -> entry.getValue().getDurability() > 0).count();
+        return getVehicles().size();
     }
 
     public ArmyForm getForm() {
         return form;
     }
 
-    public boolean isMoving() {
-        for (SmartVehicle vehicle : getForm().getEdgesVehicles().values()) {
-            if (vehicle.isMoving()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public boolean isAlive() {
         return getVehicleCount() > 0;
-    }
-
-    public SmartVehicle getNearestVehicle(Point2D point) {
-        Point2D[] points = new Point2D[1];
-        points[0] = point;
-        SmartVehicle[] vehicles = getNearestVehicle(points);
-        return vehicles[0];
     }
 
     public SmartVehicle getGunnerVehicle(Point2D target) {
         double maxDistance = 0.f;
         SmartVehicle gunnerVehicle = null;
+
+        double maxSafetyDistance = 0.f;
+        SmartVehicle safetyDistanceVehicle = null;
 
         for (SmartVehicle vehicle : getVehicles().values()) {
             if (vehicle.getDurability() > 0) {
@@ -131,11 +170,15 @@ public class Army {
                     gunnerVehicle = vehicle;
                     maxDistance = distance;
                 }
+
+                if (distance <= vehicle.getActualVisionRange() + MyStrategy.game.getTacticalNuclearStrikeRadius() && distance > maxSafetyDistance) {
+                    maxSafetyDistance = distance;
+                    safetyDistanceVehicle = vehicle;
+                }
             }
         }
 
-        double visionRange = gunnerVehicle.getActualVisionRange();
-        return gunnerVehicle;
+        return gunnerVehicle != null ? gunnerVehicle : safetyDistanceVehicle;
     }
 
     public SmartVehicle[] getNearestVehicle(Point2D[] points) {
@@ -159,19 +202,17 @@ public class Army {
         return vehicles;
     }
 
-    public void setLastModificateTick(Integer tick) {
-        lastModificateTick = tick;
+    public void setLastUpdateTick(Integer tick) {
+        lastUpdateTick = tick;
     }
 
-    public Integer getLastModificateTick() {
-        return lastModificateTick;
+    public Integer getLastUpdateTick() {
+        return lastUpdateTick;
     }
 
 
     public boolean timeToGoHeal() {
-        Integer durabilitySum = getVehicles().values().stream().
-                filter(vehicle -> vehicle.getDurability() > 0).map(SmartVehicle::getDurability).reduce(0, Integer::sum);
-        return durabilitySum / (double)(getVehicleCount() * 100) < CustomParams.percentOfHeatedVehicles;
+        return getDurability() / (double)(getVehicleCount() * 100) < CustomParams.percentOfHeatedVehicles;
     }
 
     public boolean isAerial () {
@@ -188,6 +229,8 @@ public class Army {
             double factor = 1;
             if (SmartVehicle.isTerrain(type)) {
                 factor = MyStrategy.game.getSwampTerrainSpeedFactor();
+            } else {
+                factor = MyStrategy.game.getRainWeatherSpeedFactor();
             }
 
             if (vehiclesByType.get(type).get(0).getMaxSpeed() * factor < minSpeed) {
@@ -282,11 +325,8 @@ public class Army {
         return this.vehiclesByType;
     }
 
-    private Integer recalcPPFieldTick = -1;
-    private PPFieldEnemy damageField;
-
     public PPFieldEnemy getDamageField() {
-        if (recalcPPFieldTick == MyStrategy.world.getTickIndex()) {
+        if (updateDamageFieldTick == MyStrategy.world.getTickIndex()) {
             return damageField;
         }
         damageField = MyStrategy.enemyField.getDamageField(getVehiclesType());

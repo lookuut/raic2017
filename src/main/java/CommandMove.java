@@ -17,14 +17,6 @@ public class CommandMove extends Command {
         target.maxDamageValue = null;
     }
 
-    public CommandMove(Point2D targetVector, boolean withPathFinder) {
-        super();
-        this.withPathFinder = withPathFinder;
-        target = new TargetPoint();
-        target.vector = targetVector;
-        target.maxDamageValue = null;
-    }
-
     public CommandMove(TargetPoint target){
         super();
         this.target = target;
@@ -74,9 +66,15 @@ public class CommandMove extends Command {
                         return;
                     }
 
+                    double maxSpeed = 0;
                     Integer maxRunnableTick = 0;
-                    for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
-                        maxRunnableTick = Math.max(vehicle.getVehiclePointAtTick(target.vector), maxRunnableTick);
+                    if (!army.isAerial()) {
+                        for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
+                            maxRunnableTick = Math.max(vehicle.getVehiclePointAtTick(target.vector), maxRunnableTick);
+                        }
+                    } else {
+                        maxSpeed = army.getMinSpeed();
+                        maxRunnableTick = (int)Math.ceil(target.vector.magnitude() / maxSpeed);
                     }
 
                     this.maxRunnableTick = maxRunnableTick;
@@ -84,6 +82,7 @@ public class CommandMove extends Command {
                     MyStrategy.move.setAction(ActionType.MOVE);
                     MyStrategy.move.setX(target.vector.getX());
                     MyStrategy.move.setY(target.vector.getY());
+                    MyStrategy.move.setMaxSpeed(maxSpeed);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -109,10 +108,6 @@ public class CommandMove extends Command {
 
     public Point2D getTargetVector() {
         return target.vector;
-    }
-
-    public Integer getMaxRunnableTick () {
-        return maxRunnableTick;
     }
 
     public void processing(SmartVehicle vehicle) {

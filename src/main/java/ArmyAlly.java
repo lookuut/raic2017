@@ -1,25 +1,75 @@
-import model.Vehicle;
 import model.VehicleType;
 
 import java.util.*;
 
 public class ArmyAlly extends Army {
 
-    private Map<Long, SmartVehicle> targetEnemyMap;
-    protected Integer groupId;
     /**
-     * battle fields
+     * @var target enemies
+     */
+    private Map<Long, SmartVehicle> targetEnemyMap;
+
+    /**
+     * @var army group id
+     */
+    protected Integer groupId;
+
+    /**
+     * @var battle field
      */
     protected BattleField battleField;
 
     /**
-     *  PPField
+     * @var aerial weather constant field
      */
-    protected PPField staticAerialPPField;
-    protected PPField staticTerrainPPField;
+    protected PPField constAerialPPField;
 
+    /**
+     * @var terrain constant field
+     */
+    protected PPField constTerrainPPField;
+
+    /**
+     * @var army track
+     */
     private Track track;
+
+    /**
+     * @var last compact army tick
+     */
     private Integer lastCompactTick;
+
+    /**
+     * @var ally army target vehicle
+     */
+    private SmartVehicle targetVehicle;
+
+    /**
+     * @var target vehicle damage factor
+     */
+    private double targetVehicleDamageFactor;
+
+    /**
+     * @var target army
+     */
+    private Army targetArmy;
+
+    /**
+     * @var is have target enemy around last state
+     */
+    private boolean isHaveTargetEnemyAroundLastState = false;
+
+    /**
+     * @var is have enemy around last state
+     */
+    private boolean isHaveEnemyAroundLastState = false;
+    /**
+     *
+     * @param groupId
+     * @param battleField
+     * @param terrainField
+     * @param aerialField
+     */
 
     public ArmyAlly(Integer groupId, BattleField battleField, PPField terrainField, PPField aerialField) {
         super();
@@ -27,8 +77,8 @@ public class ArmyAlly extends Army {
         track = new Track();
         targetEnemyMap = new HashMap<>();
         this.battleField = battleField;
-        this.staticTerrainPPField = terrainField;
-        this.staticAerialPPField = aerialField;
+        this.constTerrainPPField = terrainField;
+        this.constAerialPPField = aerialField;
         lastCompactTick = 0;
     }
 
@@ -43,9 +93,21 @@ public class ArmyAlly extends Army {
     public TargetPoint searchNearestEnemy() {
         TargetPoint target = new TargetPoint();
         try {
+            PPFieldEnemy damageField = getDamageField();
+
+            if (targetVehicle != null &&
+                    targetVehicle.getDurability() > 0 &&
+                    damageField.getFactor(damageField.getTransformedPoint(targetVehicle.getPoint())) <= targetVehicleDamageFactor &&
+                    isAerial()
+                    ) {
+                target.vector = targetVehicle.getPoint().subtract(getForm().getAvgPoint());
+                target.maxDamageValue = targetVehicleDamageFactor;
+                target.targetArmy = targetArmy;
+                return target;
+            }
             target = new TargetPoint();
 
-            PPFieldEnemy damageField = getDamageField();
+
             double allyArmyMinFactor = getEdgeValues(damageField).get(0).value;
 
             MyStrategy.battleField.defineArmies();
@@ -70,6 +132,9 @@ public class ArmyAlly extends Army {
                                     minFactor = edgeVehicleDamageFactor;
                                     minFactorPoint = enemyEdgeVehicle.getPoint();
                                     minFactorArmy = enemyArmy;
+                                    targetVehicle = enemyEdgeVehicle;
+                                    targetArmy = enemyArmy;
+                                    targetVehicleDamageFactor = edgeVehicleDamageFactor;
                                 }
 
                                 double distance = enemyEdgeVehicle.getPoint().subtract(getForm().getAvgPoint()).magnitude();
@@ -127,7 +192,31 @@ public class ArmyAlly extends Army {
         }
     }
 
-    public boolean haveEnemyWeakness() {
+    public boolean canAttackedByArmy(Army army) {
+        for (VehicleType enemyVehicleType : army.getVehiclesType()) {
+            for (VehicleType allyVehicleType : getVehiclesType()) {
+                if (SmartVehicle.isTargetVehicleType(enemyVehicleType, allyVehicleType)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public boolean isTargetArmy (Army army) {
+
+        for (VehicleType enemyVehicleType : army.getVehiclesType()) {
+            for (VehicleType allyVehicleType : getVehiclesType()) {
+                if (SmartVehicle.isTargetVehicleType(allyVehicleType, enemyVehicleType)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isSafetyAround() {
         MyStrategy.battleField.defineArmies();
         List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
 
@@ -135,15 +224,27 @@ public class ArmyAlly extends Army {
 
         Point2D armyCenter = getForm().getEdgesVehiclesCenter();
 
-        double minEnemyDamageFactor = Double.MAX_VALUE;
         boolean isHaveEnemyAround = false;
+
+        double minDistance = Double.MAX_VALUE;
+        double minDistanceDamageFactorDelta = 0;
+
         for (Army enemyArmy : enemyArmies) {
             if (enemyArmy.getForm().getEdgesVehiclesCenter().subtract(armyCenter).magnitude() <= CustomParams.safetyDistance) {
-                for (SmartVehicle enemyVehicle : enemyArmy.getForm().getEdgesVehicles().values()) {
-                    double enemyDamageFactor = damageField.getFactor(damageField.getTransformedPoint(enemyVehicle.getPoint()));
-                    if (enemyDamageFactor < minEnemyDamageFactor) {
-                        minEnemyDamageFactor = enemyDamageFactor;
-                        isHaveEnemyAround = true;
+                if (canAttackedByArmy(enemyArmy)) {
+                    isHaveEnemyAround = true;
+                    Collection<SmartVehicle> enemyVehiclesCollection = enemyArmy.getForm().getEdgesVehicles().values();
+
+                    for (SmartVehicle allyVehicle : getForm().getEdgesVehicles().values()) {
+                        for (SmartVehicle enemyVehicle : enemyVehiclesCollection) {
+                            double distance = enemyVehicle.getPoint().subtract(allyVehicle.getPoint()).magnitude();
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                double allyDamageFactor = damageField.getFactor(damageField.getTransformedPoint(allyVehicle.getPoint()));
+                                double enemyDamageFactor = damageField.getFactor(damageField.getTransformedPoint(enemyVehicle.getPoint()));
+                                minDistanceDamageFactorDelta = allyDamageFactor + enemyDamageFactor;
+                            }
+                        }
                     }
                 }
             }
@@ -153,30 +254,40 @@ public class ArmyAlly extends Army {
             return true;
         }
 
-        double maxAllyDamageFactor = Double.MAX_VALUE;
-        for (SmartVehicle allyVehicle : getForm().getEdgesVehicles().values()) {
-            double allyDamageFactor = damageField.getFactor(damageField.getTransformedPoint(allyVehicle.getPoint()));
-            if (maxAllyDamageFactor > allyDamageFactor) {
-                maxAllyDamageFactor = allyDamageFactor;
-            }
-        }
-
-        return maxAllyDamageFactor + minEnemyDamageFactor < 0;
+        return minDistanceDamageFactorDelta <= 0;
     }
 
     public boolean isHaveEnemy () {
         return targetEnemyMap.size() > 0;
     }
 
-    private boolean isHaveEnemyAroundLastState;
-    public boolean isHaveEnemyAround (double safetyDistance) {
+    public boolean isHaveTargetArmyAround(double safetyDistance) {
+        if (MyStrategy.world.getTickIndex() % 10 == 0) {
+            isHaveTargetEnemyAroundLastState = false;
+            int safetyDist = (int)Math.ceil(safetyDistance * (MyStrategy.battleField.getWidth() / MyStrategy.world.getWidth()));
+            for (SmartVehicle vehicle : getForm().getEdgesVehicles().values()) {
+                if (vehicle.getDurability() > 0) {
+                    Point2D transformedPoint = MyStrategy.battleField.pointTransform(vehicle.getPoint());
+                    if (battleField.searchTargetEnemiesAround(safetyDist, transformedPoint, getVehiclesType()) != null) {
+                        isHaveTargetEnemyAroundLastState = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return isHaveTargetEnemyAroundLastState;
+    }
+
+
+    public boolean isHaveEnemyAround(double safetyDistance) {
         if (MyStrategy.world.getTickIndex() % 10 == 0) {
             isHaveEnemyAroundLastState = false;
             int safetyDist = (int)Math.ceil(safetyDistance * (MyStrategy.battleField.getWidth() / MyStrategy.world.getWidth()));
             for (SmartVehicle vehicle : getForm().getEdgesVehicles().values()) {
                 if (vehicle.getDurability() > 0) {
                     Point2D transformedPoint = MyStrategy.battleField.pointTransform(vehicle.getPoint());
-                    if (battleField.searchEnemiesInRaious(safetyDist, transformedPoint, getVehiclesType()) != null) {
+                    if (battleField.searchEnemiesAround(safetyDist, transformedPoint, getVehiclesType()) != null) {
                         isHaveEnemyAroundLastState = true;
                         break;
                     }

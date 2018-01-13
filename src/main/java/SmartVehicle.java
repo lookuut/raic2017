@@ -32,7 +32,6 @@ public class SmartVehicle  {
     protected boolean aerial;
     protected boolean selected;
     protected int[] groups;
-    protected MyStrategy strategy;
 
     protected BattleFieldCell battleFieldCell;
     // null if vehicle is not in any army;
@@ -41,7 +40,7 @@ public class SmartVehicle  {
     protected Point2D leftBottomAngle;
     protected Point2D rightTopAngle;
 
-    public SmartVehicle (Vehicle vehicle, MyStrategy strategy) {
+    public SmartVehicle (Vehicle vehicle) {
 
         this.id = vehicle.getId();
         this.playerId = vehicle.getPlayerId();
@@ -70,7 +69,6 @@ public class SmartVehicle  {
         this.radius = vehicle.getRadius();
         this.army = null;
         this.battleFieldCell = null;
-        this.strategy = strategy;
         this.point = new Point2D(vehicle.getX(), vehicle.getY());
         this.leftBottomAngle = new Point2D(vehicle.getX() - vehicle.getRadius(),  vehicle.getY() - vehicle.getRadius());
         this.rightTopAngle = new Point2D(vehicle.getX() + vehicle.getRadius(),  vehicle.getY() + vehicle.getRadius());
@@ -103,7 +101,7 @@ public class SmartVehicle  {
     }
 
     public boolean isMoving() {
-        SmartVehicle prevVehicleState = strategy.getPreviousVehiclesStates().get(getId());
+        SmartVehicle prevVehicleState = MyStrategy.getVehiclePrevState(getId());
         return prevVehicleState != null && prevVehicleState.getPoint().distance(getPoint()) > 0;
     }
 
@@ -193,15 +191,15 @@ public class SmartVehicle  {
      * @return
      */
     public boolean isVehicleMoved() {
-        return strategy.getVehiclePrevState(getId()) == null || getX() != strategy.getVehiclePrevState(getId()).getX() || getY() != strategy.getVehiclePrevState(getId()).getY();
+        return MyStrategy.getVehiclePrevState(getId()) == null || getX() != MyStrategy.getVehiclePrevState(getId()).getX() || getY() != MyStrategy.getVehiclePrevState(getId()).getY();
     }
 
     public boolean isDurabilityChanched () {
-        return strategy.getVehiclePrevState(getId()) == null || strategy.getVehiclePrevState(getId()).getDurability() != getDurability();
+        return MyStrategy.getVehiclePrevState(getId()) == null || MyStrategy.getVehiclePrevState(getId()).getDurability() != getDurability();
     }
 
     public boolean isAttackCooldownChanched () {
-        return strategy.getVehiclePrevState(getId()) == null || strategy.getVehiclePrevState(getId()).getRemainingAttackCooldownTicks() != getRemainingAttackCooldownTicks();
+        return MyStrategy.getVehiclePrevState(getId()) == null || MyStrategy.getVehiclePrevState(getId()).getRemainingAttackCooldownTicks() != getRemainingAttackCooldownTicks();
     }
 
     public boolean getSelected () {
@@ -649,7 +647,7 @@ public class SmartVehicle  {
     }
 
     public double getVehicleOnTickSpeed() {
-        return strategy.getPreviousVehiclesStates().get(getId()).getPoint().subtract(getPoint()).magnitude();
+        return MyStrategy.getVehiclePrevState(getId()).getPoint().subtract(getPoint()).magnitude();
     }
 
     public static int fighterGroundDefence = 70;

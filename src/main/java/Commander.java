@@ -18,9 +18,6 @@ class Commander {
     private static TerrainPPField terrainPPField;
     private static WeatherPPField weatherPPField;
 
-    /**
-     *
-     */
     private Commander() {
         divisions = new ArmyDivisions();
         activeActions = new LinkedList<>();
@@ -38,8 +35,6 @@ class Commander {
 
         weatherPPField = new WeatherPPField(ppFieldX, ppFieldY);
         weatherPPField.addWeatherMap(MyStrategy.getWeatherMap());
-
-        //terrainArmiesForm = new TerrainArmiesForm(divisions);
     }
 
     private void checkAttackNuclear() throws Exception {
@@ -105,7 +100,8 @@ class Commander {
         while (iter.hasNext()) {
             Map.Entry<Integer, ArmyAllyOrdering> entry = iter.next();
             ArmyAllyOrdering army = entry.getValue();
-            if (!army.isAlive()) {//@TODO boolshit
+
+            if (!army.isAlive()) {
                 divisions.removeArmy(army);
                 iter.remove();
             } else if (army.isRun()) {
@@ -232,7 +228,7 @@ class Commander {
 
     public boolean isThereEnemyAround(double distance) {
         for (ArmyAllyOrdering army : divisions.getArmies().values()) {
-            if (army.isHaveEnemyAround(CustomParams.safetyDistance)) {
+            if (army.isHaveTargetArmyAround(CustomParams.safetyDistance)) {
                 return true;
             }
         }

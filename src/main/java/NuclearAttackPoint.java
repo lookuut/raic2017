@@ -16,7 +16,7 @@ public class NuclearAttackPoint implements Comparable<NuclearAttackPoint> {
         this.army = army;
         this.point = army.getForm().getAvgPoint();
 
-        avgDurability = army.getAvgArmyDurabiluty() / 100.0;
+        avgDurability = army.averageDurability() / 100.0;
         arrvPercentage = 0;
 
         Map<VehicleType, List<SmartVehicle>> vehiclesByType = army.getVehiclesByType();

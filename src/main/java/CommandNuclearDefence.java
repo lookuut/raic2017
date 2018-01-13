@@ -8,7 +8,6 @@ public class CommandNuclearDefence extends Command {
     protected double attackY;
 
     public CommandNuclearDefence() {
-        super();
         attackTick = null;
     }
 

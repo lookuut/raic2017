@@ -1,8 +1,7 @@
 
 public class CommandEmpty extends Command {
 
-    public CommandEmpty() {
-    }
+    public CommandEmpty() {}
 
     public boolean check (ArmyAllyOrdering army) {
         setState(CommandStates.Complete);
@@ -17,14 +16,10 @@ public class CommandEmpty extends Command {
             super.run(army);
         }
     }
-    @Override
-    public void pinned(){
-
-    }
 
     @Override
-    public void processing(SmartVehicle vehicle) {
+    public void pinned(){}
 
-    }
-
+    @Override
+    public void processing(SmartVehicle vehicle) { }
 }

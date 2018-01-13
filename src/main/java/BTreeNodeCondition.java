@@ -5,18 +5,8 @@ public class BTreeNodeCondition<E> extends BTreeBinaryNode {
 
     protected E e;
 
-    public BTreeNodeCondition(E e) {
-        this.e = e;
-    }
-
     public BTreeNodeCondition(Predicate<E> condition, E e) {
         super();
-        this.condition = condition;
-        this.e = e;
-    }
-
-
-    public void setPredicate(Predicate<E> condition, E e) {
         this.condition = condition;
         this.e = e;
     }

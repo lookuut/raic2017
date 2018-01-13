@@ -36,10 +36,6 @@ abstract public class Command {
         this.state = state;
     }
 
-    public Command getParentCommand() {
-        return parentCommand;
-    }
-
     public void complete() {
         if (parentCommand != null) {
             parentCommand.complete();
@@ -58,10 +54,12 @@ abstract public class Command {
     public boolean isNew() {
         return parentCommand != null && parentCommand.isNew() || getState() == CommandStates.New;
     }
+
     public boolean isFinished() {
         CommandStates state = parentCommand != null ? parentCommand.getState() : getState();
         return state == CommandStates.Complete || state == CommandStates.Failed || state == CommandStates.Canceled;
     }
+
     public Integer getRunTickIndex() {
         return runTickIndex;
     }

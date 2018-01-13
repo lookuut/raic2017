@@ -6,7 +6,6 @@ public class CommandHeal extends Command {
     private ArmyDivisions divisions;
 
     public CommandHeal(ArmyDivisions divisions) {
-        super();
         this.divisions = divisions;
     }
 
@@ -16,7 +15,7 @@ public class CommandHeal extends Command {
 
         Collection<ArmyAllyOrdering> armies = divisions.getArmyList(VehicleType.ARRV);
 
-        if (armies == null) {//no arrv :(
+        if (armies == null) {
             complete();
             return;
         }
@@ -57,6 +56,7 @@ public class CommandHeal extends Command {
     public boolean check (ArmyAllyOrdering army) {
         return super.check(army);
     }
+
     @Override
     public void pinned(){
     }

@@ -30,14 +30,6 @@ public class ArmyAllyOrdering extends ArmyAlly {
         commandQueue.addLast(command);
     }
 
-    public void setFirstCommand(Command command) {
-        commandQueue.addFirst(command);
-    }
-
-    public Deque<Command> getCommandQueue() {
-        return commandQueue;
-    }
-
     public Command pollCommand() {
 
         if (commandQueue.size() == 0) {
@@ -66,7 +58,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
             runningCommand.check(this);
         }
 
-        getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastModificateTick() - 1 ));
+        getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastUpdateTick() - 1 ));
     }
 
 
@@ -92,7 +84,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
                 putVehicle(vehicle);
                 getTrack().addStep(MyStrategy.world.getTickIndex(), new Step(battleField.pointTransform(vehicle.getPoint()), CustomParams.allyUnitPPFactor), vehicle.getType());
             }
-            setLastModificateTick(MyStrategy.world.getTickIndex());
+            setLastUpdateTick(MyStrategy.world.getTickIndex());
         }
     }
 
@@ -104,7 +96,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
         getForm().recalc(getVehicles());
 
         getTrack().clearFuture(MyStrategy.world.getTickIndex() + 1);
-        getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastModificateTick() - 1 ));
+        getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastUpdateTick() - 1 ));
 
         if (command.getTargetVector().magnitude() < 1.0) {
             return target.vector;
@@ -121,13 +113,13 @@ public class ArmyAllyOrdering extends ArmyAlly {
 
         MyStrategy.commander.getDivisions().getArmyList().forEach(army -> {
             if (army.getGroupId() != getGroupId() && army.isAlive()) {
-                if (army.getLastModificateTick() < army.getTrack().getLastAerialTick()) {
+                if (army.getLastUpdateTick() < army.getTrack().getLastAerialTick()) {
                     movingAerialArmyTrack.addTrack(army.getTrack(), army.getTrack().getLastAerialTick());
                 } else {
                     Track.sumSteps(lastAerialSteps, army.getTrack().getLastTickAerialSteps());
                 }
 
-                if (army.getLastModificateTick() < army.getTrack().getLastTerrainTick()) {
+                if (army.getLastUpdateTick() < army.getTrack().getLastTerrainTick()) {
                     movingTerrainArmyTrack.addTrack(army.getTrack(), army.getTrack().getLastTerrainTick());
                 } else {
                     Track.sumSteps(lastTerrainSteps, army.getTrack().getLastTickTerrainSteps());
@@ -139,13 +131,13 @@ public class ArmyAllyOrdering extends ArmyAlly {
         SortedMap<Integer, Map<Integer, Step>> trackMap = null;
 
         if (types.contains(VehicleType.FIGHTER) || types.contains(VehicleType.HELICOPTER)) {
-            sumPPFields.sumField(staticAerialPPField);
+            sumPPFields.sumField(constAerialPPField);
             trackMap = new TreeMap<>(movingAerialArmyTrack.getVehicleTypeTrack(VehicleType.FIGHTER));
             sumPPFields.addSteps(lastAerialSteps);
         }
 
         if (types.contains(VehicleType.TANK) || types.contains(VehicleType.IFV) || types.contains(VehicleType.ARRV)) {
-            sumPPFields.sumField(staticTerrainPPField);
+            sumPPFields.sumField(constTerrainPPField);
             sumPPFields.addSteps(lastTerrainSteps);
 
             if (trackMap != null) {

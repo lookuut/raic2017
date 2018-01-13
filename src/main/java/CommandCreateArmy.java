@@ -1,5 +1,4 @@
 import model.ActionType;
-import model.Vehicle;
 import model.VehicleType;
 
 import java.util.function.Consumer;
@@ -22,7 +21,7 @@ public class CommandCreateArmy extends Command {
             army.addVehicle(vehicle);
             vehicle.addArmy(army);
 
-            army.setLastModificateTick(MyStrategy.world.getTickIndex());
+            army.setLastUpdateTick(MyStrategy.world.getTickIndex());
             army.getTrack().addStep(MyStrategy.world.getTickIndex(), new Step(army.getBattleField().pointTransform(vehicle.getPoint()), CustomParams.allyUnitPPFactor), vehicle.getType());
         }
     }

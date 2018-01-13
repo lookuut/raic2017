@@ -14,15 +14,13 @@ public class EnemyField {
 
     private Integer width;
     private Integer height;
-    private BattleField battleField;
 
     private DamageField enemyDamageField;
     private DamageField allyDamageField;
 
-    public EnemyField(BattleField battleField) {
-        this.battleField = battleField;
-        width = battleField.getWidth();
-        height = battleField.getHeight();
+    public EnemyField() {
+        width = MyStrategy.battleField.getWidth();
+        height = MyStrategy.battleField.getHeight();
 
         enemyField = new PPFieldEnemy(width, height);
 
@@ -37,24 +35,6 @@ public class EnemyField {
 
     public int getHeight() {
         return height;
-    }
-
-    /**
-     * @param types
-     * @return
-     */
-    public PPField getEnemyDamageField(Set<VehicleType> types) throws Exception {
-        PPFieldEnemy damageField = new PPFieldEnemy(getWidth(), getHeight());
-
-        for (VehicleType type : types) {
-            if (type == VehicleType.ARRV) {
-                damageField.sumField(enemyDamageField.getVehicleTypeDamageField(VehicleType.TANK));
-            } else {
-                damageField.sumField(enemyDamageField.getVehicleTypeDamageField(type));
-            }
-        }
-
-        return damageField;
     }
 
     /**
@@ -119,31 +99,6 @@ public class EnemyField {
         return null;
     }
 
-    public Point2D searchNearestSafetyPoint(Set<VehicleType> vehicleTypes, Point2D fromPoint, Point2D escapePoint) throws Exception {
-        Point2D direction = fromPoint.subtract(escapePoint).normalize();
-
-        double minFactor = Double.MAX_VALUE;
-        Point2D minFactorVec = null;
-        PPFieldEnemy field = getDamageField(vehicleTypes);
-        for (int angleSector = 0; angleSector < CustomParams.searchSafetyZoneSectorCount; angleSector++) {
-            double angle = (angleSector % 2 == 1 ? -1 : 1) * angleSector * (2 * Math.PI) / CustomParams.searchSafetyZoneSectorCount;
-            Point2D safetyPointVector = direction.turn(angle).multiply(CustomParams.safetyDistance);
-            Point2D destPoint = escapePoint.add(safetyPointVector);
-
-            if (destPoint.getX() >= MyStrategy.world.getWidth() || destPoint.getY() >= MyStrategy.world.getHeight() || destPoint.getX() < 0 || destPoint.getY() < 0) {
-                continue;
-            }
-
-            double factor = field.getPointRadiousFactorSum( field.getTransformedPoint(escapePoint.add(safetyPointVector)), CustomParams.safetyDistance);;
-
-            if (factor < minFactor) {
-                minFactorVec = destPoint;
-                minFactor = factor;
-            }
-        }
-
-        return minFactorVec;
-    }
 
 
     public SortedSet<NuclearAttackPoint> getNuclearAttackPointsRating() {

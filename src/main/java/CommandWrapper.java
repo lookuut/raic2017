@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 public class CommandWrapper {
     private Queue<Consumer<Command>> queue;
     private Command command;
-    private Integer tickIndex = -1;
+    private Integer tickIndex;
     private Integer armyId;
     private CommandPriority priority;
 

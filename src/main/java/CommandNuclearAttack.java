@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 public class CommandNuclearAttack extends Command {
 
     public CommandNuclearAttack() {
-        super();
         Commander.getInstance().nuclearAttack();
         targetPoint = Commander.getInstance().getNuclearAttackTarget();
     }
@@ -22,7 +21,8 @@ public class CommandNuclearAttack extends Command {
     public void run(ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
 
-            if (!army.getForm().isPointInVisionRange(targetPoint)) {
+
+            if (!army.getForm().isPointInNuclearAttackRadious(targetPoint)) {
                 TargetPoint targetPoint = new TargetPoint();
                 targetPoint.vector = this.targetPoint.subtract(army.getForm().getAvgPoint());
                 targetPoint.maxDamageValue = army.getForm().getMinDamageFactor(army) * (-1);
@@ -34,10 +34,15 @@ public class CommandNuclearAttack extends Command {
             }
 
             Consumer<Command> nuclearAttack = (command) -> {
+                SmartVehicle gunner = army.getGunnerVehicle(targetPoint);
+                double visionRange = gunner.getActualVisionRange();
+                if (gunner.getPoint().distance(targetPoint) > visionRange) {
+                    targetPoint = targetPoint.subtract(gunner.getPoint()).normalize().multiply(visionRange - 1).add(gunner.getPoint());
+                }
                 MyStrategy.move.setAction(ActionType.TACTICAL_NUCLEAR_STRIKE);
                 MyStrategy.move.setX(targetPoint.getX());
                 MyStrategy.move.setY(targetPoint.getY());
-                MyStrategy.move.setVehicleId(army.getGunnerVehicle(targetPoint).getId());
+                MyStrategy.move.setVehicleId(gunner.getId());
             };
 
             CommandWrapper cw = new CommandWrapper(this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId, CommandPriority.High);

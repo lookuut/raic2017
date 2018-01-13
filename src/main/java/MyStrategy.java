@@ -25,7 +25,6 @@ public final class MyStrategy implements Strategy {
     private static HashMap<Long, SmartVehicle> enemyVehicles;
     public static Profiler profiler;
 
-    protected ArmyDamageField armyDamageField;
     public static  Commander commander;
     private long strategyTimeSum;
 
@@ -47,10 +46,8 @@ public final class MyStrategy implements Strategy {
         if (this.battleField == null) {
             battleField = new BattleField(CustomParams.tileCellSize);
             commander = Commander.getInstance();
-            enemyField = new EnemyField(battleField);
+            enemyField = new EnemyField();
 
-            //what is this shit ?
-            armyDamageField = new ArmyDamageField(this);
             System.out.println("Seed : " + MyStrategy.game.getRandomSeed());
         }
 
@@ -59,7 +56,7 @@ public final class MyStrategy implements Strategy {
     public void updatePreviousVehiclesStates (World world) throws Exception {
 
         for (Vehicle vehicle : world.getNewVehicles()) {
-            this.previousVehiclesStates.put(vehicle.getId(), new SmartVehicle(vehicle, this));
+            this.previousVehiclesStates.put(vehicle.getId(), new SmartVehicle(vehicle));
         }
 
         for (VehicleUpdate vehicleUpdate : world.getVehicleUpdates()) {
@@ -97,28 +94,6 @@ public final class MyStrategy implements Strategy {
         }
     }
 
-    public void testGetVehiclePointAtTick (SmartVehicle vehicle) {
-        try {
-
-
-            vehicle.setPoint(new Point2D(512, 512));
-            Point2D pathVector = new Point2D(-120, 0);
-
-            for (int angleSector = 0; angleSector < CustomParams.pathFinderSectorCount; angleSector++) {
-
-                double angle = (angleSector % 2 == 1 ? -1 : 1) * angleSector * (2 * Math.PI) / CustomParams.pathFinderSectorCount;
-                Point2D turnedPathVector = pathVector.turn(angle);
-                int tick = vehicle.getVehiclePointAtTick(turnedPathVector);
-                System.out.println(tick);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            System.out.println("dawdadw");
-        }
-    }
-
     public void updateWorld(World world) {
         updateVehicles(world);
         updateFacilities(world);
@@ -152,7 +127,7 @@ public final class MyStrategy implements Strategy {
                 SmartVehicle smartVehicle = vehicles.get(vehicle.getId());
 
                 if (smartVehicle == null) {
-                    smartVehicle = new SmartVehicle(vehicle, this);
+                    smartVehicle = new SmartVehicle(vehicle);
                     vehicles.put(smartVehicle.getId(), smartVehicle);
                 } else {
                     smartVehicle.vehicleUpdate(vehicle);

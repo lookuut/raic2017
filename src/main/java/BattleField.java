@@ -115,29 +115,6 @@ public class BattleField {
         return battleField[point.getIntY()][point.getIntX()];
     }
 
-    public Army getTargetArmy(ArmyAlly allyArmy) {
-        Set<VehicleType> allyTypes = allyArmy.getVehiclesType();
-        MyStrategy.battleField.defineArmies();
-        List<Army> enemyArmies = getEnemyArmies();
-
-        Army targetArmy = null;
-        for (Army enemyArmy : enemyArmies) {
-            for (VehicleType enemyArmyType : enemyArmy.getVehiclesType()) {
-                for (VehicleType allyType : allyTypes) {
-                    if (SmartVehicle.isVictimType(allyType, enemyArmyType)) {
-                        return enemyArmy;
-                    }
-
-                    if (SmartVehicle.isTargetVehicleType(allyType, enemyArmyType)) {
-                        targetArmy = enemyArmy;
-                    }
-                }
-            }
-        }
-
-        return targetArmy;
-    }
-
     public void defineArmies() {
 
         if (armiesDefineTick == MyStrategy.world.getTickIndex()) {
@@ -228,7 +205,7 @@ public class BattleField {
 
     }
 
-    public BattleFieldCell searchEnemiesInRaious(int radious, Point2D point, Set<VehicleType> vehiclesTypes) {
+    public BattleFieldCell searchTargetEnemiesAround(int radious, Point2D point, Set<VehicleType> vehiclesTypes) {
         for (int i = -radious; i <= radious; i++) {
             for (int j = -radious; j <= radious; j++) {
                 if (i * i + j * j <= radious * radious &&
@@ -243,6 +220,27 @@ public class BattleField {
                             if (SmartVehicle.isTargetVehicleType(vehicleType, enemyVehicleType)) {
                                 return getBattleFieldCell(point.getIntX() + i, point.getIntY() + j);
                             }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+
+    public BattleFieldCell searchEnemiesAround(int radious, Point2D point, Set<VehicleType> vehiclesTypes) {
+        for (int i = -radious; i <= radious; i++) {
+            for (int j = -radious; j <= radious; j++) {
+                if (i * i + j * j <= radious * radious &&
+                        point.getIntX() + i >= 0 &&
+                        point.getIntX() + i < getWidth() &&
+                        point.getIntY() + j >= 0 &&
+                        point.getIntY() + j < getHeight()) {
+
+                    for (VehicleType vehicleType : vehiclesTypes) {
+                        if (getBattleFieldCell(point.getIntX() + i, point.getIntY() + j).getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
+                            return getBattleFieldCell(point.getIntX() + i, point.getIntY() + j);
                         }
                     }
                 }

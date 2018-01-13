@@ -50,6 +50,12 @@ public class ArmyDivisions {
                 army
         );
 
+        //CONDITION: nuclear attack cond
+        BTreeNode canNuclearAttackInDefence = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> Commander.getInstance().isCanNuclearAttack(armyLocal)) ,
+                army
+        );
+
         //CONDITION: goto heal ?
         BTreeNode isNeedToHeal = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.timeToGoHeal() && armyLocal.isAerial() && armyByType.containsKey(VehicleType.ARRV) && armyByType.get(VehicleType.ARRV).size() > 0),
@@ -67,7 +73,7 @@ public class ArmyDivisions {
         );
         //CONDITION: is have enemy around
         BTreeNode isHaveEnemyCond = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isHaveEnemyAround(CustomParams.safetyDistance)),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isHaveTargetArmyAround(CustomParams.safetyDistance)),
                 army
         );
 
@@ -85,13 +91,13 @@ public class ArmyDivisions {
 
         //CONDITION: can 
         BTreeNode isHaveEnemyWeakness = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.haveEnemyWeakness()),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround()),
                 army
         );
 
         //CONDITION: can
-        BTreeNode isCanGetCloserToNuclearAttack = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.haveEnemyWeakness()),
+        BTreeNode isSafetyAround = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround()),
                 army
         );
 
@@ -108,25 +114,26 @@ public class ArmyDivisions {
         isNeedToHeal.setFalseNode(isHaveEnemyCond);
 
             isHaveEnemyCond.setTrueNode(isCanNuclearAttack);
-                isHaveEnemyWeakness.setTrueNode(isCanNuclearAttack);
-                    isCanNuclearAttack.setTrueNode(actionNuclearAttack);
-                    isCanNuclearAttack.setFalseNode(isNeedToBeforeAttackCompact);
+                isCanNuclearAttack.setTrueNode(actionNuclearAttack);
+                isCanNuclearAttack.setFalseNode(isHaveEnemyWeakness);
+                    isHaveEnemyWeakness.setTrueNode(isNeedToBeforeAttackCompact);
                         isNeedToBeforeAttackCompact.setTrueNode(actionCompact);
                         isNeedToBeforeAttackCompact.setFalseNode(actionAttack);
+                    isHaveEnemyWeakness.setFalseNode(actionCommandDefence);
+            isHaveEnemyCond.setFalseNode(isSafetyAround);
+                isSafetyAround.setTrueNode(isNeedToCompact);
 
-                isHaveEnemyWeakness.setFalseNode(actionCommandDefence);
-            isHaveEnemyCond.setFalseNode(isNeedToCompact);
+                    isNeedToCompact.setTrueNode(actionCompact);
+                    isNeedToCompact.setFalseNode(isHaveFacility);
 
-                isNeedToCompact.setTrueNode(actionCompact);
-                isNeedToCompact.setFalseNode(isHaveFacility);
+                        isHaveFacility.setTrueNode(actionSiegeFacility);
+                        isHaveFacility.setFalseNode(isHaveEnemyInAllMap);
 
-                    isHaveFacility.setTrueNode(actionSiegeFacility);
-                    isHaveFacility.setFalseNode(isHaveEnemyInAllMap);
-
-                        isHaveEnemyInAllMap.setTrueNode(actionAttack);
-                        isHaveEnemyInAllMap.setFalseNode(actionCommandDefence);
-
-
+                            isHaveEnemyInAllMap.setTrueNode(actionAttack);
+                            isHaveEnemyInAllMap.setFalseNode(actionCommandDefence);
+                isSafetyAround.setFalseNode(canNuclearAttackInDefence);
+                    canNuclearAttackInDefence.setTrueNode(actionNuclearAttack);
+                    canNuclearAttackInDefence.setFalseNode(actionCommandDefence);
         bTree.addRoot(isNeedToHeal);
         army.setBehaviourTree(bTree);
     }

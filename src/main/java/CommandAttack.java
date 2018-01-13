@@ -70,10 +70,10 @@ public class CommandAttack extends Command {
 
     public boolean check(ArmyAllyOrdering army) {
 
-        if (!army.haveEnemyWeakness()) {
+        if (!army.isSafetyAround()) {
             army.addCommand(new CommandDefence());
             complete();
-        } else if (army.isHaveEnemyAround(CustomParams.safetyDistance)) {
+        } else if (army.isHaveTargetArmyAround(CustomParams.safetyDistance)) {
             PPFieldEnemy damageField = army.getDamageField();
             double movingEndDamageSum = 0;
 
@@ -109,20 +109,6 @@ public class CommandAttack extends Command {
                 if ((angle < 180 / 6 && angle > -180 / 6) || (angle > (2 * 180 - 180 / 6) && angle < (2 * 180 + 180 / 6))) { //enemy running
                     //@TODO do something to catch them
                 } else if ((angle < 180 + 180 / 6 && angle > 180  - 180 / 6)) {
-                    /*
-                    if (army.isAerial()) {
-                        CommandScale scale = new CommandScale(10);
-                        CommandRotate rotate1 = new CommandRotate(Math.PI / 2, army.getForm().getAvgPoint() , 20);
-                        CommandRotate rotate2 = new CommandRotate(-Math.PI / 2, army.getForm().getAvgPoint() , 20);
-
-                        scale.setPriority(CommandPriority.High);
-                        rotate1.setPriority(CommandPriority.High);
-                        rotate2.setPriority(CommandPriority.High);
-
-                        army.addCommand(scale);
-                        army.addCommand(rotate1);
-                        army.addCommand(rotate2);
-                    }*/
                     complete();
                 }
             }

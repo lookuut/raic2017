@@ -4,7 +4,7 @@ public class CustomParams {
     public static int pathFinderSectorCount = 24;
     public static int pathSegmentLenght = 80;
     public static int minPathFactor = 30;
-    public static double minDamageDelta = 10;
+
     //search safety point sector count
     public static int searchSafetyZoneSectorCount = 12;
     public static int safetyDistance = 200;
@@ -24,14 +24,14 @@ public class CustomParams {
     //armies config
     public static double compactAngle = Math.PI / 4;
     public static int minVehiclesCountInArmy = 50;
-    public static int maxVehiclesCountInArmy = 25;
+
     public static double maxSizeVehicleInArmy = 1.0;//for scale
 
     public static int healTimeout = 30;
     //commands config
     public static int runImmediatelyTick = -1;
 
-    public static int tileCellSize = 8;
+    public static int tileCellSize = 16;
 
     public static int enemyArmiesDefineInterval = 10;
     //
@@ -51,10 +51,7 @@ public class CustomParams {
 
     public static int borderPointsCount = 12;
     public static double percentOfHeatedVehicles = 0.75;
-    //facilities
-    public static int maxGotoSiegeArmyCount = 1;
 
     //compact
     public static int armyCompactTimeout = 200;
-    public static double movingDelta = 0.0001;
 }
