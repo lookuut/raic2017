@@ -1,5 +1,6 @@
 # raic2017
-Russian AI Cup 2017, Round 2
-My first Russian AI CUP competition, Round 1 533 place, Round 2 257 place, Sandbox 216 place at 30 December 2017 04:55
-
-Developed PP Fields, Behaviour Tree, Nuclear Attack rating with local cache, Units navigation using PP fields
+<a href="http://russianaicup.ru/">Russian AI Cup 2017</a>
+Соревнования по исскуственному интеллекту от mail.ru <br/>
+Суть задачи: разработка RTS с целью выиграть у противника, описание мира можно посмотреть на сайте конкурса. <br/>
+Разработано: <a href="https://habrahabr.ru/post/262181/">Потенциальные поля</a>, Поведенческое дерево(Behaviour Tree)
+Итог: 1 раунд 533 место, 2 раунд 257 место
