@@ -1,7 +1,8 @@
+package strategy;
+
 import model.VehicleType;
 
 import java.util.*;
-import java.util.List;
 
 /**
  * @TODO programming mirror map save logic
@@ -178,7 +179,7 @@ public class PPField {
     }
 
     public Point2D getTransformedPoint(Point2D point) {
-        return point.multiply(getWidth() /MyStrategy.world.getWidth());
+        return point.multiply(getWidth() / MyStrategy.world.getWidth());
     }
 
     public int transformLenght (double worldLenght) {
@@ -373,8 +374,8 @@ public class PPField {
         Map<Integer, Step> terrainTrack = terrainMap.get(army.getTrack().getLastTerrainTick());
         Map<Integer, Step> aerialTrack = aerialMap.get(army.getTrack().getLastAerialTick());
 
-        int proposeX = (int)MyStrategy.world.getWidth() / getWidth();
-        int proposeY = (int)MyStrategy.world.getHeight() / getHeight();
+        int proposeX = (int) MyStrategy.world.getWidth() / getWidth();
+        int proposeY = (int) MyStrategy.world.getHeight() / getHeight();
 
         Integer tick = MyStrategy.world.getTickIndex() + 1;
 
@@ -431,7 +432,7 @@ public class PPField {
     }
 
     public Double getPathFactor(Point2D startPoint, Point2D endPoint) throws Exception {
-        int propose = (int)MyStrategy.world.getWidth() / getWidth();
+        int propose = (int) MyStrategy.world.getWidth() / getWidth();
 
         Point2D direction = endPoint.subtract(startPoint);
         if (direction.getY() < 0) {

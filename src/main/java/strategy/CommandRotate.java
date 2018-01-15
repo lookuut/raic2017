@@ -1,5 +1,6 @@
-import model.ActionType;
+package strategy;
 
+import model.ActionType;
 
 import java.util.function.Consumer;
 

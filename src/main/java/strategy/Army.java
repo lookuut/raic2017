@@ -1,3 +1,5 @@
+package strategy;
+
 import model.VehicleType;
 
 import java.util.*;

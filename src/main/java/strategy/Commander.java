@@ -1,5 +1,6 @@
-import model.VehicleType;
+package strategy;
 
+import model.VehicleType;
 
 import java.util.*;
 

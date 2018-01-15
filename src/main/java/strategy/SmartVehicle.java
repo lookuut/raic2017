@@ -1,7 +1,7 @@
+package strategy;
 
 import model.*;
 
-import java.util.HashSet;
 import java.util.Map;
 
 public class SmartVehicle  {
@@ -365,7 +365,7 @@ public class SmartVehicle  {
         startPoint.setX(Math.min(startPoint.getX(), MyStrategy.world.getWidth() - 1));
         startPoint.setY(Math.min(startPoint.getY(), MyStrategy.world.getHeight() - 1));
 
-        int propose = (int)MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount();
+        int propose = (int) MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount();
 
         Point2D voxelStartPoint = startPoint.multiply(1/(double)propose);
 
@@ -450,7 +450,7 @@ public class SmartVehicle  {
     public Point2D getVehiclePointAtTick(Point2D direction, Integer tick)  throws  Exception {
         Point2D startPoint = getPoint();
         Point2D targetPoint = direction.multiply(MyStrategy.world.getWidth()).add(getPoint());
-        int propose = (int)MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount();
+        int propose = (int) MyStrategy.world.getWidth() / MyStrategy.game.getTerrainWeatherMapColumnCount();
 
         Point2D voxelStartPoint = getPoint().multiply(1/(double)propose);
 

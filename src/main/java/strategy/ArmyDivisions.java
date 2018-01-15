@@ -1,7 +1,8 @@
-import java.util.*;
+package strategy;
 
 import model.VehicleType;
 
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;

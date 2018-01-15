@@ -1,6 +1,11 @@
+package strategy;
+
 import model.VehicleType;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 
 public class EnemyField {

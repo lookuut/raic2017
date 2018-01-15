@@ -1,3 +1,4 @@
+package strategy;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +31,7 @@ public class ArmyForm {
         minPoint.setY(Math.min(point.getY(), minPoint.getY()));
     }
 
-    public void recalc(Map<Long,SmartVehicle> vehicles) {
+    public void recalc(Map<Long, SmartVehicle> vehicles) {
         if (recalculationIndex == MyStrategy.world.getTickIndex()) {
             return;
         }
