@@ -12,7 +12,7 @@ public class BattleField {
     protected int pFieldHeight;
     
     private Map<Long, List<Army>> armies;
-    private int armiesDefineTick;
+    private int armiesDefineTick = -1;
 
     //temporary code remove it before upload
     private Integer cellSize;
@@ -144,11 +144,13 @@ public class BattleField {
                         recursiveDeepSearchEnemies(point, visitedCells, enemyArmy, allyArmy);
                         
                         if (allyArmy.getVehicles().size() > 0) {
+                            allyArmy.getForm().update(allyArmy.getVehicles());
                             armies.get(MyStrategy.player.getId()).add(allyArmy);
                             allyArmy = new Army();
                         }
 
                         if (enemyArmy.getVehicles().size() > 0) {
+                            enemyArmy.getForm().update(enemyArmy.getVehicles());
                             armies.get(MyStrategy.getEnemyPlayerId()).add(enemyArmy);
                             enemyArmy = new Army();
                         }

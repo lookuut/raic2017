@@ -65,9 +65,9 @@ public class Army {
         vehiclesByType = new HashMap<>();
 
         durability = 0;
-        durabilityUpdateTick = 0;
-        updateDamageFieldTick = 0;
-        lastUpdateTick = 0;
+        durabilityUpdateTick = -1;
+        updateDamageFieldTick = -1;
+        lastUpdateTick = -1;
     }
 
     /**
@@ -100,7 +100,6 @@ public class Army {
 
         vehiclesByType.get(vehicle.getType()).add(vehicle);
         vehicleTypes.put(vehicle.getType(), count);
-        getForm().updateEdgesVehicles(vehicle);
 
         //update max vision range of army
         maxVisionRange = Math.max(maxVisionRange, vehicle.getMinVisionRange());
@@ -127,7 +126,6 @@ public class Army {
     public void putVehicle(SmartVehicle vehicle) {
         vehicles.put(vehicle.getId(), vehicle);
         getForm().addPoint(vehicle.getPoint());
-        getForm().updateEdgesVehicles(vehicle);
         maxVisionRange = Math.max(maxVisionRange, vehicle.getMinVisionRange());
     }
 
@@ -152,6 +150,7 @@ public class Army {
     public ArmyForm getForm() {
         return form;
     }
+
 
     public boolean isAlive() {
         return getVehicleCount() > 0;
@@ -335,7 +334,8 @@ public class Army {
         return damageField;
     }
 
-    public SmartVehicle getMaxDamageVehicle() {
+    public List<SmartVehicle> getMaxDamageVehicle() {
+        List<SmartVehicle> maxDamageVehicles = new ArrayList<>();
         PPFieldEnemy damageField = getDamageField();
         Collection<SmartVehicle> edgesVehicles = getForm().getEdgesVehicles().values();
         SmartVehicle maxDamageVehicle = edgesVehicles.iterator().next();
@@ -344,21 +344,38 @@ public class Army {
         for (SmartVehicle vehicle : edgesVehicles) {
             if (maxDamage > damageField.getFactor(vehicle.getPoint())) {
                 maxDamage = damageField.getFactor(vehicle.getPoint());
-                maxDamageVehicle = vehicle;
             }
         }
 
-        return maxDamageVehicle;
+        for (SmartVehicle vehicle : edgesVehicles) {
+            if (Math.abs(maxDamage - damageField.getFactor(vehicle.getPoint())) <= CustomParams.damageDelta) {
+                maxDamageVehicles.add(vehicle);
+            }
+        }
+
+        return maxDamageVehicles;
     }
 
     public double getMaxDamageVehicleTurnedAngle(Point2D target) {
 
-        SmartVehicle maxDamageVehicle = getMaxDamageVehicle();
+        List<SmartVehicle> maxDamageVehicles = getMaxDamageVehicle();
+
+        Iterator<SmartVehicle> iterator = maxDamageVehicles.iterator();
+        SmartVehicle maxDamageVehicle = iterator.next();
+        double minDistance = target.subtract(maxDamageVehicle.getPoint()).magnitude();
+
+        while (iterator.hasNext()) {
+            SmartVehicle vehicle = iterator.next();
+            double distance = target.subtract(vehicle.getPoint()).magnitude();
+            if (distance < minDistance) {
+                maxDamageVehicle = vehicle;
+            }
+        }
 
         Iterator<SmartVehicle> edgeVehiclesIterator = getForm().getEdgesVehicles().values().iterator();
 
         SmartVehicle nearestToTargetEdgeVehicle = edgeVehiclesIterator.next();
-        double minDistance = target.distance(nearestToTargetEdgeVehicle.getPoint());
+        minDistance = target.distance(nearestToTargetEdgeVehicle.getPoint());
 
         while (edgeVehiclesIterator.hasNext()) {
             SmartVehicle edgeVehicle = edgeVehiclesIterator.next();
@@ -366,18 +383,17 @@ public class Army {
 
             if (distance < minDistance) {
                 nearestToTargetEdgeVehicle = edgeVehicle;
+                minDistance = distance;
             }
         }
-        Point2D maxDamageArmyCenterVector = maxDamageVehicle.getPoint().subtract(getForm().getEdgesVehiclesCenter());
-        Point2D maxDamageVehicleVector = maxDamageVehicle.getPoint().subtract(target);
-        Point2D nearestToTargetVehicleVector = nearestToTargetEdgeVehicle.getPoint().subtract(target);
+        Point2D armyCenter = getForm().getEdgesVehiclesCenter();
 
-        double angle = Math.PI * maxDamageVehicleVector.angle(nearestToTargetVehicleVector) / 180;
-        if (maxDamageArmyCenterVector.angle(maxDamageVehicleVector) <= 180) {
-            angle = angle * -1;
-        }
+        Point2D maxDamageArmyCenterVector = maxDamageVehicle.getPoint().subtract(armyCenter).normalize();
+        Point2D nearestToTargetVehicleVector = nearestToTargetEdgeVehicle.getPoint().subtract(armyCenter).normalize();
 
-        return angle;
+        double dot = maxDamageArmyCenterVector.dotProduct(nearestToTargetVehicleVector);
+        double cross = maxDamageArmyCenterVector.cross(nearestToTargetVehicleVector);
+        return Math.atan2(cross, dot);
     }
 
     public SmartVehicle getFarestVehicleFromPoint(Point2D point) {

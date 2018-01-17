@@ -58,7 +58,7 @@ public class CommandMove extends Command {
 
             Consumer<Command> funcMove = (command) -> {
                 try {
-                    army.getForm().recalc(army.getVehicles());
+                    army.getForm().update(army.getVehicles());
 
                     if (withPathFinder) {
                         target.vector = army.pathFinder(this, target);

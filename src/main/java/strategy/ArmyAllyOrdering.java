@@ -95,7 +95,7 @@ public class ArmyAllyOrdering extends ArmyAlly {
     }
 
     public Point2D pathFinder(CommandMove command, TargetPoint target) throws Exception {
-        getForm().recalc(getVehicles());
+        getForm().update(getVehicles());
 
         getTrack().clearFuture(MyStrategy.world.getTickIndex() + 1);
         getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastUpdateTick() - 1 ));

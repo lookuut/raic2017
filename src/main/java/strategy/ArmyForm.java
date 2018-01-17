@@ -1,9 +1,6 @@
 package strategy;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ArmyForm {
 
@@ -11,15 +8,18 @@ public class ArmyForm {
      * @desc edges vehicles by angles
      */
     private Map<Point2D, SmartVehicle> edgesVehicles;
+    private Collection<Point2D> edgesPoints;
 
     private Point2D maxPoint;
     private Point2D minPoint;
     private Point2D avgPoint;
     private Integer recalculationIndex = -1;
+
     public ArmyForm() {
         maxPoint = new Point2D(0.0,0.0);
         minPoint = new Point2D(CustomParams.fieldMaxWidth, CustomParams.fieldMinHeight);
         edgesVehicles = new HashMap<>();
+        edgesPoints = new ArrayList<>();
     }
 
 
@@ -31,35 +31,43 @@ public class ArmyForm {
         minPoint.setY(Math.min(point.getY(), minPoint.getY()));
     }
 
-    public void recalc(Map<Long, SmartVehicle> vehicles) {
+    private void updateEdgesPoints() {
+        edgesPoints.clear();
+
+        Point2D direction = new Point2D(0, maxPoint.subtract(minPoint).multiply(0.5).magnitude());
+
+        for (int i = 0; i < CustomParams.borderPointsCount; i++) {
+            double angle = i * 2 * Math.PI / CustomParams.borderPointsCount;
+            Point2D edgePoint = direction.turn(angle);
+            edgesPoints.add(getAvgPoint().add(edgePoint));
+        }
+    }
+
+    public void update(Map<Long, SmartVehicle> vehicles) {
+
         if (recalculationIndex == MyStrategy.world.getTickIndex()) {
             return;
         }
-        Integer count = 0;
+
         Point2D sumVector = new Point2D(0.0, 0.0);
 
         minPoint = new Point2D(Double.MAX_VALUE, Double.MAX_VALUE);
         maxPoint = new Point2D(0.0, 0.0);
-        edgesVehicles.clear();
+
         for (Map.Entry<Long, SmartVehicle> entry : vehicles.entrySet()) {
-            if (entry.getValue().getDurability() > 0) {
+            maxPoint.setX(Math.max(maxPoint.getX(), entry.getValue().getX()));
+            maxPoint.setY(Math.max(maxPoint.getY(), entry.getValue().getY()));
 
-                maxPoint.setX(Math.max(maxPoint.getX(), entry.getValue().getX()));
-                maxPoint.setY(Math.max(maxPoint.getY(), entry.getValue().getY()));
+            minPoint.setX(Math.min(minPoint.getX(), entry.getValue().getX()));
+            minPoint.setY(Math.min(minPoint.getY(), entry.getValue().getY()));
 
-                minPoint.setX(Math.min(minPoint.getX(), entry.getValue().getX()));
-                minPoint.setY(Math.min(minPoint.getY(), entry.getValue().getY()));
-
-                sumVector.setX(entry.getValue().getPoint().getX() + sumVector.getX());
-                sumVector.setY(entry.getValue().getPoint().getY() + sumVector.getY());
-                updateEdgesVehicles(entry.getValue());
-                count++;
-            }
+            sumVector.setX(entry.getValue().getPoint().getX() + sumVector.getX());
+            sumVector.setY(entry.getValue().getPoint().getY() + sumVector.getY());
         }
 
-        if (count > 0)  {
-            avgPoint = sumVector.multiply((double)1/count);
-        }
+        avgPoint = sumVector.multiply((double)1/ vehicles.size());
+        updateEdgesPoints();
+        updateEdgesVehicles(vehicles);
 
         recalculationIndex = MyStrategy.world.getTickIndex();
     }
@@ -67,20 +75,31 @@ public class ArmyForm {
 
     public Point2D getAvgPoint() { return avgPoint; }
 
-    public void updateEdgesVehicles(SmartVehicle vehicle) {
-        for (Point2D edgePoint : MyStrategy.getBorderPointList()) {
-            if (!edgesVehicles.containsKey(edgePoint) || vehicle.getPoint().distance(edgePoint) < edgesVehicles.get(edgePoint).getPoint().distance(edgePoint)) {
-                edgesVehicles.put(edgePoint, vehicle);
+    private void updateEdgesVehicles(Map<Long, SmartVehicle> vehiclesMap) {
+        edgesVehicles.clear();
+
+        Collection<SmartVehicle> vehicles = vehiclesMap.values();
+
+        for (Point2D edgePoint : edgesPoints) {
+            Iterator<SmartVehicle> iterator = vehicles.iterator();
+            SmartVehicle minDistanceVehicle = iterator.next();
+            double minDistance = edgePoint.subtract(minDistanceVehicle.getPoint()).magnitude();
+            while (iterator.hasNext()) {
+                SmartVehicle vehicle = iterator.next();
+                double distance = edgePoint.subtract(vehicle.getPoint()).magnitude();
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    minDistanceVehicle = vehicle;
+                }
             }
+
+            edgesVehicles.put(edgePoint, minDistanceVehicle);
         }
     }
 
     public void removeVehicle(Map<Long, SmartVehicle> vehicles, SmartVehicle vehicle) {
         if (edgesVehicles.values().contains(vehicle)) {
             edgesVehicles.values().remove(vehicle);
-            vehicles.values().stream().filter(_vehicle -> _vehicle.getDurability() > 0).forEach(_vehicle -> {
-                this.updateEdgesVehicles(_vehicle);
-            });
         }
     }
 
@@ -195,5 +214,22 @@ public class ArmyForm {
         result.add(minDistanceAllyPoint);
         result.add(minDistanceEnemyPoint);
         return result;
+    }
+
+    public SmartVehicle getNearestEdgeVehicle(Point2D point) {
+        Iterator<SmartVehicle> iterator = getEdgesVehicles().values().iterator();
+        SmartVehicle minDistanceVehicle = iterator.next();
+        double minDistance = minDistanceVehicle.getPoint().distance(point);
+
+        while (iterator.hasNext()) {
+            SmartVehicle vehicle = iterator.next();
+            double distance = vehicle.getPoint().distance(point);
+            if (minDistance > distance) {
+                minDistanceVehicle = vehicle;
+                minDistance = distance;
+            }
+        }
+
+        return minDistanceVehicle;
     }
 }

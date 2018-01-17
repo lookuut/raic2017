@@ -29,7 +29,7 @@ public class CommandNuclearAttack extends Command {
                 targetPoint.vector = this.targetPoint.subtract(army.getForm().getAvgPoint());
                 targetPoint.maxDamageValue = army.getForm().getMinDamageFactor(army) * (-1);
 
-                army.getForm().recalc(army.getVehicles());
+                army.getForm().update(army.getVehicles());
                 army.addCommand(new CommandMove(targetPoint));
                 setState(CommandStates.Complete);
                 return;

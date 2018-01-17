@@ -56,4 +56,5 @@ public class CustomParams {
 
     //compact
     public static int armyCompactTimeout = 200;
+    public static double damageDelta = 1.0;
 }

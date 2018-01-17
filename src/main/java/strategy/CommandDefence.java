@@ -18,7 +18,7 @@ public class CommandDefence extends Command {
 
         PPFieldEnemy damageField = army.getDamageField();
 
-        army.getForm().recalc(army.getVehicles());
+        army.getForm().update(army.getVehicles());
         double allyArmyDamageFactor = damageField.getFactorOld(damageField.getTransformedPoint(army.getForm().getAvgPoint()));
 
         MyStrategy.battleField.defineArmies();

@@ -37,7 +37,7 @@ public class CommandScale extends Command {
                 MyStrategy.move.setAction(ActionType.SCALE);
 
                 if (scalePoint == null) {
-                    army.getForm().recalc(army.getVehicles());
+                    army.getForm().update(army.getVehicles());
                     MyStrategy.move.setX(army.getForm().getAvgPoint().getX());
                     MyStrategy.move.setY(army.getForm().getAvgPoint().getY());
                 } else {
@@ -59,6 +59,7 @@ public class CommandScale extends Command {
 
     public boolean check (ArmyAllyOrdering army) {
         if (isRun() && getRunningTicks() > scaleDurability) {
+            army.getForm().update(army.getVehicles());
             complete();
             return true;
         }
