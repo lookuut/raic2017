@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 public final class MyStrategy implements Strategy {
 
     private static List<Point2D> borderPointList;
+
     public static Player player;
     public static World world;
     public static Game game;
@@ -203,8 +204,7 @@ public final class MyStrategy implements Strategy {
     }
 
     public static boolean isNuclearAttack() {
-        Player player = Arrays.stream(MyStrategy.world.getPlayers()).filter(player1 -> player1.getNextNuclearStrikeTickIndex() > 0 && player1.getId() != MyStrategy.player.getId()).findFirst().orElse(null);
-        return player != null;
+        return (world.getOpponentPlayer().getNextNuclearStrikeTickIndex() - world.getTickIndex()) > 0;
     }
 
     public static boolean mayEnemyAttackNuclearSoon () {

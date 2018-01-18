@@ -1,8 +1,11 @@
 package strategy;
 
+import model.ActionType;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.function.Consumer;
 
 
 enum CommandPriority {
@@ -127,5 +130,17 @@ abstract public class Command {
 
     public void setPriority(CommandPriority priority) {
         this.priority = priority;
+    }
+
+    public static Consumer<Command> selectSquare(Point2D minPoint, Point2D maxPoint) {
+        Consumer<Command> commandSelect = (command) -> {
+            MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
+            MyStrategy.move.setLeft(minPoint.getX());
+            MyStrategy.move.setBottom(maxPoint.getY());
+            MyStrategy.move.setRight(maxPoint.getX());
+            MyStrategy.move.setTop(minPoint.getY());
+        };
+
+        return commandSelect;
     }
 }

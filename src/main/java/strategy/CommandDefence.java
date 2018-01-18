@@ -3,8 +3,10 @@ package strategy;
 import java.util.List;
 
 public class CommandDefence extends Command {
+    private Point2D mapCenter;
     public CommandDefence () {
         super();
+        mapCenter = new Point2D(MyStrategy.world.getWidth()/2, (MyStrategy.world.getHeight()/2));
     }
 
     @Override
@@ -13,6 +15,9 @@ public class CommandDefence extends Command {
         Point2D point = army.dangerPoint();
 
         if (point == null) {//danger is gone, relax take it easy
+            army.getForm().update(army.getVehicles());
+            army.addCommand(new CommandMove(army.getForm().getAvgPoint().subtract(mapCenter)));
+            complete();
             return;
         }
 

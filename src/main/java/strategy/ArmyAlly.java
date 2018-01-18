@@ -1,11 +1,9 @@
 package strategy;
 
 import model.VehicleType;
+import sun.swing.BakedArrayList;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ArmyAlly extends Army {
 
@@ -240,7 +238,7 @@ public class ArmyAlly extends Army {
 
         double minDistance = Double.MAX_VALUE;
         double minDistanceDamageFactorDelta = 0;
-
+        
         for (Army enemyArmy : enemyArmies) {
             if (enemyArmy.getForm().getEdgesVehiclesCenter().subtract(armyCenter).magnitude() <= CustomParams.safetyDistance) {
                 if (canAttackedByArmy(enemyArmy)) {
@@ -318,12 +316,37 @@ public class ArmyAlly extends Army {
         if (MyStrategy.world.getTickIndex() - lastCompactTick < CustomParams.armyCompactTimeout) {
             return false;
         }
+        Collection<SmartVehicle> edgesVehicles = getForm().getEdgesVehicles().values();
+        List<Double> minDistanceList = new ArrayList();
 
-        return false;
+        for (SmartVehicle minDistanceVehicle : edgesVehicles) {
+
+            Iterator<SmartVehicle> iterator = getForm().getEdgesVehicles().values().iterator();
+            double minDistance = Double.MAX_VALUE;
+            while (iterator.hasNext()) {
+                SmartVehicle vehicle = iterator.next();
+                if (vehicle == minDistanceVehicle) {
+                    continue;
+                }
+                double distance = vehicle.getPoint().distance(minDistanceVehicle.getPoint());
+                if (minDistance > distance) {
+                    minDistance = distance;
+                }
+            }
+
+            minDistanceList.add(minDistance);
+        }
+
+        Integer count = edgesVehicles.size();
+        Double sum = minDistanceList.stream().mapToDouble(Double::doubleValue).sum();
+        Double avg = sum / count;
+
+        return avg > 10.0;
     }
 
     public boolean isNeedToTurnArmyToEnemy () {
-
+        return false;
+        /*
         if (targetVehicle == null || targetVehicle.getDurability() == 0) {
             return false;
         }
@@ -337,7 +360,7 @@ public class ArmyAlly extends Army {
             return true;
         }
 
-        return false;
+        return false;*/
     }
 
     public SmartVehicle getTargetVehicle() {

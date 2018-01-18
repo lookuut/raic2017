@@ -6,7 +6,10 @@ import java.util.*;
 
 public class ArmyAllyOrdering extends ArmyAlly {
 
-
+    /**
+     * @var is locked
+     */
+    private boolean isLocked;
     /**
      * commands
      */
@@ -21,7 +24,24 @@ public class ArmyAllyOrdering extends ArmyAlly {
 
     public ArmyAllyOrdering(Integer groupId, BattleField battleField, PPField terrainField, PPField aerialField) {
         super(groupId, battleField, terrainField, aerialField);
+        isLocked = false;
         commandQueue = new ArrayDeque<>();
+    }
+
+    public void lock() throws Exception {
+        if (isLocked) {
+            throw new Exception("Army already locked");
+        }
+
+        isLocked = true;
+    }
+
+    public void unlock() {
+        isLocked = false;
+    }
+
+    public boolean locked() {
+        return isLocked;
     }
 
     public void setBehaviourTree(BehaviourTree behaviourTree) {

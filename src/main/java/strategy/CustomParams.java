@@ -49,6 +49,7 @@ public class CustomParams {
     public static int trackMinTickInhistory = 60;
 
     //nuclear attack
+    public static int nuclearAttackDefenceScaleFactor = 10;
     public static int nuclearAttackRatingRecalcTickInterval = 10;
 
     public static int borderPointsCount = 12;

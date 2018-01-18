@@ -1,11 +1,9 @@
 package strategy;
 
 import model.VehicleType;
-
 import java.util.*;
 
 public class Army {
-
     /**
      * @var vehicles in army
      */
@@ -55,7 +53,6 @@ public class Army {
      * @var PP damage field
      */
     private PPFieldEnemy damageField;
-
 
     public Army() {
         form = new ArmyForm();
@@ -225,17 +222,21 @@ public class Army {
     }
 
     public double getMinSpeed() {
-        double minSpeed = 10;
-        for (VehicleType type : getVehiclesType()) {
-            double factor = 1;
-            if (SmartVehicle.isTerrain(type)) {
-                factor = MyStrategy.game.getSwampTerrainSpeedFactor();
-            } else {
-                factor = MyStrategy.game.getRainWeatherSpeedFactor();
-            }
 
-            if (vehiclesByType.get(type).get(0).getMaxSpeed() * factor < minSpeed) {
-                minSpeed = vehiclesByType.get(type).get(0).getMaxSpeed() * factor;
+        Iterator<VehicleType> typeIterator = getVehiclesType().iterator();
+        VehicleType type = typeIterator.next();
+
+        double terrainFactor = MyStrategy.game.getSwampTerrainSpeedFactor();
+        double aerialFactor = MyStrategy.game.getRainWeatherSpeedFactor();
+
+        double minSpeed = vehiclesByType.get(type).iterator().next().getMaxSpeed() *
+                                (SmartVehicle.isTerrain(type) ? terrainFactor : aerialFactor);
+
+        while (typeIterator.hasNext()) {
+            double factor = SmartVehicle.isTerrain(type) ? terrainFactor : aerialFactor;
+            double speed = vehiclesByType.get(type).get(0).getMaxSpeed() * factor;
+            if (speed < minSpeed) {
+                minSpeed = speed;
             }
         }
 

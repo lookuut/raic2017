@@ -232,4 +232,12 @@ public class ArmyForm {
 
         return minDistanceVehicle;
     }
+
+    public Point2D getMaxPoint() {
+        return maxPoint;
+    }
+
+    public Point2D getMinPoint() {
+        return minPoint;
+    }
 }

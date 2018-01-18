@@ -39,11 +39,12 @@ class Commander {
     }
 
     private void checkAttackNuclear() throws Exception {
+
         if (nuclearAttackDefence != null) {
             nuclearAttackDefence.check(null);
         }
 
-        if (MyStrategy.isNuclearAttack() && !(nuclearAttackDefence.isRun() || nuclearAttackDefence.isHold())) {
+        if (MyStrategy.isNuclearAttack() || nuclearAttackDefence.isRun()) {
             nuclearAttackDefence.run(null);
         }
     }
@@ -66,7 +67,7 @@ class Commander {
 
         //run divisions logic
         for (ArmyAllyOrdering army : divisions.getArmyList()) {
-            if (army.isAlive()) {
+            if (army.isAlive() && !army.locked()) {
                 army.run();
             }
         }
@@ -79,11 +80,11 @@ class Commander {
                 if (entry.getValue().size() >= CustomParams.minVehiclesCountInArmy) {
                     Square vehicleTypeSquare = noArmySquaereMap.get(entry.getKey());
                     if (
-                        entry.getKey() == VehicleType.FIGHTER// ||
-                        //entry.getKey() == VehicleType.HELICOPTER ||
-                        //entry.getKey() == VehicleType.TANK ||
-                        //entry.getKey() == VehicleType.IFV ||
-                        /*entry.getKey() == VehicleType.ARRV*/) {
+                        entry.getKey() == VehicleType.FIGHTER ||
+                        entry.getKey() == VehicleType.HELICOPTER ||
+                        entry.getKey() == VehicleType.TANK ||
+                        entry.getKey() == VehicleType.IFV ||
+                        entry.getKey() == VehicleType.ARRV) {
                         divisions.addArmy(vehicleTypeSquare, new HashSet(Arrays.asList(entry.getKey())));
                     } 
                     noArmySquaereMap.remove(entry.getKey());
@@ -105,7 +106,7 @@ class Commander {
             if (!army.isAlive()) {
                 divisions.removeArmy(army);
                 iter.remove();
-            } else if (army.isRun()) {
+            } else if (army.isRun() && !army.locked()) {
                 army.check();
             }
         }
