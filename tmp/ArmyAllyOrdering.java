@@ -5,7 +5,10 @@ import java.util.*;
 
 public class ArmyAllyOrdering extends ArmyAlly {
 
-
+    /**
+     * @var is locked
+     */
+    private boolean isLocked;
     /**
      * commands
      */
@@ -20,7 +23,24 @@ public class ArmyAllyOrdering extends ArmyAlly {
 
     public ArmyAllyOrdering(Integer groupId, BattleField battleField, PPField terrainField, PPField aerialField) {
         super(groupId, battleField, terrainField, aerialField);
+        isLocked = false;
         commandQueue = new ArrayDeque<>();
+    }
+
+    public void lock() throws Exception {
+        if (isLocked) {
+            throw new Exception("Army already locked");
+        }
+
+        isLocked = true;
+    }
+
+    public void unlock() {
+        isLocked = false;
+    }
+
+    public boolean locked() {
+        return isLocked;
     }
 
     public void setBehaviourTree(BehaviourTree behaviourTree) {
@@ -93,8 +113,8 @@ public class ArmyAllyOrdering extends ArmyAlly {
         return runningCommand;
     }
 
-    public Point2D pathFinder(CommandMove command, TargetPoint target) throws Exception {
-        getForm().recalc(getVehicles());
+    public Point2D pathFinder(CommandMove command, TargetPoint target, PPField sumPPFields) throws Exception {
+        getForm().update(getVehicles());
 
         getTrack().clearFuture(MyStrategy.world.getTickIndex() + 1);
         getTrack().clearPast(Math.min(MyStrategy.world.getTickIndex() - CustomParams.trackMinTickInhistory, getLastUpdateTick() - 1 ));
@@ -104,7 +124,6 @@ public class ArmyAllyOrdering extends ArmyAlly {
         }
 
         Set<VehicleType> types = getVehiclesType();
-        PPField sumPPFields = MyStrategy.enemyField.getDamageField(types);
 
         Track movingAerialArmyTrack = new Track();
         Track movingTerrainArmyTrack = new Track();
@@ -132,13 +151,11 @@ public class ArmyAllyOrdering extends ArmyAlly {
         SortedMap<Integer, Map<Integer, Step>> trackMap = null;
 
         if (types.contains(VehicleType.FIGHTER) || types.contains(VehicleType.HELICOPTER)) {
-            sumPPFields.sumField(constAerialPPField);
             trackMap = new TreeMap<>(movingAerialArmyTrack.getVehicleTypeTrack(VehicleType.FIGHTER));
             sumPPFields.addSteps(lastAerialSteps);
         }
 
         if (types.contains(VehicleType.TANK) || types.contains(VehicleType.IFV) || types.contains(VehicleType.ARRV)) {
-            sumPPFields.sumField(constTerrainPPField);
             sumPPFields.addSteps(lastTerrainSteps);
 
             if (trackMap != null) {

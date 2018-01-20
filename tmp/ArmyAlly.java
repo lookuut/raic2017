@@ -1,10 +1,8 @@
 
 import model.VehicleType;
+import sun.swing.BakedArrayList;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ArmyAlly extends Army {
 
@@ -98,17 +96,6 @@ public class ArmyAlly extends Army {
         TargetPoint target = new TargetPoint();
         try {
             PPFieldEnemy damageField = getDamageField();
-
-            if (targetVehicle != null &&
-                    targetVehicle.getDurability() > 0 &&
-                    damageField.getFactorOld(damageField.getTransformedPoint(targetVehicle.getPoint())) <= targetVehicleDamageFactor &&
-                    isAerial()
-                    ) {
-                target.vector = targetVehicle.getPoint().subtract(getForm().getAvgPoint());
-                target.maxDamageValue = targetVehicleDamageFactor;
-                target.targetArmy = targetArmy;
-                return target;
-            }
             target = new TargetPoint();
 
 
@@ -125,6 +112,8 @@ public class ArmyAlly extends Army {
             double minFactor = Double.MAX_VALUE;
             Point2D minFactorPoint = null;
             Army minFactorArmy = null;
+            SmartVehicle minDistanceTargetVehicle = null;
+            SmartVehicle minFactorTargetVehicle = null;
             for (Army enemyArmy : enemyArmies) {
                 for (VehicleType enemyVehicleType : enemyArmy.getVehiclesType()) {
                     if (SmartVehicle.isTargetVehicleType(getVehiclesType().iterator().next(), enemyVehicleType)){
@@ -137,7 +126,7 @@ public class ArmyAlly extends Army {
                                         minFactor = edgeVehicleDamageFactor;
                                         minFactorPoint = enemyEdgeVehicle.getPoint();
                                         minFactorArmy = enemyArmy;
-                                        targetVehicle = enemyEdgeVehicle;
+                                        minDistanceTargetVehicle = enemyEdgeVehicle;
                                         targetArmy = enemyArmy;
                                         targetVehicleDamageFactor = edgeVehicleDamageFactor;
                                     }
@@ -149,6 +138,7 @@ public class ArmyAlly extends Army {
                                         minDistancePoint = enemyEdgeVehicle.getPoint();
                                         minDistanceFactor = edgeVehicleDamageFactor;
                                         minDistanceArmy = enemyArmy;
+                                        minFactorTargetVehicle = enemyEdgeVehicle;
                                     }
                                 }
                             }
@@ -157,14 +147,16 @@ public class ArmyAlly extends Army {
                 }
             }
 
-            if (isAerial() && minFactorPoint != null) {
+            if (isAerial() && minFactorPoint != null && false) {
                 target.vector = minFactorPoint.subtract(getForm().getAvgPoint());
                 target.maxDamageValue = minFactor;
                 target.targetArmy = minFactorArmy;
+                targetVehicle = minFactorTargetVehicle;
             } else if (minDistancePoint != null) {
                 target.vector = minDistancePoint.subtract(getForm().getAvgPoint());
                 target.maxDamageValue = minDistanceFactor;
                 target.targetArmy = minDistanceArmy;
+                targetVehicle = minDistanceTargetVehicle;
             } else {
                 return null;
             }
@@ -182,7 +174,7 @@ public class ArmyAlly extends Army {
 
 
     public Point2D dangerPoint() throws Exception {
-        return MyStrategy.enemyField.onDanger(getVehiclesType(), getForm().getAvgPoint(), CustomParams.dangerRadious);
+        return MyStrategy.enemyField.onDanger(getVehiclesType(), getForm().getAvgPoint(), CustomParams.safetyDistance);
     }
 
     public void setEnemy(SmartVehicle enemyVehicle) {
@@ -308,33 +300,41 @@ public class ArmyAlly extends Army {
         lastCompactTick = tick;
     }
 
-    public boolean isNeedToCompact() {
+    public boolean isNeedToCompact() {//@TODO need to rewrite it
         if (MyStrategy.world.getTickIndex() - lastCompactTick < CustomParams.armyCompactTimeout) {
             return false;
         }
+        Collection<SmartVehicle> edgesVehicles = getForm().getEdgesVehicles().values();
+        List<Double> minDistanceList = new ArrayList();
 
-        int vehicleCount = getVehicleCount();
-        Map<Point2D, SmartVehicle> edgesVehicles = getForm().getEdgesVehicles();
+        for (SmartVehicle minDistanceVehicle : edgesVehicles) {
 
-        double maxDistance = 0;
-        for (int i = 0; i < CustomParams.borderPointsCount / 2; i++) {
-            Point2D borderPoint = MyStrategy.getBorderPointList().get(i);
-            Point2D oppositePoint = MyStrategy.getBorderPointList().get(i  + CustomParams.borderPointsCount / 2);
-
-            SmartVehicle vehicle = edgesVehicles.get(borderPoint);
-            SmartVehicle oppositeVehicle = edgesVehicles.get(oppositePoint);
-
-            double distance = vehicle.getPoint().distance(oppositeVehicle.getPoint());
-            if (distance > maxDistance) {
-                maxDistance = distance;
+            Iterator<SmartVehicle> iterator = getForm().getEdgesVehicles().values().iterator();
+            double minDistance = Double.MAX_VALUE;
+            while (iterator.hasNext()) {
+                SmartVehicle vehicle = iterator.next();
+                if (vehicle == minDistanceVehicle) {
+                    continue;
+                }
+                double distance = vehicle.getPoint().distance(minDistanceVehicle.getPoint());
+                if (minDistance > distance) {
+                    minDistance = distance;
+                }
             }
+
+            minDistanceList.add(minDistance);
         }
 
-        return maxDistance / (double)vehicleCount >= CustomParams.maxSizeVehicleInArmy;
+        Integer count = edgesVehicles.size();
+        Double sum = minDistanceList.stream().mapToDouble(Double::doubleValue).sum();
+        Double avg = sum / count;
+
+        return avg > 10.0;
     }
 
     public boolean isNeedToTurnArmyToEnemy () {
-
+        return false;
+        /*
         if (targetVehicle == null || targetVehicle.getDurability() == 0) {
             return false;
         }
@@ -348,7 +348,7 @@ public class ArmyAlly extends Army {
             return true;
         }
 
-        return false;
+        return false;*/
     }
 
     public SmartVehicle getTargetVehicle() {

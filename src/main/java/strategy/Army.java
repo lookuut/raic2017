@@ -53,6 +53,7 @@ public class Army {
      * @var PP damage field
      */
     private PPFieldEnemy damageField;
+    private Set<ArmyAllyOrdering> vehiclesContainedArmies;
 
     public Army() {
         form = new ArmyForm();
@@ -65,6 +66,7 @@ public class Army {
         durabilityUpdateTick = -1;
         updateDamageFieldTick = -1;
         lastUpdateTick = -1;
+        vehiclesContainedArmies = new HashSet<>();
     }
 
     /**
@@ -97,6 +99,10 @@ public class Army {
 
         vehiclesByType.get(vehicle.getType()).add(vehicle);
         vehicleTypes.put(vehicle.getType(), count);
+
+        if (vehicle.getArmy() != null) {
+            addArmy(vehicle.getArmy());
+        }
 
         //update max vision range of army
         maxVisionRange = Math.max(maxVisionRange, vehicle.getMinVisionRange());
@@ -415,4 +421,28 @@ public class Army {
 
         return farestToTargetEdgeVehicle;
     }
+
+    public void addArmy (ArmyAllyOrdering army) {
+        if (!vehiclesContainedArmies.contains(army)) {
+            vehiclesContainedArmies.add(army);
+        }
+    }
+
+    public Set<ArmyAllyOrdering> getVehiclesArmies() {
+        return vehiclesContainedArmies;
+    }
+    public boolean isHeat (Army army) {
+        Collection<SmartVehicle> edgesVehicles = getForm().getEdgesVehicles().values();
+
+        for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
+            for (SmartVehicle vehicle1 : edgesVehicles) {
+                if (vehicle.getPoint().distance(vehicle1.getPoint()) <= 10 ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
 }

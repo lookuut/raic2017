@@ -11,27 +11,54 @@ public class CommanderFacility {
     private Map<Long, SmartFacility> facilities;
     private Map<FacilityType, Set<SmartFacility>> facilitiesByTypes;
     private Map<ArmyAllyOrdering, SmartFacility> armiesGotoFacility;
-
+    private Deque<Command> createVehicleCommandQueue;
     public CommanderFacility () {
         facilities = new HashMap<>();
         facilitiesByTypes = new HashMap<>();
         armiesGotoFacility = new HashMap<>();
+        createVehicleCommandQueue = new LinkedList<>();
     }
 
     public void orderCreateVehicle() {
         try {
+
+            Map<VehicleType, Integer> enemyTypeVehiclesCount = MyStrategy.getEnemyTypeVehiclesCount();
+            Map<VehicleType, Integer> allyTypeVehiclesCount = MyStrategy.getAllyTypeVehiclesCount();
+
+            int maxDelta = 0;
+            VehicleType maxDeltaVehicleType = VehicleType.FIGHTER;
+            for (VehicleType type : VehicleType.values()) {
+                int delta = enemyTypeVehiclesCount.get(type) - allyTypeVehiclesCount.get(type);
+                if (delta > 0 && delta > maxDelta) {
+                    maxDelta = delta;
+                    maxDeltaVehicleType = type;
+                }
+            }
+
+            if (allyTypeVehiclesCount.get(maxDeltaVehicleType) / (double)enemyTypeVehiclesCount.get(maxDeltaVehicleType) >= 1.2) {
+                return;
+            }
+
             for (SmartFacility facility : facilities.values()) {
                 if (facility.getOwnerPlayerId() == MyStrategy.player.getId() &&
                         facility.getProductionProgress() == 0 &&
-                        facility.getType() == FacilityType.VEHICLE_FACTORY) {
-                    CommandCreateVehicle createVehicle = new CommandCreateVehicle(facility.getId(), VehicleType.TANK);
-                    createVehicle.run(null);
+                        facility.getType() == FacilityType.VEHICLE_FACTORY &&
+                        createVehicleCommandQueue.size() < 2) {
+                    createVehicleCommandQueue.add(new CommandCreateVehicle(facility.getId(), SmartVehicle.getVictimType(maxDeltaVehicleType)));
                 }
             }
+
+            if (createVehicleCommandQueue.size() > 0 && createVehicleCommandQueue.getFirst().isNew()) {
+                createVehicleCommandQueue.getFirst().run(null);
+            }
+
+            if (createVehicleCommandQueue.size() > 0 && createVehicleCommandQueue.getFirst().isFinished()) {
+                createVehicleCommandQueue.poll();
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     public void updateFacility(Facility facility) {

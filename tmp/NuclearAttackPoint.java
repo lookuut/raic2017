@@ -13,7 +13,7 @@ public class NuclearAttackPoint implements Comparable<NuclearAttackPoint> {
     private double vehiclesPercentage;
 
     public NuclearAttackPoint(Army army) {
-        army.getForm().recalc(army.getVehicles());
+        army.getForm().update(army.getVehicles());
         this.army = army;
         this.point = army.getForm().getAvgPoint();
 

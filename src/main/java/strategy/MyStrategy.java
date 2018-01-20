@@ -8,8 +8,6 @@ import java.util.function.Consumer;
 
 public final class MyStrategy implements Strategy {
 
-    private static List<Point2D> borderPointList;
-
     public static Player player;
     public static World world;
     public static Game game;
@@ -24,8 +22,13 @@ public final class MyStrategy implements Strategy {
     public static EnemyField enemyField;
 
     static protected HashMap<Long, SmartVehicle> previousVehiclesStates;
-    private static  HashMap<Long, SmartVehicle> vehicles;
-    private static HashMap<Long, SmartVehicle> enemyVehicles;
+
+    private static Map<Long, SmartVehicle> vehicles;
+    private static Map<Long, SmartVehicle> enemyVehicles;
+
+    private static Map<VehicleType, Integer> allyVehiclesByType;
+    private static Map<VehicleType, Integer> enemyVehiclesByType;
+
     public static Profiler profiler;
 
     public static Commander commander;
@@ -35,7 +38,17 @@ public final class MyStrategy implements Strategy {
         this.previousVehiclesStates = new HashMap();
         this.vehicles = new HashMap<>();
         this.enemyVehicles = new HashMap<>();
+
         this.commanderFacility = new CommanderFacility();
+
+        this.allyVehiclesByType = new HashMap<>();
+        this.enemyVehiclesByType = new HashMap<>();
+
+        for (VehicleType type : VehicleType.values()) {
+            allyVehiclesByType.put(type, 0);
+            enemyVehiclesByType.put(type, 0);
+        }
+
         strategyTimeSum = 0;
         profiler = new Profiler();
     }
@@ -138,6 +151,9 @@ public final class MyStrategy implements Strategy {
 
                 if (smartVehicle.getPlayerId() == MyStrategy.getEnemyPlayerId()) {
                     enemyVehicles.put(smartVehicle.getId() , smartVehicle);
+                    enemyVehiclesByType.put(smartVehicle.getType(), enemyVehiclesByType.get(smartVehicle.getType()) + 1);
+                } else {
+                    allyVehiclesByType.put(smartVehicle.getType(), allyVehiclesByType.get(smartVehicle.getType()) + 1);
                 }
 
                 commander.addNoArmyVehicle(smartVehicle);
@@ -172,6 +188,13 @@ public final class MyStrategy implements Strategy {
                         vehicles.remove(smartVehicle.getId());
                         if (enemyVehicles.containsKey(smartVehicle.getId())) {
                             enemyVehicles.remove(smartVehicle.getId());
+                        }
+
+                        if (smartVehicle.getPlayerId() == MyStrategy.getEnemyPlayerId()) {
+                            enemyVehicles.put(smartVehicle.getId() , smartVehicle);
+                            enemyVehiclesByType.put(smartVehicle.getType(), enemyVehiclesByType.get(smartVehicle.getType()) - 1);
+                        } else {
+                            allyVehiclesByType.put(smartVehicle.getType(), allyVehiclesByType.get(smartVehicle.getType()) - 1);
                         }
                     }
 
@@ -220,8 +243,8 @@ public final class MyStrategy implements Strategy {
         return MyStrategy.world.getOpponentPlayer().getId();
     }
 
-    public static boolean isHaveFacilities() {
-        return MyStrategy.world.getFacilities().length > 0;
+    public static boolean isHaveFacilitiesToSiege() {
+        return Arrays.stream(MyStrategy.world.getFacilities()).filter(facility -> facility.getOwnerPlayerId() != MyStrategy.world.getMyPlayer().getId()).count() > 0;
     }
     /**
      * weather and terrain static data
@@ -257,42 +280,19 @@ public final class MyStrategy implements Strategy {
         return weatherMap;
     }
 
-    public static List<Point2D> getBorderPointList () {
-        if (borderPointList == null) {
-            borderPointList = new ArrayList<>();
-            Point2D direction = new Point2D(MyStrategy.world.getWidth(),0);
-            for (int i = 0; i  < CustomParams.borderPointsCount; i++) {
-                double angle = i * 2 * Math.PI / CustomParams.borderPointsCount;
-                Point2D turnedDirection = direction.turn(angle);
-                Point2D borderPoint1 = new Point2D(0,0);
-                Point2D borderPoint2 = new Point2D(0,0);
-                if (turnedDirection.getX() >= 0 && Math.abs(turnedDirection.getX()) > Math.abs(turnedDirection.getY())) {
-                    borderPoint1.setX(MyStrategy.world.getWidth());
-                    borderPoint2 = new Point2D(MyStrategy.world.getWidth(), MyStrategy.world.getHeight());
-                } else if (turnedDirection.getX() < 0 && Math.abs(turnedDirection.getX()) > Math.abs(turnedDirection.getY())) {
-                    borderPoint2.setY(MyStrategy.world.getHeight());
-                } else if (turnedDirection.getY() >=0 && Math.abs(turnedDirection.getX()) <= Math.abs(turnedDirection.getY()) ) {
-                    borderPoint1.setY(MyStrategy.world.getHeight());
-                    borderPoint2 = new Point2D(MyStrategy.world.getWidth(), MyStrategy.world.getHeight());
-                } else {
-                    borderPoint2.setX(MyStrategy.world.getWidth());
-                }
-
-                Point2D center = new Point2D(MyStrategy.world.getWidth() / 2, MyStrategy.world.getHeight() / 2);
-                Point2D turnedVectorPoint = center.add(turnedDirection);
-
-                borderPointList.add(Point2D.lineIntersect(center, turnedVectorPoint, borderPoint1 ,borderPoint2));
-            }
-        }
-
-        return borderPointList;
-    }
-
     public static Map<Long, SmartVehicle> getVehicles() {
         return vehicles;
     }
 
     public static Map<Long, SmartVehicle> getEnemyVehicles() {
         return enemyVehicles;
+    }
+
+    public static Map<VehicleType, Integer> getEnemyTypeVehiclesCount() {
+        return enemyVehiclesByType;
+    }
+
+    public static Map<VehicleType, Integer> getAllyTypeVehiclesCount() {
+        return allyVehiclesByType;
     }
 }

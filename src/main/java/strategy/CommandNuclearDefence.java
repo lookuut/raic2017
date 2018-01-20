@@ -18,6 +18,9 @@ public class CommandNuclearDefence extends Command {
     private List<ArmyAllyOrdering> attackedArmies;
     private boolean isNeedCompact;
     private boolean isNeedProtect;
+
+
+
     public CommandNuclearDefence() {
         attackTick = null;
         isNeedCompact = false;
@@ -27,32 +30,50 @@ public class CommandNuclearDefence extends Command {
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {}
 
-    private List<Point2D> defineAttackedSquare(Collection<ArmyAllyOrdering> armies) {
-        List<Point2D> result = new ArrayList<>();
-        Point2D attackMaxPoint = new Point2D(0,0);
-        Point2D attackMinPoint = new Point2D(MyStrategy.world.getWidth(),MyStrategy.world.getHeight());
+    private List<Long> defineAttackedSquareAngleVehicles(Collection<ArmyAllyOrdering> armies) {
+        List<Long> result = new ArrayList<>();
+
+        Long leftVehicleId = 0l;
+        Long rightVehicleId = 0l;;
+
+        Long topVehicleId = 0l;;
+        Long bottomVehicleId = 0l;;
+
+        double left = MyStrategy.world.getWidth();
+        double right = 0;
+
+        double top = MyStrategy.world.getHeight();
+        double bottom = 0;
 
         for (ArmyAllyOrdering armyLocal : armies) {
-                armyLocal.getForm().update(armyLocal.getVehicles());
+            if (armyLocal.isAlive()) {
+                for (SmartVehicle vehicle : armyLocal.getVehicles().values()) {
+                    if (vehicle.getX() < left) {
+                        left = vehicle.getX();
+                        leftVehicleId = vehicle.getId();
+                    }
 
-                if (attackMinPoint.getX() > armyLocal.getForm().getMinPoint().getX()) {
-                    attackMinPoint.setX(armyLocal.getForm().getMinPoint().getX());
-                }
+                    if (vehicle.getX() > right) {
+                        right = vehicle.getX();
+                        rightVehicleId = vehicle.getId();
+                    }
 
-                if (attackMinPoint.getY() > armyLocal.getForm().getMinPoint().getY()) {
-                    attackMinPoint.setY(armyLocal.getForm().getMinPoint().getY());
-                }
+                    if (vehicle.getY() < top) {
+                        top = vehicle.getY();
+                        topVehicleId = vehicle.getId();
+                    }
 
-                if (attackMaxPoint.getX() < armyLocal.getForm().getMaxPoint().getX()) {
-                    attackMaxPoint.setX(armyLocal.getForm().getMaxPoint().getX());
+                    if (vehicle.getY() > bottom) {
+                        bottom = vehicle.getY();
+                        bottomVehicleId = vehicle.getId();
+                    }
                 }
-
-                if (attackMaxPoint.getY() < armyLocal.getForm().getMaxPoint().getY()) {
-                    attackMaxPoint.setY(armyLocal.getForm().getMaxPoint().getY());
-                }
+            }
         }
-        result.add(attackMinPoint);
-        result.add(attackMaxPoint);
+        result.add(leftVehicleId);
+        result.add(rightVehicleId);
+        result.add(topVehicleId);
+        result.add(bottomVehicleId);
         return result;
     }
 
@@ -74,7 +95,7 @@ public class CommandNuclearDefence extends Command {
             Point2D attackPoint = new Point2D(attackX, attackY);
 
             for (ArmyAllyOrdering armyLocal : Commander.getInstance().getDivisions().getArmies().values()) {
-                if (armyLocal.getForm().isPointInDistance(attackPoint, MyStrategy.game.getTacticalNuclearStrikeRadius())) {
+                if (armyLocal.getForm().isPointInDistance(attackPoint, MyStrategy.game.getTacticalNuclearStrikeRadius()) && armyLocal.isAlive()) {
                     armyLocal.getForm().update(armyLocal.getVehicles());
                     armyLocal.lock();
                     attackedArmies.add(armyLocal);
@@ -82,7 +103,7 @@ public class CommandNuclearDefence extends Command {
             }
 
             if (attackedArmies.size() > 0) {
-                List<Point2D> attackedSquare = defineAttackedSquare(attackedArmies);
+                List<Long> attackedSquare = defineAttackedSquareAngleVehicles(attackedArmies);
                 CommandWrapper cw = new CommandWrapper( this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId, CommandPriority.High);
 
 
@@ -94,7 +115,7 @@ public class CommandNuclearDefence extends Command {
                     scaleTick = MyStrategy.world.getTickIndex();
                 };
 
-                cw.addCommand(Command.selectSquare(attackedSquare.get(0), attackedSquare.get(1)));
+                cw.addCommand(Command.selectSquare(attackedSquare));
                 cw.addCommand(commandScale);
                 CommandQueue.getInstance().addCommand(cw);
             }
@@ -107,7 +128,7 @@ public class CommandNuclearDefence extends Command {
                                 MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeVehicleId() == -1
                 )) {//nuclear attack complete, need scale
 
-            List<Point2D> attackedSquare = defineAttackedSquare(attackedArmies);
+            List<Long> attackedSquare = defineAttackedSquareAngleVehicles(attackedArmies);
             CommandWrapper cw = new CommandWrapper( this, CustomParams.runImmediatelyTick, CustomParams.noAssignGroupId, CommandPriority.High);
 
 
@@ -119,7 +140,7 @@ public class CommandNuclearDefence extends Command {
                 compactCompleteTick = MyStrategy.world.getTickIndex() + (MyStrategy.world.getTickIndex() - scaleTick);
             };
 
-            cw.addCommand(Command.selectSquare(attackedSquare.get(0), attackedSquare.get(1)));
+            cw.addCommand(Command.selectSquare(attackedSquare));
             cw.addCommand(commandScale);
             CommandQueue.getInstance().addCommand(cw);
 

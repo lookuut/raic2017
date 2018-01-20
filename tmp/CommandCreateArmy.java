@@ -66,7 +66,7 @@ public class CommandCreateArmy extends Command {
                 }
             }
 
-            army.getForm().recalc(army.getVehicles());
+            army.getForm().update(army.getVehicles());
             army.addCommand(new CommandScale(30));
             setState(CommandStates.Complete);
             return true;

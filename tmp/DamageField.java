@@ -33,8 +33,8 @@ public class DamageField {
         Function<Double, Float> doubleFactorToFloat = (factor) -> factor >= 0 ? (float)Math.floor(factor) : (float)Math.ceil(factor);
 
         double factor = vehicle.getAttackCooldownTicks() > 0 ? vehicle.getDurability() * (vehicle.getAttackCooldownTicks() - vehicle.getRemainingAttackCooldownTicks()) / vehicle.getAttackCooldownTicks() : 0;
-        for (int j = -1; j <= 1 && j + y < height; j++) {
-            for (int i = -1; i <= 1 && i + x < width; i++ ) {
+        for (int j = -2; j <= 2 && j + y < height; j++) {
+            for (int i = -2; i <= 2 && i + x < width; i++ ) {
                 if (x + i < 0 || y + j < 0) {
                     continue;
                 }
@@ -60,7 +60,7 @@ public class DamageField {
                 } else {
                     vehicleDamageByType.
                             get(type).
-                            addAerialPPValue(x, y, (factor * SmartVehicle.getEnemyDamage(type, vehicle.getType()) / counterAttack.apply(type)) * operator, addedPoints);
+                            addLinearPPValue(x, y, (factor * SmartVehicle.getEnemyDamage(type, vehicle.getType()) / counterAttack.apply(type)) * operator, addedPoints);
                 }
 
             }

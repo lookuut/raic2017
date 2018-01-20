@@ -24,12 +24,12 @@ public class CommandNuclearAttack extends Command {
         if (isNew()) {
 
 
-            if (!army.getForm().isPointInNuclearAttackRadious(targetPoint)) {
+            if (!army.getForm().isPointInVisionRange(targetPoint)) {
+                army.getForm().update(army.getVehicles());
+
                 TargetPoint targetPoint = new TargetPoint();
                 targetPoint.vector = this.targetPoint.subtract(army.getForm().getAvgPoint());
                 targetPoint.maxDamageValue = army.getForm().getMinDamageFactor(army) * (-1);
-
-                army.getForm().update(army.getVehicles());
                 army.addCommand(new CommandMove(targetPoint));
                 setState(CommandStates.Complete);
                 return;

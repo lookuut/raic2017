@@ -617,6 +617,23 @@ public class SmartVehicle  {
         return false;
     }
 
+    public static VehicleType getVictimType(VehicleType type) {
+        switch (type) {
+            case TANK :
+                return VehicleType.HELICOPTER;
+            case IFV :
+                return VehicleType.TANK;
+            case HELICOPTER :
+                return VehicleType.FIGHTER;
+            case FIGHTER :
+                return VehicleType.IFV;
+            case ARRV :
+                return VehicleType.HELICOPTER;
+        }
+
+        return VehicleType.FIGHTER;
+    }
+
     public static boolean isVictimType (VehicleType allyType, VehicleType enemyType) {
         if (allyType == VehicleType.FIGHTER && (enemyType == VehicleType.HELICOPTER))  {
             return true;

@@ -10,6 +10,7 @@ public class CustomParams {
     //search safety point sector count
     public static int searchSafetyZoneSectorCount = 12;
     public static int safetyDistance = 200;
+    public static int doCompactDistance = 100;
     public static int dangerRadious = 160;
 
     public static float armyScaleFactor = 0.1F;
@@ -25,9 +26,7 @@ public class CustomParams {
 
     //armies config
     public static double compactAngle = Math.PI / 4;
-    public static int minVehiclesCountInArmy = 50;
-
-    public static double maxSizeVehicleInArmy = 1.0;//for scale
+    public static int minVehiclesCountInArmy = 20;
 
     public static int healTimeout = 30;
     //commands config
@@ -52,10 +51,11 @@ public class CustomParams {
     public static int nuclearAttackDefenceScaleFactor = 10;
     public static int nuclearAttackRatingRecalcTickInterval = 10;
 
-    public static int borderPointsCount = 12;
+    public static int borderPointsCount = 36;
     public static double percentOfHeatedVehicles = 0.75;
 
     //compact
     public static int armyCompactTimeout = 200;
     public static double damageDelta = 1.0;
+
 }

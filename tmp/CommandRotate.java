@@ -17,7 +17,8 @@ public class CommandRotate extends Command {
 
     public CommandRotate(ArmyAllyOrdering army) {
         this.angle = army.getMaxDamageVehicleTurnedAngle(army.getTargetVehicle().getPoint());
-        this.centre = army.getForm().getEdgesVehiclesCenter();//@TODO turn from nearest point of army
+
+        this.centre = army.getForm().getNearestEdgeVehicle(army.getTargetVehicle().getPoint()).getPoint();//@TODO turn from nearest point of army
         SmartVehicle farestVehicle = army.getFarestVehicleFromPoint(army.getForm().getEdgesVehiclesCenter());
         double farestVehiclePathLenght = 2 * Math.abs(this.angle) * farestVehicle.getPoint().subtract(army.getForm().getEdgesVehiclesCenter()).magnitude();
         this.durability = (int)Math.ceil(farestVehiclePathLenght / army.getMinSpeed());
@@ -25,6 +26,7 @@ public class CommandRotate extends Command {
 
     public boolean check (ArmyAllyOrdering army) {
         if (isRun() && getRunningTicks() > durability) {
+            army.getForm().update(army.getVehicles());
             setState(CommandStates.Complete);
             return true;
         }

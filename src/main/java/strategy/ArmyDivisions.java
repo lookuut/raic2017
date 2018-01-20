@@ -78,9 +78,16 @@ public class ArmyDivisions {
                 army
         );
 
+        //CONDITION: is have enemy around
+        BTreeNode isEnemyNear = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isHaveEnemyAround(CustomParams.doCompactDistance)),
+                army
+        );
+
+
         //CONDITION: if army terrain and have facilities to siege
         BTreeNode isHaveFacility = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> !armyLocal.isAerial() && MyStrategy.isHaveFacilities()),
+                (Predicate<ArmyAlly>)((armyLocal) -> !armyLocal.isAerial() && MyStrategy.isHaveFacilitiesToSiege()),
                 army
         );
 
@@ -123,11 +130,13 @@ public class ArmyDivisions {
             isHaveEnemyCond.setTrueNode(isCanNuclearAttack);
                 isCanNuclearAttack.setTrueNode(actionNuclearAttack);
                 isCanNuclearAttack.setFalseNode(isHaveEnemyWeakness);
-                    isHaveEnemyWeakness.setTrueNode(isNeedToBeforeAttackCompact);
-                        isNeedToBeforeAttackCompact.setTrueNode(actionCompact);
-                        isNeedToBeforeAttackCompact.setFalseNode(isNeedToTurnArmy);
+                    isHaveEnemyWeakness.setTrueNode(isEnemyNear);
+                        isEnemyNear.setTrueNode(isNeedToTurnArmy);
                             isNeedToTurnArmy.setTrueNode(actionCommandRotate);
                             isNeedToTurnArmy.setFalseNode(actionAttack);
+                        isEnemyNear.setFalseNode(isNeedToBeforeAttackCompact);
+                            isNeedToBeforeAttackCompact.setTrueNode(actionCompact);
+                            isNeedToBeforeAttackCompact.setFalseNode(actionAttack);
                     isHaveEnemyWeakness.setFalseNode(actionCommandDefence);
             isHaveEnemyCond.setFalseNode(isSafetyAround);
                 isSafetyAround.setTrueNode(isNeedToCompact);

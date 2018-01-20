@@ -97,17 +97,6 @@ public class ArmyAlly extends Army {
         TargetPoint target = new TargetPoint();
         try {
             PPFieldEnemy damageField = getDamageField();
-            /*
-            if (targetVehicle != null &&
-                    targetVehicle.getDurability() > 0 &&
-                    damageField.getFactor(targetVehicle.getPoint()) <= targetVehicleDamageFactor &&
-                    isAerial()
-                    ) {
-                target.vector = targetVehicle.getPoint().subtract(getForm().getAvgPoint());
-                target.maxDamageValue = targetVehicleDamageFactor;
-                target.targetArmy = targetArmy;
-                return target;
-            }*/
             target = new TargetPoint();
 
 
@@ -186,7 +175,7 @@ public class ArmyAlly extends Army {
 
 
     public Point2D dangerPoint() throws Exception {
-        return MyStrategy.enemyField.onDanger(getVehiclesType(), getForm().getAvgPoint(), CustomParams.dangerRadious);
+        return MyStrategy.enemyField.onDanger(getVehiclesType(), getForm().getAvgPoint(), CustomParams.safetyDistance);
     }
 
     public void setEnemy(SmartVehicle enemyVehicle) {
@@ -238,7 +227,7 @@ public class ArmyAlly extends Army {
 
         double minDistance = Double.MAX_VALUE;
         double minDistanceDamageFactorDelta = 0;
-        
+
         for (Army enemyArmy : enemyArmies) {
             if (enemyArmy.getForm().getEdgesVehiclesCenter().subtract(armyCenter).magnitude() <= CustomParams.safetyDistance) {
                 if (canAttackedByArmy(enemyArmy)) {

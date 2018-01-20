@@ -14,7 +14,7 @@ public class CommandAttack extends Command {
 
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {
-        army.getForm().recalc(army.getVehicles());
+        army.getForm().update(army.getVehicles());
         target = army.searchNearestEnemy();
 
         if (target == null) {//no enemy for vehicle
@@ -96,7 +96,7 @@ public class CommandAttack extends Command {
         if (!vehicle.isAlly() && SmartVehicle.isTargetVehicleType(army.getVehiclesType().iterator().next(), vehicle.getType())) {
 
             if (army.getForm().isPointInDistance(vehicle.getPoint(), vehicle.getAttackRange(vehicle.isAerial()))) {
-                army.getForm().recalc(army.getVehicles());
+                army.getForm().update(army.getVehicles());
 
                 Point2D enemyArmyVector = vehicle.getPoint().subtract(army.getForm().getAvgPoint());
 

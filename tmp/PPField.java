@@ -51,7 +51,8 @@ public class PPField {
                         !exceptPoints.contains(new Point2D(x + i, y + j))
                         )
                 {
-                    float divide = (float)((1 + Math.abs(j) + Math.abs(i)) * (1 + Math.abs(j) + Math.abs(i)));
+                    float f = (1 + Math.abs(j) + Math.abs(i));
+                    float divide = (f * f * f * f);
                     float value = factor >= 0 ? (float)Math.floor(factor / divide) : (float)Math.ceil(factor / divide);
                     addFactor(x + i, y + j, value);
                 }

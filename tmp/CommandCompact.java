@@ -30,7 +30,7 @@ public class CommandCompact extends Command {
             return;
         }
 
-        army.getForm().recalc(army.getVehicles());
+        army.getForm().update(army.getVehicles());
         Point2D centre = army.getForm().getAvgPoint();
         Point2D maxVec = army.getForm().getMaxDistanceVec(centre);
 

@@ -2,8 +2,10 @@
 import java.util.List;
 
 public class CommandDefence extends Command {
+    private Point2D mapCenter;
     public CommandDefence () {
         super();
+        mapCenter = new Point2D(MyStrategy.world.getWidth()/2, (MyStrategy.world.getHeight()/2));
     }
 
     @Override
@@ -12,12 +14,15 @@ public class CommandDefence extends Command {
         Point2D point = army.dangerPoint();
 
         if (point == null) {//danger is gone, relax take it easy
+            army.getForm().update(army.getVehicles());
+            army.addCommand(new CommandMove(army.getForm().getAvgPoint().subtract(mapCenter), true));
+            complete();
             return;
         }
 
         PPFieldEnemy damageField = army.getDamageField();
 
-        army.getForm().recalc(army.getVehicles());
+        army.getForm().update(army.getVehicles());
         double allyArmyDamageFactor = damageField.getFactorOld(damageField.getTransformedPoint(army.getForm().getAvgPoint()));
 
         MyStrategy.battleField.defineArmies();
@@ -39,15 +44,20 @@ public class CommandDefence extends Command {
             return;
         }
 
-        PPFieldEnemy enemyPPField = dangerArmy.getDamageField();
-        Point2D safetyPoint = enemyPPField.getMinValuePoint();
+        Point2D safetyPoint;
+        if (army.isAerial()) {
+            PPFieldEnemy enemyPPField = dangerArmy.getDamageField();
+            safetyPoint = enemyPPField.getMinValuePoint();
+        } else {
+            safetyPoint = army.getForm().getAvgPoint().subtract(dangerArmy.getForm().getEdgesVehiclesCenter()).add(army.getForm().getAvgPoint());
+        }
 
         if (safetyPoint == null) {
             throw new Exception("Mistake call defence");
         }
 
+        army.addCommand(new CommandMove(safetyPoint.subtract(army.getForm().getAvgPoint()), true));
         complete();
-        army.addCommand(new CommandMove(safetyPoint.subtract(army.getForm().getAvgPoint())));
     }
 
     public void pinned() {

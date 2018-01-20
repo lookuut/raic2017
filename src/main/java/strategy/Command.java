@@ -4,8 +4,10 @@ import model.ActionType;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 
 enum CommandPriority {
@@ -134,11 +136,39 @@ abstract public class Command {
 
     public static Consumer<Command> selectSquare(Point2D minPoint, Point2D maxPoint) {
         Consumer<Command> commandSelect = (command) -> {
+
             MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
             MyStrategy.move.setLeft(minPoint.getX());
             MyStrategy.move.setBottom(maxPoint.getY());
             MyStrategy.move.setRight(maxPoint.getX());
             MyStrategy.move.setTop(minPoint.getY());
+        };
+
+        return commandSelect;
+    }
+
+    public static Consumer<Command> selectSquare(List<Long> edgeVehicleIds) {
+        Consumer<Command> commandSelect = (command) -> {
+
+            Function<Long, SmartVehicle> getAliveVehicle = (vehicleId) -> {
+                return MyStrategy.getVehicles().get(vehicleId).getDurability() > 0 ? MyStrategy.getVehicles().get(vehicleId) : MyStrategy.getVehiclePrevState(vehicleId);
+            };
+
+            SmartVehicle leftVehicle = getAliveVehicle.apply(edgeVehicleIds.get(0));
+            SmartVehicle rightVehicle = getAliveVehicle.apply(edgeVehicleIds.get(1));
+            SmartVehicle topVehicle = getAliveVehicle.apply(edgeVehicleIds.get(2));
+            SmartVehicle bottomVehicle = getAliveVehicle.apply(edgeVehicleIds.get(3));
+
+            double left = Math.max(leftVehicle.getX() - MyStrategy.game.getVehicleRadius(), 0);
+            double right = Math.min(rightVehicle.getX() + MyStrategy.game.getVehicleRadius(), MyStrategy.world.getWidth());
+            double top = Math.max(topVehicle.getY() - MyStrategy.game.getVehicleRadius(), 0);
+            double bottom = Math.min(bottomVehicle.getY() + MyStrategy.game.getVehicleRadius(), MyStrategy.world.getHeight());
+
+            MyStrategy.move.setAction(ActionType.CLEAR_AND_SELECT);
+            MyStrategy.move.setLeft(left);
+            MyStrategy.move.setRight(right);
+            MyStrategy.move.setBottom(bottom);
+            MyStrategy.move.setTop(top);
         };
 
         return commandSelect;

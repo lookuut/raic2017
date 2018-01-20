@@ -1,6 +1,7 @@
 package strategy;
 
 import model.ActionType;
+import model.VehicleType;
 
 import java.util.function.Consumer;
 
@@ -10,19 +11,22 @@ public class CommandMove extends Command {
 
     private int startTick;
     private int maxRunnableTick = 0;
-    private boolean withPathFinder = true;
+    private boolean isDefence = true;
 
-    public CommandMove(Point2D targetVector){
+    public CommandMove(Point2D targetVector, boolean isDefence){
         super();
         target = new TargetPoint();
         target.vector = targetVector;
         target.maxDamageValue = null;
+        this.isDefence = isDefence;
     }
 
     public CommandMove(TargetPoint target){
         super();
         this.target = target;
+
     }
+
 
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {}
@@ -60,22 +64,30 @@ public class CommandMove extends Command {
                 try {
                     army.getForm().update(army.getVehicles());
 
-                    if (withPathFinder) {
-                        target.vector = army.pathFinder(this, target);
+                    PPField sumPPFields = MyStrategy.enemyField.getDamageField(army.getVehiclesType());
+                    if (isDefence) {
+                        if (army.isAerial()) {
+                            sumPPFields.sumField(army.constAerialPPField);
+                        } else {
+                            sumPPFields.sumField(army.constTerrainPPField);
+                        }
                     }
+                    target.vector = army.pathFinder(this, target, sumPPFields);
 
                     if (target == null || target.vector == null) {
                         return;
                     }
 
-                    double maxSpeed = 0;
+                    double maxSpeed = army.getSpeed();
                     Integer maxRunnableTick = 0;
-                    if (!army.isAerial()) {
+                    if (!army.getVehiclesType().contains(VehicleType.FIGHTER)) {
                         for (SmartVehicle vehicle : army.getForm().getEdgesVehicles().values()) {
                             maxRunnableTick = Math.max(vehicle.getVehiclePointAtTick(target.vector), maxRunnableTick);
                         }
                     } else {
-                        maxSpeed = army.getMinSpeed();
+                        if (army.getVehicleCount() > 1) {
+                            maxSpeed = army.getMinSpeed();
+                        }
                         maxRunnableTick = (int)Math.ceil(target.vector.magnitude() / maxSpeed);
                     }
 

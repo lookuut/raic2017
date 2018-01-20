@@ -2,6 +2,7 @@
 import model.VehicleType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 class Commander {
 
@@ -17,6 +18,7 @@ class Commander {
 
     private static TerrainPPField terrainPPField;
     private static WeatherPPField weatherPPField;
+    private SmartVehicle scoutVehicle;
 
     private Commander() {
         divisions = new ArmyDivisions();
@@ -38,12 +40,41 @@ class Commander {
     }
 
     private void checkAttackNuclear() throws Exception {
+
         if (nuclearAttackDefence != null) {
             nuclearAttackDefence.check(null);
         }
 
-        if (MyStrategy.isNuclearAttack() && !(nuclearAttackDefence.isRun() || nuclearAttackDefence.isHold())) {
+        if (MyStrategy.isNuclearAttack() || nuclearAttackDefence.isRun()) {
             nuclearAttackDefence.run(null);
+        }
+    }
+
+    public void clustering () {
+        if (MyStrategy.world.getTickIndex() % 20 == 0) {
+            MyStrategy.battleField.defineArmies();
+            List<Army> allyArmies = MyStrategy.battleField.getAllyArmies();
+
+            for (Army army : allyArmies) {
+                SmartVehicle vehicle = army.getVehicles().values().iterator().next();
+                if (vehicle.getArmy() != null) {
+                    if (vehicle.getArmy().getVehicleCount() < army.getVehicleCount() && army.getVehiclesArmies().size() > 1) {
+                        Iterator<ArmyAllyOrdering> iterator = army.getVehiclesArmies().iterator();
+                        ArmyAllyOrdering firstArmy = iterator.next();
+                        ArmyAllyOrdering secondArmy = iterator.next();
+
+                        if (firstArmy.isAerial() == secondArmy.isAerial() && firstArmy.isHeat(secondArmy)) {
+                            army.getForm().update(army.getVehicles());
+                             System.out.println("Merge armies");
+                             Square square = new Square(army.getForm().getMinPoint(), army.getForm().getMaxPoint());
+                             new CommandCreateArmy(square, null);
+                        }
+
+                    } else if (vehicle.getArmy().getVehicleCount() > army.getVehicleCount()) {
+                        System.out.println("Separate army");
+                    }
+                }
+            }
         }
     }
 
@@ -51,6 +82,7 @@ class Commander {
         constructArmies();
         checkAttackNuclear();
         nuclearAttack();
+        //clustering();
 
         MyStrategy.commanderFacility.orderCreateVehicle();
 
@@ -65,7 +97,7 @@ class Commander {
 
         //run divisions logic
         for (ArmyAllyOrdering army : divisions.getArmyList()) {
-            if (army.isAlive()) {
+            if (army.isAlive() && !army.locked()) {
                 army.run();
             }
         }
@@ -80,11 +112,21 @@ class Commander {
                     if (
                         entry.getKey() == VehicleType.FIGHTER ||
                         entry.getKey() == VehicleType.HELICOPTER ||
-                        entry.getKey() == VehicleType.TANK ||
                         entry.getKey() == VehicleType.IFV ||
                         entry.getKey() == VehicleType.ARRV) {
                         divisions.addArmy(vehicleTypeSquare, new HashSet(Arrays.asList(entry.getKey())));
-                    } 
+                    } else if (entry.getKey() == VehicleType.TANK) {
+
+                        double centreX = (vehicleTypeSquare.getRightTopAngle().getX() - vehicleTypeSquare.getLeftBottomAngle().getX()) / 2;
+                        double centreY = (vehicleTypeSquare.getRightTopAngle().getY() - vehicleTypeSquare.getLeftBottomAngle().getY()) / 2;
+                        Point2D centrePoint = new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY() + centreY);
+
+                        Square armySquare = new Square(vehicleTypeSquare.getLeftBottomAngle(), centrePoint.add(new Point2D(0, centreY)));
+                        divisions.addArmy(armySquare, new HashSet(Arrays.asList(entry.getKey())));
+
+                        armySquare = new Square(new Point2D(vehicleTypeSquare.getLeftBottomAngle().getX() + centreX, vehicleTypeSquare.getLeftBottomAngle().getY()), vehicleTypeSquare.getRightTopAngle());
+                        divisions.addArmy(armySquare, new HashSet(Arrays.asList(entry.getKey())));
+                    }
                     noArmySquaereMap.remove(entry.getKey());
                     noArmyVehicles.get(entry.getKey()).clear();
                 }
@@ -104,7 +146,7 @@ class Commander {
             if (!army.isAlive()) {
                 divisions.removeArmy(army);
                 iter.remove();
-            } else if (army.isRun()) {
+            } else if (army.isRun() && !army.locked()) {
                 army.check();
             }
         }
@@ -156,12 +198,14 @@ class Commander {
             SortedSet<NuclearAttackPoint> nuclearAttackPointSortedSet = MyStrategy.enemyField.getNuclearAttackPointsRating();
 
             for (NuclearAttackPoint point : nuclearAttackPointSortedSet) {
-                for (ArmyAllyOrdering army : divisions.getArmyList()) {
-                    double distance = army.getForm().getEdgesVehiclesCenter().subtract(point.getPoint()).magnitude();
-                    if (minTime > distance / army.getSpeed()) {
-                        minTime = distance / army.getSpeed();
-                        minTimeArmy = army;
-                        minTimeNuclearTarget = point.getPoint();
+                for (ArmyAllyOrdering army : divisions.getArmyList()) {//choose non locked armies and alive
+                    if (!army.locked()) {
+                        double distance = army.getForm().getEdgesVehiclesCenter().subtract(point.getPoint()).magnitude();
+                        if (minTime > distance / army.getSpeed()) {
+                            minTime = distance / army.getSpeed();
+                            minTimeArmy = army;
+                            minTimeNuclearTarget = point.getPoint();
+                        }
                     }
                 }
             }
@@ -175,7 +219,8 @@ class Commander {
             }
 
             if (nuclearAttackArmy.getForm().isPointInVisionRange(getNuclearAttackTarget()) &&
-                    nuclearAttackArmy.getRunningCommand() instanceof CommandMove/* &&
+                    nuclearAttackArmy.getRunningCommand() instanceof CommandMove &&
+                    !(nuclearAttackArmy.getRunningCommand() instanceof CommandStop)/* &&
                     !nuclearAttackArmy.getForm().isDamagedByNuclearAttack(getNuclearAttackTarget())*/) {
 
                 nuclearAttackArmy.getRunningCommand().setState(CommandStates.Complete);

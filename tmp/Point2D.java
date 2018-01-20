@@ -129,6 +129,27 @@ public class Point2D {
         return Math.toDegrees(Math.acos(delta));
     }
 
+    public double angleRadiance(Point2D point) {
+        return angleRadiance(point.getX(), point.getY());
+    }
+
+    public double angleRadiance(double x, double y) {
+        final double ax = getX();
+        final double ay = getY();
+
+        final double delta = (ax * x + ay * y) / Math.sqrt(
+                (ax * ax + ay * ay) * (x * x + y * y));
+
+        if (delta > 1.0) {
+            return 0.0;
+        }
+        if (delta < -1.0) {
+            return 180.0;
+        }
+
+        return (Math.acos(delta));
+    }
+
     public double magnitude() {
         final double x = getX();
         final double y = getY();
@@ -142,6 +163,14 @@ public class Point2D {
 
     public double dotProduct(Point2D vector) {
         return dotProduct(vector.getX(), vector.getY());
+    }
+
+    public double cross(double x, double y) {
+        return getX() * y - getY() * x;
+    }
+
+    public double cross(Point2D vector) {
+        return cross(vector.getX(), vector.getY());
     }
 
     @Override public boolean equals(Object obj) {

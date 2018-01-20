@@ -10,7 +10,7 @@ public class CommandSiegeFacility extends Command {
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {
 
-        army.getForm().recalc(army.getVehicles());
+        army.getForm().update(army.getVehicles());
 
         facility = MyStrategy.commanderFacility.getFacilityToSiege(army);
         if (facility == null) {//no facility to siege
@@ -28,7 +28,7 @@ public class CommandSiegeFacility extends Command {
         TargetPoint point = new TargetPoint();
         point.vector = targetVec;
 
-        setParentCommand(new CommandMove(targetVec));
+        setParentCommand(new CommandMove(targetVec, false));
     }
 
     @Override

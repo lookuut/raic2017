@@ -29,7 +29,7 @@ public class CommandSiegeFacility extends Command {
         TargetPoint point = new TargetPoint();
         point.vector = targetVec;
 
-        setParentCommand(new CommandMove(targetVec));
+        setParentCommand(new CommandMove(targetVec, false));
     }
 
     @Override

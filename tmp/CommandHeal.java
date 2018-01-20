@@ -12,7 +12,7 @@ public class CommandHeal extends Command {
 
     @Override
     public void prepare(ArmyAllyOrdering army) throws Exception {
-        army.getForm().recalc(army.getVehicles());
+        army.getForm().update(army.getVehicles());
 
         Collection<ArmyAllyOrdering> armies = divisions.getArmyList(VehicleType.ARRV);
 
@@ -25,7 +25,7 @@ public class CommandHeal extends Command {
         ArmyAllyOrdering minDistArmy = null;
         for (ArmyAllyOrdering arrvArmy : armies) {
             if (arrvArmy.isAlive()) {
-                arrvArmy.getForm().recalc(arrvArmy.getVehicles());
+                arrvArmy.getForm().update(arrvArmy.getVehicles());
                 double distance = arrvArmy.getForm().getAvgPoint().distance(army.getForm().getAvgPoint());
                 if (distance < minDistance) {
                     minDistArmy = arrvArmy;
