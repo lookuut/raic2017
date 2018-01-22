@@ -135,6 +135,11 @@ public class Army {
     public void removeVehicle(SmartVehicle vehicle) {
         vehicles.remove(vehicle.getId());
         vehicleTypes.put(vehicle.getType(), vehicleTypes.get(vehicle.getType()) - 1);
+
+        if (vehicleTypes.get(vehicle.getType()) == 0) {
+            vehicleTypes.remove(vehicle.getType());
+        }
+
         getForm().removeVehicle(vehicles, vehicle);
     }
 
@@ -443,6 +448,10 @@ public class Army {
         }
 
         return false;
+    }
+
+    public boolean containVehicleType(VehicleType type) {
+        return getVehiclesType().contains(type);
     }
 
 }

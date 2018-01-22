@@ -215,7 +215,7 @@ public class ArmyAlly extends Army {
         return false;
     }
 
-    public boolean isSafetyAround() {
+    public boolean isSafetyAround(double safetyDistance) {
         MyStrategy.battleField.defineArmies();
         List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
 
@@ -229,7 +229,7 @@ public class ArmyAlly extends Army {
         double minDistanceDamageFactorDelta = 0;
 
         for (Army enemyArmy : enemyArmies) {
-            if (enemyArmy.getForm().getEdgesVehiclesCenter().subtract(armyCenter).magnitude() <= CustomParams.safetyDistance) {
+            if (enemyArmy.getForm().getEdgesVehiclesCenter().subtract(armyCenter).magnitude() <= safetyDistance) {
                 if (canAttackedByArmy(enemyArmy)) {
                     isHaveEnemyAround = true;
                     Collection<SmartVehicle> enemyVehiclesCollection = enemyArmy.getForm().getEdgesVehicles().values();
@@ -354,5 +354,10 @@ public class ArmyAlly extends Army {
 
     public SmartVehicle getTargetVehicle() {
         return targetVehicle;
+    }
+
+
+    public SmartVehicle getMinDurabilityVehicle() {
+        return getVehicles().values().stream().min(Comparator.comparingInt(SmartVehicle::getDurability)).get();
     }
 }

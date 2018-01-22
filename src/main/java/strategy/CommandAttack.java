@@ -72,7 +72,7 @@ public class CommandAttack extends Command {
 
     public boolean check(ArmyAllyOrdering army) {
 
-        if (!army.isSafetyAround()) {
+        if (!army.isSafetyAround(CustomParams.safetyDistance)) {
             army.addCommand(new CommandDefence());
             complete();
         } else if (army.isHaveTargetArmyAround(CustomParams.safetyDistance)) {

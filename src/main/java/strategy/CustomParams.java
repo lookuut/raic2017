@@ -1,6 +1,8 @@
 package strategy;
 
 public class CustomParams {
+    //HEAL
+    public static int endHealAVGDurability = 99;
     //path search
     public static float allyUnitPPFactor = 1000000;
     public static int pathFinderSectorCount = 24;
@@ -8,7 +10,8 @@ public class CustomParams {
     public static int minPathFactor = 30;
 
     //search safety point sector count
-    public static int searchSafetyZoneSectorCount = 12;
+
+    public static int healSafetyDistance = 120;
     public static int safetyDistance = 200;
     public static int doCompactDistance = 100;
     public static int dangerRadious = 160;
@@ -20,7 +23,7 @@ public class CustomParams {
 
 
     public static double onFacilityEps = 2.0;
-    public static double onHealerEps = 2.0;
+    public static double onHealerEps = 10.0;
 
     public static double nearestEnemyEps = 0.01;
 

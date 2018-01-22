@@ -68,7 +68,12 @@ public class ArmyDivisions {
                 army
         );
 
-        BTreeNode isNeedToBeforeAttackCompact = new BTreeNodeCondition(
+        BTreeNode isNeedCompactBeforeAttack = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isNeedToCompact()),
+                army
+        );
+
+        BTreeNode isNeedCompactBeforeHeal = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isNeedToCompact()),
                 army
         );
@@ -99,13 +104,19 @@ public class ArmyDivisions {
 
         //CONDITION: can 
         BTreeNode isHaveEnemyWeakness = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround()),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround(CustomParams.safetyDistance)),
                 army
         );
 
         //CONDITION: can
         BTreeNode isSafetyAround = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround()),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround(CustomParams.safetyDistance)),
+                army
+        );
+
+        //CONDITION: can
+        BTreeNode isSafetyAroundWhenHeal = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround(CustomParams.healSafetyDistance)),
                 army
         );
 
@@ -124,7 +135,11 @@ public class ArmyDivisions {
         BTreeNode actionCommandDefence  = new BTreeAction(() -> new CommandDefence());
         BTreeNode actionCommandRotate  = new BTreeAction(() -> new CommandRotate(army));
 
-        isNeedToHeal.setTrueNode(actionHeal);
+        isNeedToHeal.setTrueNode(isSafetyAroundWhenHeal);
+            isSafetyAroundWhenHeal.setTrueNode(isNeedCompactBeforeHeal);
+                isNeedCompactBeforeHeal.setTrueNode(actionCompact);
+                isNeedCompactBeforeHeal.setFalseNode(actionHeal);
+            isSafetyAroundWhenHeal.setFalseNode(actionCommandDefence);
         isNeedToHeal.setFalseNode(isHaveEnemyCond);
 
             isHaveEnemyCond.setTrueNode(isCanNuclearAttack);
@@ -134,9 +149,9 @@ public class ArmyDivisions {
                         isEnemyNear.setTrueNode(isNeedToTurnArmy);
                             isNeedToTurnArmy.setTrueNode(actionCommandRotate);
                             isNeedToTurnArmy.setFalseNode(actionAttack);
-                        isEnemyNear.setFalseNode(isNeedToBeforeAttackCompact);
-                            isNeedToBeforeAttackCompact.setTrueNode(actionCompact);
-                            isNeedToBeforeAttackCompact.setFalseNode(actionAttack);
+                        isEnemyNear.setFalseNode(isNeedCompactBeforeAttack);
+                            isNeedCompactBeforeAttack.setTrueNode(actionCompact);
+                            isNeedCompactBeforeAttack.setFalseNode(actionAttack);
                     isHaveEnemyWeakness.setFalseNode(actionCommandDefence);
             isHaveEnemyCond.setFalseNode(isSafetyAround);
                 isSafetyAround.setTrueNode(isNeedToCompact);
@@ -185,5 +200,24 @@ public class ArmyDivisions {
     public void clear() {
         armyList.clear();
         armyByType.clear();
+    }
+
+    public Army getNearestArmy(VehicleType armyType, Point2D fromPoint) {
+
+        ArmyAllyOrdering minDistArmy = null;
+        double minDistance = Double.MAX_VALUE;
+
+        for (ArmyAllyOrdering army : armyList.values()) {
+            if (army.isAlive() && army.containVehicleType(armyType)) {
+
+                double distance = army.getForm().getEdgesVehiclesCenter().distance(fromPoint);
+                if (distance < minDistance) {
+                    minDistArmy = army;
+                    minDistance = distance;
+                }
+            }
+        }
+
+        return minDistArmy;
     }
 }
