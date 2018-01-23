@@ -38,7 +38,7 @@ public class CommandAttack extends Command {
             target.vector = target.vector.normalize().multiply(CustomParams.pathSegmentLenght);
         }
 
-        CommandMove move = new CommandMove(target);
+        CommandMove move = new CommandMove(target, false);
 
         move.setPriority(CommandPriority.Middle);
         if (army.isAerial()) {
@@ -63,7 +63,7 @@ public class CommandAttack extends Command {
             }
 
             movingEndCells.add(transformedPoint);
-            movingEndDamageSum += army.getDamageField().getFactorOld(transformedPoint);
+            movingEndDamageSum += army.getDamageField().getTileFactor(transformedPoint);
         }
 
         setParentCommand(move);
@@ -71,7 +71,7 @@ public class CommandAttack extends Command {
 
     public boolean check(ArmyAllyOrdering army) {
 
-        if (!army.isSafetyAround()) {
+        if (army.isDangerousAround()) {
             army.addCommand(new CommandDefence());
             complete();
         } else if (army.isHaveTargetArmyAround(CustomParams.safetyDistance)) {
@@ -79,7 +79,7 @@ public class CommandAttack extends Command {
             double movingEndDamageSum = 0;
 
             for (Point2D point2D : movingEndCells) {
-                movingEndDamageSum += damageField.getFactorOld(point2D);
+                movingEndDamageSum += damageField.getTileFactor(point2D);
             }
 
             if (movingEndDamageSum > 0 && movingEndDamageSum > this.movingEndDamageSum + Math.abs(movingEndDamageSum) * 0.3) {

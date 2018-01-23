@@ -21,15 +21,13 @@ public class CommandNuclearAttack extends Command {
 
     public void run(ArmyAllyOrdering army) throws Exception {
         if (isNew()) {
-
-
             if (!army.getForm().isPointInVisionRange(targetPoint)) {
                 army.getForm().update(army.getVehicles());
 
                 TargetPoint targetPoint = new TargetPoint();
                 targetPoint.vector = this.targetPoint.subtract(army.getForm().getAvgPoint());
                 targetPoint.maxDamageValue = army.getForm().getMinDamageFactor(army) * (-1);
-                army.addCommand(new CommandMove(targetPoint));
+                army.addCommand(new CommandMove(targetPoint, false));
                 setState(CommandStates.Complete);
                 return;
             }
@@ -54,8 +52,15 @@ public class CommandNuclearAttack extends Command {
     }
 
     public boolean check(ArmyAllyOrdering army) {
+
+        if (army.isDangerousAround()) {
+            complete();
+            return true;
+        }
+
         if (isRun() && attackIndex + MyStrategy.game.getTacticalNuclearStrikeDelay() < MyStrategy.world.getTickIndex()) {
-            setState(CommandStates.Complete);
+            Commander.getInstance().nuclearAttackClear();
+            complete();
             return true;
         }
         return false;

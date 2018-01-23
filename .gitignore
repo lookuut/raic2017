@@ -17,3 +17,4 @@ src/main/main.iml
 /build.xml
 /target
 /.idea/dictionaries/*.xml
+tmp/

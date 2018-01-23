@@ -198,9 +198,13 @@ class Commander {
             Point2D minTimeNuclearTarget = null;
             SortedSet<NuclearAttackPoint> nuclearAttackPointSortedSet = MyStrategy.enemyField.getNuclearAttackPointsRating();
 
+            if (nuclearAttackPointSortedSet.size() == 0) {
+                return;
+            }
+
             for (NuclearAttackPoint point : nuclearAttackPointSortedSet) {
                 for (ArmyAllyOrdering army : divisions.getArmyList()) {//choose non locked armies and alive
-                    if (!army.locked()) {
+                    if (!army.locked() && !army.isDangerousAround()) {
                         double distance = army.getForm().getEdgesVehiclesCenter().subtract(point.getPoint()).magnitude();
                         if (minTime > distance / army.getSpeed()) {
                             minTime = distance / army.getSpeed();
@@ -209,6 +213,10 @@ class Commander {
                         }
                     }
                 }
+            }
+
+            if (minTimeArmy == null) {
+                return;
             }
 
             nuclearAttackTarget = minTimeNuclearTarget;
@@ -231,6 +239,11 @@ class Commander {
         } catch (Exception e)  {
             e.printStackTrace();
         }
+    }
+
+    public void nuclearAttackClear() {
+        nuclearAttackArmy = null;
+        nuclearAttackTarget = null;
     }
 
     public void addNoArmyVehicle(SmartVehicle vehicle){

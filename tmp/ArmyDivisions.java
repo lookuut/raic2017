@@ -67,7 +67,12 @@ public class ArmyDivisions {
                 army
         );
 
-        BTreeNode isNeedToBeforeAttackCompact = new BTreeNodeCondition(
+        BTreeNode isNeedCompactBeforeAttack = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isNeedToCompact()),
+                army
+        );
+
+        BTreeNode isNeedCompactBeforeHeal = new BTreeNodeCondition(
                 (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isNeedToCompact()),
                 army
         );
@@ -98,13 +103,26 @@ public class ArmyDivisions {
 
         //CONDITION: can 
         BTreeNode isHaveEnemyWeakness = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround()),
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround(CustomParams.safetyDistance)),
                 army
         );
 
         //CONDITION: can
+        BTreeNode isDangerousAround = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isDangerousAround()),
+                army
+        );
+
+
+        //CONDITION: can
         BTreeNode isSafetyAround = new BTreeNodeCondition(
-                (Predicate<ArmyAlly>)((armyLocal) -> armyLocal.isSafetyAround()),
+                (Predicate<ArmyAlly>)((armyLocal) -> !armyLocal.isDangerousAround()),
+                army
+        );
+
+        //CONDITION: can
+        BTreeNode isSafetyAroundWhenHeal = new BTreeNodeCondition(
+                (Predicate<ArmyAlly>)((armyLocal) -> !armyLocal.isDangerousAround()),
                 army
         );
 
@@ -123,34 +141,39 @@ public class ArmyDivisions {
         BTreeNode actionCommandDefence  = new BTreeAction(() -> new CommandDefence());
         BTreeNode actionCommandRotate  = new BTreeAction(() -> new CommandRotate(army));
 
-        isNeedToHeal.setTrueNode(actionHeal);
-        isNeedToHeal.setFalseNode(isHaveEnemyCond);
+        isNeedToHeal.setTrueNode(isSafetyAroundWhenHeal);
+            isSafetyAroundWhenHeal.setTrueNode(isNeedCompactBeforeHeal);
+                isNeedCompactBeforeHeal.setTrueNode(actionCompact);
+                isNeedCompactBeforeHeal.setFalseNode(actionHeal);
+            isSafetyAroundWhenHeal.setFalseNode(actionCommandDefence);
+        isNeedToHeal.setFalseNode(isDangerousAround);
+            isDangerousAround.setTrueNode(actionCommandDefence);
+            isDangerousAround.setFalseNode(isHaveEnemyCond);
+                isHaveEnemyCond.setTrueNode(isCanNuclearAttack);
+                    isCanNuclearAttack.setTrueNode(actionNuclearAttack);
+                    isCanNuclearAttack.setFalseNode(isHaveEnemyWeakness);
+                        isHaveEnemyWeakness.setTrueNode(isEnemyNear);
+                            isEnemyNear.setTrueNode(isNeedToTurnArmy);
+                                isNeedToTurnArmy.setTrueNode(actionCommandRotate);
+                                isNeedToTurnArmy.setFalseNode(actionAttack);
+                            isEnemyNear.setFalseNode(isNeedCompactBeforeAttack);
+                                isNeedCompactBeforeAttack.setTrueNode(actionCompact);
+                                isNeedCompactBeforeAttack.setFalseNode(actionAttack);
+                        isHaveEnemyWeakness.setFalseNode(actionCommandDefence);
+                isHaveEnemyCond.setFalseNode(isSafetyAround);
+                    isSafetyAround.setTrueNode(isNeedToCompact);
 
-            isHaveEnemyCond.setTrueNode(isCanNuclearAttack);
-                isCanNuclearAttack.setTrueNode(actionNuclearAttack);
-                isCanNuclearAttack.setFalseNode(isHaveEnemyWeakness);
-                    isHaveEnemyWeakness.setTrueNode(isEnemyNear);
-                        isEnemyNear.setTrueNode(isNeedToTurnArmy);
-                            isNeedToTurnArmy.setTrueNode(actionCommandRotate);
-                            isNeedToTurnArmy.setFalseNode(actionAttack);
-                        isEnemyNear.setFalseNode(isNeedToBeforeAttackCompact);
-                            isNeedToBeforeAttackCompact.setTrueNode(actionCompact);
-                            isNeedToBeforeAttackCompact.setFalseNode(actionAttack);
-                    isHaveEnemyWeakness.setFalseNode(actionCommandDefence);
-            isHaveEnemyCond.setFalseNode(isSafetyAround);
-                isSafetyAround.setTrueNode(isNeedToCompact);
+                        isNeedToCompact.setTrueNode(actionCompact);
+                        isNeedToCompact.setFalseNode(isHaveFacility);
 
-                    isNeedToCompact.setTrueNode(actionCompact);
-                    isNeedToCompact.setFalseNode(isHaveFacility);
+                            isHaveFacility.setTrueNode(actionSiegeFacility);
+                            isHaveFacility.setFalseNode(isHaveEnemyInAllMap);
 
-                        isHaveFacility.setTrueNode(actionSiegeFacility);
-                        isHaveFacility.setFalseNode(isHaveEnemyInAllMap);
-
-                            isHaveEnemyInAllMap.setTrueNode(actionAttack);
-                            isHaveEnemyInAllMap.setFalseNode(actionCommandDefence);
-                isSafetyAround.setFalseNode(canNuclearAttackInDefence);
-                    canNuclearAttackInDefence.setTrueNode(actionNuclearAttack);
-                    canNuclearAttackInDefence.setFalseNode(actionCommandDefence);
+                                isHaveEnemyInAllMap.setTrueNode(actionAttack);
+                                isHaveEnemyInAllMap.setFalseNode(actionCommandDefence);
+                    isSafetyAround.setFalseNode(canNuclearAttackInDefence);
+                        canNuclearAttackInDefence.setTrueNode(actionNuclearAttack);
+                        canNuclearAttackInDefence.setFalseNode(actionCommandDefence);
         bTree.addRoot(isNeedToHeal);
         army.setBehaviourTree(bTree);
     }
@@ -184,5 +207,24 @@ public class ArmyDivisions {
     public void clear() {
         armyList.clear();
         armyByType.clear();
+    }
+
+    public Army getNearestArmy(VehicleType armyType, Point2D fromPoint) {
+
+        ArmyAllyOrdering minDistArmy = null;
+        double minDistance = Double.MAX_VALUE;
+
+        for (ArmyAllyOrdering army : armyList.values()) {
+            if (army.isAlive() && army.containVehicleType(armyType)) {
+
+                double distance = army.getForm().getEdgesVehiclesCenter().distance(fromPoint);
+                if (distance < minDistance) {
+                    minDistArmy = army;
+                    minDistance = distance;
+                }
+            }
+        }
+
+        return minDistArmy;
     }
 }

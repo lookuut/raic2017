@@ -81,7 +81,7 @@ public final class Runner {
         float minValue = damageField.getMinValue();
         for (int j = 0; j < MyStrategy.enemyField.getHeight(); j++) {
             for (int i = 0; i <  MyStrategy.enemyField.getWidth(); i++) {
-                float factor = damageField.getFactorOld(i, j);
+                float factor = damageField.getTileFactor(i, j);
 
                 Point2D point = damageField.getWorldPoint(new Point2D(i,j));
                 Color color = new Color(0f,0f,0f);

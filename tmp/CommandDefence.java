@@ -23,18 +23,20 @@ public class CommandDefence extends Command {
         PPFieldEnemy damageField = army.getDamageField();
 
         army.getForm().update(army.getVehicles());
-        double allyArmyDamageFactor = damageField.getFactorOld(damageField.getTransformedPoint(army.getForm().getAvgPoint()));
+        double allyArmyDamageFactor = damageField.getTileFactor(damageField.getTransformedPoint(army.getForm().getAvgPoint()));
 
         MyStrategy.battleField.defineArmies();
         List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
         Army dangerArmy = null;
-
+        double enemyArrivedTick = Double.MAX_VALUE;
         for (Army enemyArmy : enemyArmies) {
-            if (enemyArmy.getForm().getEdgesVehiclesCenter().subtract(army.getForm().getAvgPoint()).magnitude() <= CustomParams.safetyDistance + CustomParams.safetyDistance / 2) {
-                double enemyDamageFactor = damageField.getFactorOld(damageField.getTransformedPoint(enemyArmy.getForm().getEdgesVehiclesCenter()));
-                if (allyArmyDamageFactor + enemyDamageFactor > 0)  { //run forrest run from this guy, he can defeat us
+            double enemyDamageFactor = damageField.getTileFactor(damageField.getTransformedPoint(enemyArmy.getForm().getEdgesVehiclesCenter()));
+
+            if (allyArmyDamageFactor + enemyDamageFactor > 0)  { //run forrest run from this guy, he can defeat us
+                double tick = enemyArmy.getForm().getEdgesVehiclesCenter().distance(army.getForm().getEdgesVehiclesCenter()) / enemyArmy.getSpeed();
+                if (tick < enemyArrivedTick) {
+                    enemyArrivedTick = tick;
                     dangerArmy = enemyArmy;
-                    break;
                 }
             }
         }

@@ -1,7 +1,6 @@
 package strategy;
 
 import model.VehicleType;
-import sun.swing.BakedArrayList;
 
 import java.util.*;
 
@@ -121,7 +120,7 @@ public class ArmyAlly extends Army {
 
                         for (SmartVehicle enemyEdgeVehicle : enemyArmy.getForm().getEdgesVehicles().values()) {
                             if (SmartVehicle.isTargetVehicleType(getVehiclesType().iterator().next(), enemyEdgeVehicle.getType())) {
-                                double edgeVehicleDamageFactor = damageField.getFactorOld(damageField.getTransformedPoint(enemyEdgeVehicle.getPoint()));
+                                double edgeVehicleDamageFactor = damageField.getTileFactor(damageField.getTransformedPoint(enemyEdgeVehicle.getPoint()));
                                 if (allyArmyMinFactor + edgeVehicleDamageFactor < 0) {
                                     if (edgeVehicleDamageFactor < minFactor) {
                                         minFactor = edgeVehicleDamageFactor;
@@ -215,6 +214,41 @@ public class ArmyAlly extends Army {
         return false;
     }
 
+    public boolean isDangerousAround () {
+        MyStrategy.battleField.defineArmies();
+        List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
+
+        Point2D armyCenterPoint = getForm().getEdgesVehiclesCenter();
+        PPFieldEnemy damageField = getDamageField();
+        List<PPFieldPoint> edgeValues = damageField.getEdgesValueInRadious(armyCenterPoint, CustomParams.tileCellSize * 3);
+        double maxDamage = edgeValues.get(0).value;
+        double allySpeed = getMinSpeed();
+
+        for (Army enemyArmy : enemyArmies) {
+
+            double maxEnemyDamage = damageField.getEdgesValueInRadious(enemyArmy.getForm().getEdgesVehiclesCenter(), CustomParams.tileCellSize * 3).get(1).value;
+
+            if (canAttackedByArmy(enemyArmy) && Math.abs(maxDamage) * CustomParams.enemyDamageFactor < Math.abs(maxEnemyDamage)) {
+                Point2D safetyPoint = enemyArmy.getDamageField().getMinValuePoint();
+
+                SmartVehicle enemyVehicle = enemyArmy.getForm().getNearestEdgeVehicle(safetyPoint);
+                SmartVehicle allyVehicle = getForm().getNearestEdgeVehicle(enemyVehicle.getPoint());
+                double enemySpeed = enemyVehicle.getVehicleOnTickSpeed() > 0 ? enemyVehicle.getVehicleOnTickSpeed() : enemyVehicle.getMaxSpeed();
+
+                double distanceEnemyToSafetyPoint = enemyVehicle.getPoint().distance(safetyPoint);
+                double distanceToSafetyPoint = safetyPoint.distance(allyVehicle.getPoint());
+                int timeToSafetyPoint = (int)Math.ceil(distanceToSafetyPoint / allySpeed);
+                int timeEnemyToSafetyPoint = (int)Math.ceil(distanceEnemyToSafetyPoint / enemySpeed);
+
+                if (timeEnemyToSafetyPoint < 1.2 * timeToSafetyPoint && enemySpeed > allySpeed) {//holly crap, have to defence!
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public boolean isSafetyAround(double safetyDistance) {
         MyStrategy.battleField.defineArmies();
         List<Army> enemyArmies = MyStrategy.battleField.getEnemyArmies();
@@ -239,8 +273,8 @@ public class ArmyAlly extends Army {
                             double distance = enemyVehicle.getPoint().subtract(allyVehicle.getPoint()).magnitude();
                             if (distance < minDistance) {
                                 minDistance = distance;
-                                double allyDamageFactor = damageField.getFactorOld(damageField.getTransformedPoint(allyVehicle.getPoint()));
-                                double enemyDamageFactor = damageField.getFactorOld(damageField.getTransformedPoint(enemyVehicle.getPoint()));
+                                double allyDamageFactor = damageField.getPointFactor(allyVehicle.getPoint());
+                                double enemyDamageFactor = damageField.getPointFactor(enemyVehicle.getPoint());
                                 minDistanceDamageFactorDelta = allyDamageFactor + enemyDamageFactor;
                             }
                         }

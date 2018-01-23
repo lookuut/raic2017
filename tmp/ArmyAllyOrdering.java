@@ -32,6 +32,10 @@ public class ArmyAllyOrdering extends ArmyAlly {
             throw new Exception("Army already locked");
         }
 
+        if (getRunningCommand() != null) {
+            getRunningCommand().complete();
+        }
+
         isLocked = true;
     }
 

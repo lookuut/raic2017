@@ -232,7 +232,7 @@ public class Army {
         return !isAerial();
     }
 
-    public double getMinSpeed() {
+    public double getMinSpeedWithEnviromentFactor() {
 
         Iterator<VehicleType> typeIterator = getVehiclesType().iterator();
         VehicleType type = typeIterator.next();
@@ -254,11 +254,32 @@ public class Army {
         return minSpeed;
     }
 
+    /**
+     * @desc
+     * @return max possible speed of army
+     */
+
     public double getSpeed() {
         double speed = 0.0;
         for (VehicleType type : getVehiclesType()) {
 
             if (speed < vehiclesByType.get(type).get(0).getMaxSpeed()) {
+                speed = vehiclesByType.get(type).get(0).getMaxSpeed();
+            }
+        }
+
+        return speed;
+    }
+
+    /**
+     * @desc
+     * @return min possible speed of army
+     */
+
+    public double getMinSpeed() {
+        double speed = 10.0;
+        for (VehicleType type : getVehiclesType()) {
+            if (speed > vehiclesByType.get(type).get(0).getMaxSpeed()) {
                 speed = vehiclesByType.get(type).get(0).getMaxSpeed();
             }
         }
@@ -289,13 +310,13 @@ public class Army {
                             point.getIntY() >= 0 && point.getIntY() < damageField.getHeight() &&
                             !visitedCells.contains(point)) {
 
-                        if (maxFactor < damageField.getFactorOld(point)) {
-                            maxFactor = damageField.getFactorOld(point);
+                        if (maxFactor < damageField.getTileFactor(point)) {
+                            maxFactor = damageField.getTileFactor(point);
                             maxFactorPoint = point;
                         }
 
-                        if (minFactor > damageField.getFactorOld(point)) {
-                            minFactor = damageField.getFactorOld(point);
+                        if (minFactor > damageField.getTileFactor(point)) {
+                            minFactor = damageField.getTileFactor(point);
                             minFactorPoint = point;
                         }
                     }
@@ -313,13 +334,13 @@ public class Army {
                         point.getIntY() >= 0 && point.getIntY() < damageField.getHeight() &&
                         !visitedCells.contains(point)) {
 
-                    if (maxFactor < damageField.getFactorOld(point)) {
-                        maxFactor = damageField.getFactorOld(point);
+                    if (maxFactor < damageField.getTileFactor(point)) {
+                        maxFactor = damageField.getTileFactor(point);
                         maxFactorPoint = point;
                     }
 
-                    if (minFactor > damageField.getFactorOld(point)) {
-                        minFactor = damageField.getFactorOld(point);
+                    if (minFactor > damageField.getTileFactor(point)) {
+                        minFactor = damageField.getTileFactor(point);
                         minFactorPoint = point;
                     }
                 }
@@ -351,16 +372,16 @@ public class Army {
         PPFieldEnemy damageField = getDamageField();
         Collection<SmartVehicle> edgesVehicles = getForm().getEdgesVehicles().values();
         SmartVehicle maxDamageVehicle = edgesVehicles.iterator().next();
-        double maxDamage = damageField.getFactor(maxDamageVehicle.getPoint());
+        double maxDamage = damageField.getPointFactor(maxDamageVehicle.getPoint());
 
         for (SmartVehicle vehicle : edgesVehicles) {
-            if (maxDamage > damageField.getFactor(vehicle.getPoint())) {
-                maxDamage = damageField.getFactor(vehicle.getPoint());
+            if (maxDamage > damageField.getPointFactor(vehicle.getPoint())) {
+                maxDamage = damageField.getPointFactor(vehicle.getPoint());
             }
         }
 
         for (SmartVehicle vehicle : edgesVehicles) {
-            if (Math.abs(maxDamage - damageField.getFactor(vehicle.getPoint())) <= CustomParams.damageDelta) {
+            if (Math.abs(maxDamage - damageField.getPointFactor(vehicle.getPoint())) <= CustomParams.damageDelta) {
                 maxDamageVehicles.add(vehicle);
             }
         }
@@ -453,5 +474,4 @@ public class Army {
     public boolean containVehicleType(VehicleType type) {
         return getVehiclesType().contains(type);
     }
-
 }

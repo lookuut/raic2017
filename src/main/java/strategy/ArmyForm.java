@@ -141,7 +141,7 @@ public class ArmyForm {
 
         double minFactor = Double.NEGATIVE_INFINITY;
         for (SmartVehicle vehicle : getEdgesVehicles().values()) {
-            double factor = damageField.getFactorOld(damageField.getTransformedPoint(vehicle.getPoint()));
+            double factor = damageField.getTileFactor(damageField.getTransformedPoint(vehicle.getPoint()));
             if (minFactor < factor) {
                 minFactor = factor;
             }

@@ -89,14 +89,10 @@ public class EnemyField {
 
     public Point2D onDanger(Set<VehicleType> types, Point2D armyCenter, double dangerRadious) throws Exception {
 
-        int propose = (int)(MyStrategy.world.getWidth() / getWidth());
-        int intDangerRadoius = (int)Math.floor(dangerRadious / propose);
-        Point2D armyTransformedCentre = new Point2D(Math.round(armyCenter.getX() / propose), Math.round(armyCenter.getY() / propose));
         PPFieldEnemy damageField = getDamageField(types);
 
-
-        List<PPFieldPoint> edges = damageField.getEdgesValueInRadious(armyTransformedCentre, intDangerRadoius);
-        if (edges.get(1).point != null && damageField.getFactorOld(edges.get(1).point) > 0) {
+        List<PPFieldPoint> edges = damageField.getEdgesValueInRadious(armyCenter, dangerRadious);
+        if (edges.get(1).point != null && damageField.getTileFactor(edges.get(1).point) > 0) {
             return damageField.getWorldPoint(edges.get(1).point);
         }
 

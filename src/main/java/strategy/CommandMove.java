@@ -3,6 +3,8 @@ package strategy;
 import model.ActionType;
 import model.VehicleType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class CommandMove extends Command {
@@ -11,7 +13,7 @@ public class CommandMove extends Command {
 
     private int startTick;
     private int maxRunnableTick = 0;
-    private boolean isDefence = true;
+    private boolean isDefence;
 
     public CommandMove(Point2D targetVector, boolean isDefence){
         super();
@@ -21,19 +23,23 @@ public class CommandMove extends Command {
         this.isDefence = isDefence;
     }
 
-    public CommandMove(TargetPoint target){
+    public CommandMove(TargetPoint target, boolean isDefence){
         super();
         this.target = target;
-
+        this.isDefence = isDefence;
     }
 
-
     @Override
-    public void prepare(ArmyAllyOrdering army) throws Exception {}
+    public void prepare(ArmyAllyOrdering army) throws Exception {
+    }
 
     @Override
     public boolean check (ArmyAllyOrdering army) {
 
+        if (!isDefence && army.isDangerousAround()) {
+            complete();
+            return true;
+        }
         if (getState() == CommandStates.Complete || getState() == CommandStates.Failed) {
             return true;
         }
@@ -86,7 +92,7 @@ public class CommandMove extends Command {
                         }
                     } else {
                         if (army.getVehicleCount() > 1) {
-                            maxSpeed = army.getMinSpeed();
+                            maxSpeed = army.getMinSpeedWithEnviromentFactor();
                         }
                         maxRunnableTick = (int)Math.ceil(target.vector.magnitude() / maxSpeed);
                     }

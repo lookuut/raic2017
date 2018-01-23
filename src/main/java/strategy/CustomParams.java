@@ -14,7 +14,6 @@ public class CustomParams {
     public static int healSafetyDistance = 120;
     public static int safetyDistance = 200;
     public static int doCompactDistance = 100;
-    public static int dangerRadious = 160;
 
     public static float armyScaleFactor = 0.1F;
 
@@ -28,6 +27,7 @@ public class CustomParams {
     public static double nearestEnemyEps = 0.01;
 
     //armies config
+    public static double enemyDamageFactor = 1.5;
     public static double compactAngle = Math.PI / 4;
     public static int minVehiclesCountInArmy = 20;
 

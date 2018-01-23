@@ -27,7 +27,8 @@ public class CommandNuclearDefence extends Command {
     }
 
     @Override
-    public void prepare(ArmyAllyOrdering army) throws Exception {}
+    public void prepare(ArmyAllyOrdering army) throws Exception {
+    }
 
     private List<Long> defineAttackedSquareAngleVehicles(Collection<ArmyAllyOrdering> armies) {
         List<Long> result = new ArrayList<>();

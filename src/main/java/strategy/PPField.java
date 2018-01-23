@@ -123,10 +123,12 @@ public class PPField {
             maxValue = this.field[y][x];
         }
     }
-    public float getFactorOld(int x, int y) {
+    
+    
+    public float getTileFactor(int x, int y) {
         return field[y][x];
     }
-    public float getFactorOld(Point2D point) {
+    public float getTileFactor(Point2D point) {
         return field[(int)Math.floor(point.getY())][(int)Math.floor(point.getX())];
     }
 
@@ -135,7 +137,7 @@ public class PPField {
      * @param worldPoint in world coordinates
      * @return damage factor
      */
-    public float getFactor(Point2D worldPoint) {
+    public float getPointFactor(Point2D worldPoint) {
         Point2D damageFieldPoint = getTransformedPoint(worldPoint);
         return field[(int)Math.floor(damageFieldPoint.getY())][(int)Math.floor(damageFieldPoint.getX())];
     }
@@ -150,8 +152,8 @@ public class PPField {
 
         for (int y = 0; y < sum.getHeight(); y++) {
             for (int x = 0; x < sum.getWidth(); x++) {
-                if (field1.getFactorOld(x, y) > 0 || field2.getFactorOld(x, y) > 0) {
-                    sum.addFactor(x, y, field1.getFactorOld(x, y) + operate * field2.getFactorOld(x, y));
+                if (field1.getTileFactor(x, y) > 0 || field2.getTileFactor(x, y) > 0) {
+                    sum.addFactor(x, y, field1.getTileFactor(x, y) + operate * field2.getTileFactor(x, y));
                 }
             }
         }
@@ -166,7 +168,7 @@ public class PPField {
             int transformedY = y / yFactor;
             for (int x = 0; x < getWidth(); x++) {
                 int transformedX = x / xFactor;
-                addFactor( x, y, operate * localField.getFactorOld(transformedX, transformedY));
+                addFactor( x, y, operate * localField.getTileFactor(transformedX, transformedY));
             }
         }
     }
@@ -208,15 +210,31 @@ public class PPField {
         double minValue = Double.MAX_VALUE;
         for (int x = 0; x < getWidth(); x++) {
             for (int y = 0; y < getHeight(); y++) {
-                if (minValue > getFactorOld(x, y)) {
-                    minValue = getFactorOld(x, y);
+                if (minValue > getTileFactor(x, y)) {
+                    minValue = getTileFactor(x, y);
                     minValuePoint = new Point2D(x,y);
                 }
             }
         }
 
         return getWorldPoint(minValuePoint);
+    }
 
+    public Point2D getMaxValuePoint() {
+
+        Point2D maxValuePoint = new Point2D(0,0);
+        double maxValue = getTileFactor(0,0);
+
+        for (int x = 0; x < getWidth(); x++) {
+            for (int y = 0; y < getHeight(); y++) {
+                if (maxValue < getTileFactor(x, y)) {
+                    maxValue = getTileFactor(x, y);
+                    maxValuePoint = new Point2D(x,y);
+                }
+            }
+        }
+
+        return getWorldPoint(maxValuePoint);
     }
 
     public List<Point2D> getMinValueCells() {
@@ -224,7 +242,7 @@ public class PPField {
 
         for (int j = 0; j < getHeight(); j++) {
             for (int i = 0; i < getWidth(); i++) {
-                if (getFactorOld(i, j) == minValue) {
+                if (getTileFactor(i, j) == minValue) {
                     minValueList.add(new Point2D((double)i, (double)j));
                 }
             }
@@ -237,8 +255,8 @@ public class PPField {
         float minValue = Float.MAX_VALUE;
         Point2D minValuePoint = null;
         for (Point2D point : searchPoints) {
-            if (getFactorOld(point.getIntX(), point.getIntY()) < minValue) {
-                minValue = getFactorOld(point.getIntX(), point.getIntY());
+            if (getTileFactor(point.getIntX(), point.getIntY()) < minValue) {
+                minValue = getTileFactor(point.getIntX(), point.getIntY());
                 minValuePoint = point;
             }
         }
@@ -261,7 +279,7 @@ public class PPField {
                     visitedCells.add(number);
 
                     if (line.isIntersectSquare(x + i, y + j, 1)) {
-                        if (getFactorOld(x + i, y + j) == 0) {
+                        if (getTileFactor(x + i, y + j) == 0) {
                             return deepSearch(visitedCells, new Point2D(x + i, y + j), line);
                         } else {
                             return new Point2D(x + i, y + j);
@@ -461,7 +479,7 @@ public class PPField {
 
         double maxWidth = MyStrategy.world.getWidth();
         double maxHeight = MyStrategy.world.getHeight();
-        double factorSum = getFactorOld((int)Math.floor(tStartX / propose), (int)Math.floor(tStartY / propose));
+        double factorSum = getTileFactor((int)Math.floor(tStartX / propose), (int)Math.floor(tStartY / propose));
         Integer intersectCellsCount = 1;
 
         while (
@@ -502,7 +520,7 @@ public class PPField {
 
             int x = (int)Math.floor(tStartX / propose);
             int y = (int)Math.floor(tStartY / propose);
-            factorSum += getFactorOld(x, y);
+            factorSum += getTileFactor(x, y);
             intersectCellsCount++;
         }
 
@@ -516,13 +534,13 @@ public class PPField {
 
             for (int x = 0; x <= radius; x++) {
                 if (y * y + x * x <= radius) {
-                    if (point.getIntX() + x < getWidth() && getFactorOld(point.getIntX() + x, yCentre + y ) > 0) {
-                        factor += getFactorOld(point.getIntX() + x, yCentre + y );
+                    if (point.getIntX() + x < getWidth() && getTileFactor(point.getIntX() + x, yCentre + y ) > 0) {
+                        factor += getTileFactor(point.getIntX() + x, yCentre + y );
                         visitedCells.add(point.getIntX() + x  + (yCentre + y) * getWidth() );
                     }
 
-                    if (x != 0 && point.getIntX() - x >= 0 && getFactorOld(point.getIntX() - x, yCentre + y ) > 0) {
-                        factor += getFactorOld(point.getIntX() - x, yCentre + y );
+                    if (x != 0 && point.getIntX() - x >= 0 && getTileFactor(point.getIntX() - x, yCentre + y ) > 0) {
+                        factor += getTileFactor(point.getIntX() - x, yCentre + y );
                         visitedCells.add(point.getIntX() - x  + (yCentre + y) * getWidth());
                     }
                 }

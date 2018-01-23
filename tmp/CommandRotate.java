@@ -21,7 +21,7 @@ public class CommandRotate extends Command {
         this.centre = army.getForm().getNearestEdgeVehicle(army.getTargetVehicle().getPoint()).getPoint();//@TODO turn from nearest point of army
         SmartVehicle farestVehicle = army.getFarestVehicleFromPoint(army.getForm().getEdgesVehiclesCenter());
         double farestVehiclePathLenght = 2 * Math.abs(this.angle) * farestVehicle.getPoint().subtract(army.getForm().getEdgesVehiclesCenter()).magnitude();
-        this.durability = (int)Math.ceil(farestVehiclePathLenght / army.getMinSpeed());
+        this.durability = (int)Math.ceil(farestVehiclePathLenght / army.getMinSpeedWithEnviromentFactor());
     }
 
     public boolean check (ArmyAllyOrdering army) {
@@ -44,7 +44,7 @@ public class CommandRotate extends Command {
                 MyStrategy.move.setX(centre.getX());
                 MyStrategy.move.setY(centre.getY());
                 MyStrategy.move.setAngle(angle);
-                MyStrategy.move.setMaxSpeed(army.getMinSpeed());
+                MyStrategy.move.setMaxSpeed(army.getMinSpeedWithEnviromentFactor());
             };
             CommandWrapper cw = new CommandWrapper( this, CustomParams.runImmediatelyTick, army.getGroupId(), getPriority());
             cw.addCommand(funcRotate);

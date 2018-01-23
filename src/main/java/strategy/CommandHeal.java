@@ -33,7 +33,7 @@ public class CommandHeal extends Command {
             return;
         }
         target.maxDamageValue = army.getForm().getMinDamageFactor(army) * (-1);
-        CommandMove move = new CommandMove(target);
+        CommandMove move = new CommandMove(target, false);
         move.setPriority(CommandPriority.High);
 
         setParentCommand(move);
@@ -41,7 +41,7 @@ public class CommandHeal extends Command {
 
     @Override
     public boolean check (ArmyAllyOrdering army) {
-        if (army.averageDurability() >= CustomParams.endHealAVGDurability || arrvArmy == null) {
+        if (army.averageDurability() >= CustomParams.endHealAVGDurability || !arrvArmy.isAlive() || arrvArmy == null) {
             complete();
             return true;
         }
@@ -61,8 +61,9 @@ public class CommandHeal extends Command {
                 setParentCommand(new CommandWait(CustomParams.healTimeout));
             } else {
                 target.maxDamageValue = army.getForm().getMinDamageFactor(army) * (-1);
-                setParentCommand(new CommandMove(target));
+                setParentCommand(new CommandMove(target, false));
             }
+            return false;
         }
 
         return super.check(army);
