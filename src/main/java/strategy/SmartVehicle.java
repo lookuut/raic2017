@@ -2,9 +2,18 @@ package strategy;
 
 import model.*;
 
+import java.awt.*;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class SmartVehicle  {
+    /**
+     * @var distance matrix, uses for DBSCAN
+     */
+    private Set<Long> nearVehicles;
+    private Point2D updateNearVehiclesPoint;
 
     protected double radius;
     protected double x;
@@ -72,8 +81,56 @@ public class SmartVehicle  {
         this.point = new Point2D(vehicle.getX(), vehicle.getY());
         this.leftBottomAngle = new Point2D(vehicle.getX() - vehicle.getRadius(),  vehicle.getY() - vehicle.getRadius());
         this.rightTopAngle = new Point2D(vehicle.getX() + vehicle.getRadius(),  vehicle.getY() + vehicle.getRadius());
+        this.nearVehicles = new HashSet<>();
+        this.updateNearVehiclesPoint = getPoint().clone();
     }
 
+    public boolean canNearVehicleUpdate() {
+        return getPoint().squaredDistance(updateNearVehiclesPoint) > CustomParams.nearDistance * CustomParams.nearDistance;
+    }
+
+    public void addNearVehicle(Long vehicleId) {
+        nearVehicles.add(vehicleId);
+    }
+
+    public void updateNearVehicle(Long vehicleId, double x, double y, Long playerId) {
+        if (playerId != getPlayerId() || vehicleId == getId()) {
+            return;
+        }
+
+        double squaredDistance = getPoint().squaredDistance(x, y);
+        if (squaredDistance <= CustomParams.nearDistance * CustomParams.nearDistance) {
+            if (!nearVehicles.contains(vehicleId)) {
+                nearVehicles.add(vehicleId);
+                MyStrategy.getVehicles().get(vehicleId).addNearVehicle(getId());
+            }
+        } else if (nearVehicles.contains(vehicleId)) {
+            nearVehicles.remove(vehicleId);
+            MyStrategy.getVehicles().get(vehicleId).removeNearVehicle(getId());
+        }
+
+        if (updateNearVehiclesPoint != getPoint()) {
+            updateNearVehiclesPoint = getPoint().clone();
+        }
+    }
+
+    public void updateNearVehicle (VehicleUpdate vehicle, long playerId) {
+        updateNearVehicle(vehicle.getId(), vehicle.getX(), vehicle.getY(), playerId);
+    }
+
+    public void updateNearVehicle (SmartVehicle vehicle) {
+        updateNearVehicle(vehicle.getId(), vehicle.getX(), vehicle.getY(), vehicle.getPlayerId());
+    }
+
+    public void removeNearVehicle(Long vehicleId) {
+        if (nearVehicles.contains(vehicleId)) {
+            nearVehicles.remove(vehicleId);
+        }
+    }
+
+    public Set<Long> getNearVehicles() {
+        return nearVehicles;
+    }
 
     public void vehicleUpdate(VehicleUpdate vehicleUpdate) {
 

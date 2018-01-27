@@ -247,24 +247,22 @@ class Commander {
     }
 
     public void addNoArmyVehicle(SmartVehicle vehicle){
-        if (vehicle.isAlly()) {
 
-            if (!noArmyVehicles.containsKey(vehicle.getType())){
-                noArmyVehicles.put(vehicle.getType(), new ArrayList<>());
+        if (!noArmyVehicles.containsKey(vehicle.getType())){
+            noArmyVehicles.put(vehicle.getType(), new ArrayList<>());
+            noArmySquaereMap.put(vehicle.getType(), new Square(vehicle.getLeftBottomAngle(), vehicle.getRightTopAngle()));
+        } else {
+            if (!noArmySquaereMap.containsKey(vehicle.getType())) {
                 noArmySquaereMap.put(vehicle.getType(), new Square(vehicle.getLeftBottomAngle(), vehicle.getRightTopAngle()));
             } else {
-                if (!noArmySquaereMap.containsKey(vehicle.getType())) {
-                    noArmySquaereMap.put(vehicle.getType(), new Square(vehicle.getLeftBottomAngle(), vehicle.getRightTopAngle()));
-                } else {
-                    Square square = noArmySquaereMap.get(vehicle.getType());
-                    square.addPoint(vehicle.getLeftBottomAngle());
-                    square.addPoint(vehicle.getRightTopAngle());
-                }
+                Square square = noArmySquaereMap.get(vehicle.getType());
+                square.addPoint(vehicle.getLeftBottomAngle());
+                square.addPoint(vehicle.getRightTopAngle());
             }
-
-            List<SmartVehicle> vehicleList = noArmyVehicles.get(vehicle.getType());
-            vehicleList.add(vehicle);
         }
+
+        List<SmartVehicle> vehicleList = noArmyVehicles.get(vehicle.getType());
+        vehicleList.add(vehicle);
     }
 
 

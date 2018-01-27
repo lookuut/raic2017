@@ -3,6 +3,7 @@ package strategy;
 import model.VehicleType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class BattleField {
 
@@ -112,52 +113,98 @@ public class BattleField {
         return battleField[point.getIntY()][point.getIntX()];
     }
 
+    public void addNearVehicles(SmartVehicle vehicle, Queue<Long> toVisitVehicleIds, Set<Long> visitedVehicleIds, Set<Long> haveArmyVehicles, Set<Long> edgesVehicles, Army army) {
+        army.addVehicle(vehicle);
+        haveArmyVehicles.add(vehicle.getId());
+
+        while (toVisitVehicleIds.size() > 0) {
+            Long vehicleId = toVisitVehicleIds.poll();
+
+            if (!visitedVehicleIds.contains(vehicleId)) {
+                visitedVehicleIds.add(vehicleId);
+                SmartVehicle nVehicle = MyStrategy.getVehicles().get(vehicleId);
+                if (nVehicle.getNearVehicles().size() >= CustomParams.groupMinItemCount) {
+                    toVisitVehicleIds.addAll(nVehicle.getNearVehicles());
+                }
+            }
+
+            if (!haveArmyVehicles.contains(vehicleId)) {
+                haveArmyVehicles.add(vehicleId);
+                army.addVehicle(MyStrategy.getVehicles().get(vehicleId));
+                if (edgesVehicles.contains(vehicleId)) {
+                    edgesVehicles.remove(vehicleId);
+                }
+            }
+        }
+    }
+
+    public void clusteringVehicles(Collection<SmartVehicle> clusteringVehicles, Long playerId) {
+
+        armies.get(playerId).clear();
+
+        Set<Long> edgesVehicles = new HashSet<>();
+        Set<Long> haveArmyVehicles = new HashSet<>();
+        Set<Long> visitedVehicles = new HashSet<>();
+
+        for (SmartVehicle vehicle : clusteringVehicles) {
+            if (visitedVehicles.contains(vehicle.getId())) {
+                continue;
+            }
+            visitedVehicles.add(vehicle.getId());
+
+            if (vehicle.getNearVehicles().size() < CustomParams.groupMinItemCount) {
+                edgesVehicles.add(vehicle.getId());
+            } else {
+                Army army = new Army();
+                Queue<Long> queue = vehicle.getNearVehicles().stream().collect(Collectors.toCollection(() -> new LinkedList<>()));
+                addNearVehicles(vehicle, queue,
+                        visitedVehicles,
+                        haveArmyVehicles,
+                        edgesVehicles, army);
+
+                army.getForm().update(army.getVehicles());
+                armies.get(playerId).add(army);
+            }
+        }
+
+        if (edgesVehicles.size() > 0) {
+            for (Long vehicleId : edgesVehicles) {
+                if (!haveArmyVehicles.contains(vehicleId)) {
+                    haveArmyVehicles.add(vehicleId);
+                    Army army = new Army();
+                    army.addVehicle(MyStrategy.getVehicles().get(vehicleId));
+                    for (Long nearVehicleId : MyStrategy.getVehicles().get(vehicleId).getNearVehicles()) {
+                        if (!haveArmyVehicles.contains(nearVehicleId)) {
+                            army.addVehicle(MyStrategy.getVehicles().get(nearVehicleId));
+                            haveArmyVehicles.add(nearVehicleId);
+                        }
+                    }
+
+                    army.getForm().update(army.getVehicles());
+                    armies.get(playerId).add(army);
+                }
+            }
+        }
+    }
+
     public void defineArmies() {
 
         if (armiesDefineTick == MyStrategy.world.getTickIndex()) {
             return;
         }
 
+        /*
         if (MyStrategy.world.getTickIndex() - armiesDefineTick < CustomParams.enemyArmiesDefineInterval) {
             return;
-        }
+        }*/
 
-        Set<Point2D> visitedCells = new HashSet();
-        
-        Army allyArmy = new Army();
-        Army enemyArmy = new Army();
+        clusteringVehicles(MyStrategy.getAllyVehicles().values(),
+                MyStrategy.player.getId()
+        );
 
-        armies.get(MyStrategy.getEnemyPlayerId()).clear();
-        armies.get(MyStrategy.player.getId()).clear();
-
-        for (int j = 0; j < getHeight(); j++) {
-            for (int i = 0; i < getWidth(); i++) {
-                Point2D point = new Point2D(i,j);
-
-                if (!visitedCells.contains(point)) {
-
-                    if (battleField[j][i].getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0 
-                        || 
-                        battleField[j][i].getVehicles(MyStrategy.player.getId()).size() > 0
-                        ) {
-                        
-                        recursiveDeepSearchEnemies(point, visitedCells, enemyArmy, allyArmy);
-                        
-                        if (allyArmy.getVehicles().size() > 0) {
-                            allyArmy.getForm().update(allyArmy.getVehicles());
-                            armies.get(MyStrategy.player.getId()).add(allyArmy);
-                            allyArmy = new Army();
-                        }
-
-                        if (enemyArmy.getVehicles().size() > 0) {
-                            enemyArmy.getForm().update(enemyArmy.getVehicles());
-                            armies.get(MyStrategy.getEnemyPlayerId()).add(enemyArmy);
-                            enemyArmy = new Army();
-                        }
-                    }
-                }
-            }
-        }
+        clusteringVehicles(MyStrategy.getEnemyVehicles().values(),
+                MyStrategy.getEnemyPlayerId()
+        );
 
         armiesDefineTick = MyStrategy.world.getTickIndex();
     }
@@ -168,40 +215,6 @@ public class BattleField {
 
     public List<Army> getAllyArmies() {
         return armies.get(MyStrategy.player.getId());
-    }
-
-    public void recursiveDeepSearchEnemies(Point2D center, Set<Point2D> visitedCells, Army enemyArmy, Army allyArmy) {
-
-        Point2D[] points = new Point2D[5];
-        points[0] = new Point2D(0,-1);
-        points[1] = new Point2D(-1,0);
-        points[2] = new Point2D(1,0);
-        points[3] = new Point2D(0,1);
-        points[4] = new Point2D(0,0);
-
-        for (Point2D point : points) {
-            Point2D visitedPoint = center.add(point);
-            if (visitedPoint.getY() < 0 || visitedPoint.getX() < 0 || visitedPoint.getX() >= getWidth() || visitedPoint.getY() >= getHeight()) {
-                continue;
-            }
-
-            BattleFieldCell cell = getBattleFieldCell(visitedPoint);
-
-            if (!visitedCells.contains(visitedPoint)) {
-                if (cell.getVehicles(MyStrategy.getEnemyPlayerId()).size() > 0) {
-                    cell.getVehicles(MyStrategy.getEnemyPlayerId()).values().forEach(vehicle -> enemyArmy.addVehicle(vehicle));
-                    visitedCells.add(visitedPoint);
-                    recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy, allyArmy);
-                }
-
-                if (cell.getVehicles(MyStrategy.player.getId()).size() > 0) {
-                    cell.getVehicles(MyStrategy.player.getId()).values().forEach(vehicle -> allyArmy.addVehicle(vehicle));
-                    visitedCells.add(visitedPoint);
-                    recursiveDeepSearchEnemies(visitedPoint, visitedCells, enemyArmy, allyArmy);
-                }
-            }
-        }
-
     }
 
     public BattleFieldCell searchTargetEnemiesAround(int radious, Point2D point, Set<VehicleType> vehiclesTypes) {

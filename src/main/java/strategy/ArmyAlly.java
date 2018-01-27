@@ -225,7 +225,9 @@ public class ArmyAlly extends Army {
         double allySpeed = getMinSpeed();
 
         for (Army enemyArmy : enemyArmies) {
+            if (enemyArmy.isAlive()) {
 
+            }
             double maxEnemyDamage = damageField.getEdgesValueInRadious(enemyArmy.getForm().getEdgesVehiclesCenter(), CustomParams.tileCellSize * 3).get(1).value;
 
             if (canAttackedByArmy(enemyArmy) && Math.abs(maxDamage) * CustomParams.enemyDamageFactor < Math.abs(maxEnemyDamage)) {

@@ -37,7 +37,6 @@ public class CustomParams {
 
     public static int tileCellSize = 16;
 
-    public static int enemyArmiesDefineInterval = 10;
     //
     public static int max_player_index = 2;
 
@@ -61,4 +60,7 @@ public class CustomParams {
     public static int armyCompactTimeout = 200;
     public static double damageDelta = 1.0;
 
+    //DBSCAN parameters
+    public static double nearDistance = 10.0;
+    public static int groupMinItemCount = 3;
 }

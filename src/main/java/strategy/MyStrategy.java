@@ -4,6 +4,7 @@ import model.*;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 public final class MyStrategy implements Strategy {
@@ -23,11 +24,11 @@ public final class MyStrategy implements Strategy {
 
     static protected HashMap<Long, SmartVehicle> previousVehiclesStates;
 
-    private static Map<Long, SmartVehicle> vehicles;
-    private static Map<Long, SmartVehicle> enemyVehicles;
+    private static Map<Long, SmartVehicle> smartVehicles;
 
-    private static Map<VehicleType, Integer> allyVehiclesByType;
-    private static Map<VehicleType, Integer> enemyVehiclesByType;
+    private static Map<Long, Map<Long, SmartVehicle>> playerVehicles;
+    private static Map<Long, Map<VehicleType, Integer>> playerVehiclesByType;
+
 
     public static Profiler profiler;
 
@@ -36,17 +37,22 @@ public final class MyStrategy implements Strategy {
 
     public MyStrategy() {
         this.previousVehiclesStates = new HashMap();
-        this.vehicles = new HashMap<>();
-        this.enemyVehicles = new HashMap<>();
+        this.smartVehicles = new HashMap<>();
+
+        playerVehicles = new HashMap<>();
+        playerVehicles.put(1l, new HashMap<>());
+        playerVehicles.put(2l, new HashMap<>());
+
+        playerVehiclesByType = new HashMap<>();
+        playerVehiclesByType.put(1l, new HashMap<>());
+        playerVehiclesByType.put(2l, new HashMap<>());
 
         this.commanderFacility = new CommanderFacility();
 
-        this.allyVehiclesByType = new HashMap<>();
-        this.enemyVehiclesByType = new HashMap<>();
-
-        for (VehicleType type : VehicleType.values()) {
-            allyVehiclesByType.put(type, 0);
-            enemyVehiclesByType.put(type, 0);
+        for(Map<VehicleType, Integer> typeCounter : playerVehiclesByType.values()) {
+            for (VehicleType type : VehicleType.values()) {
+                typeCounter.put(type, 0);
+            }
         }
 
         strategyTimeSum = 0;
@@ -121,6 +127,25 @@ public final class MyStrategy implements Strategy {
         }
     }
 
+    public static SmartVehicle getSmartVehicle(Vehicle vehicle) {
+        SmartVehicle smartVehicle = smartVehicles.get(vehicle.getId());
+
+        if (smartVehicle == null) {
+            smartVehicle = new SmartVehicle(vehicle);
+            smartVehicles.put(smartVehicle.getId(), smartVehicle);
+        } else {
+            smartVehicle.vehicleUpdate(vehicle);
+        }
+
+        return smartVehicle;
+    }
+
+    public static SmartVehicle getSmartVehicle(VehicleUpdate vehicleUpdate) {
+        SmartVehicle smartVehicle = smartVehicles.get(vehicleUpdate.getId());
+        smartVehicle.vehicleUpdate(vehicleUpdate);
+        return smartVehicle;
+    }
+
     private void updateVehicles(World world) {
 
         Collection<ArmyAllyOrdering> armies = commander.getDivisions().getArmyList();
@@ -136,72 +161,78 @@ public final class MyStrategy implements Strategy {
                 }
             }
         };
-        Arrays.stream(
-            world.getNewVehicles()).
+
+        Vehicle[] vehicleArray = world.getNewVehicles();
+
+        List<Vehicle> allyVehicleList= Arrays.stream(vehicleArray).filter(vehicle -> vehicle.getPlayerId() == MyStrategy.player.getId()).collect(Collectors.toList());
+        List<Vehicle> enemyVehicleList = Arrays.stream(vehicleArray).filter(vehicle -> vehicle.getPlayerId() == MyStrategy.getEnemyPlayerId()).collect(Collectors.toList());
+
+        Arrays.stream(vehicleArray).
             forEach(vehicle -> {
                 //update vehicles hashmap
-                SmartVehicle smartVehicle = vehicles.get(vehicle.getId());
+                SmartVehicle smartVehicle = MyStrategy.getSmartVehicle(vehicle);
 
-                if (smartVehicle == null) {
-                    smartVehicle = new SmartVehicle(vehicle);
-                    vehicles.put(smartVehicle.getId(), smartVehicle);
-                } else {
-                    smartVehicle.vehicleUpdate(vehicle);
+                playerVehicles.get(smartVehicle.getPlayerId()).put(smartVehicle.getId(), smartVehicle);
+                playerVehiclesByType.get(
+                        smartVehicle.getPlayerId()
+                ).put(smartVehicle.getType(),
+                        playerVehiclesByType.get(smartVehicle.getPlayerId()).get(smartVehicle.getType()) + 1);
+
+                battleField.addVehicle(smartVehicle);
+
+                if (smartVehicle.isAlly()) {
+                    commander.addNoArmyVehicle(smartVehicle);
                 }
 
-                if (smartVehicle.getPlayerId() == MyStrategy.getEnemyPlayerId()) {
-                    enemyVehicles.put(smartVehicle.getId() , smartVehicle);
-                    enemyVehiclesByType.put(smartVehicle.getType(), enemyVehiclesByType.get(smartVehicle.getType()) + 1);
+                commander.result(smartVehicle);
+                updateVehiclesInArmies.accept(smartVehicle);
+
+                List<Vehicle> vehicles;
+                if (smartVehicle.isAlly()) {
+                    vehicles = allyVehicleList;
                 } else {
-                    allyVehiclesByType.put(smartVehicle.getType(), allyVehiclesByType.get(smartVehicle.getType()) + 1);
+                    vehicles = enemyVehicleList;
                 }
 
-                commander.addNoArmyVehicle(smartVehicle);
+                for (Vehicle _vehicle : vehicles) {
+                    SmartVehicle sVehicle = MyStrategy.getSmartVehicle(_vehicle);
+                    smartVehicle.updateNearVehicle(sVehicle);
+                }
+            });
+
+        VehicleUpdate[] vehicleUpdatesArray = world.getVehicleUpdates();
+
+        Arrays.stream(vehicleUpdatesArray).
+            forEach(vehicleUpdate -> {
+                SmartVehicle smartVehicle = MyStrategy.getSmartVehicle(vehicleUpdate);
+
+                playerVehicles.get(smartVehicle.getPlayerId()).put(smartVehicle.getId(), smartVehicle);
+
                 commander.result(smartVehicle);
 
                 battleField.addVehicle(smartVehicle);
                 updateVehiclesInArmies.accept(smartVehicle);
-            });
 
-        Arrays.stream(
-            world.getVehicleUpdates()).
-            forEach(vehicleUpdate -> {
-                try {
-                    SmartVehicle smartVehicle = vehicles.get(vehicleUpdate.getId());
-
-                    if (smartVehicle == null) {
-                        throw new Exception("Something goes wrong with vehicles");
+                if (smartVehicle.getDurability() == 0) {
+                    for (Long vehicleId : smartVehicle.getNearVehicles()) {
+                        MyStrategy.getVehicles().get(vehicleId).removeNearVehicle(smartVehicle.getId());
                     }
-
-                    smartVehicle.vehicleUpdate(vehicleUpdate);
-
-                    if (smartVehicle.getPlayerId() == MyStrategy.getEnemyPlayerId()) {
-                        enemyVehicles.put(smartVehicle.getId() , smartVehicle);
+                } else if (smartVehicle.canNearVehicleUpdate()){
+                    for (SmartVehicle vUpdate : playerVehicles.get(smartVehicle.getPlayerId()).values()) {
+                        smartVehicle.updateNearVehicle(vUpdate);
                     }
-
-                    commander.result(smartVehicle);
-
-                    battleField.addVehicle(smartVehicle);
-                    updateVehiclesInArmies.accept(smartVehicle);
-
-                    if (smartVehicle.getDurability() == 0) {
-                        vehicles.remove(smartVehicle.getId());
-                        if (enemyVehicles.containsKey(smartVehicle.getId())) {
-                            enemyVehicles.remove(smartVehicle.getId());
-                        }
-
-                        if (smartVehicle.getPlayerId() == MyStrategy.getEnemyPlayerId()) {
-                            enemyVehicles.put(smartVehicle.getId() , smartVehicle);
-                            enemyVehiclesByType.put(smartVehicle.getType(), enemyVehiclesByType.get(smartVehicle.getType()) - 1);
-                        } else {
-                            allyVehiclesByType.put(smartVehicle.getType(), allyVehiclesByType.get(smartVehicle.getType()) - 1);
-                        }
-                    }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
-        });
+
+                if (smartVehicle.getDurability() == 0) {
+                    smartVehicles.remove(smartVehicle.getId());
+
+                    playerVehicles.get(smartVehicle.getPlayerId()).remove(smartVehicle.getId());
+                    playerVehiclesByType.get(smartVehicle.getPlayerId()).put(
+                            smartVehicle.getType(),
+                            playerVehiclesByType.get(smartVehicle.getPlayerId()).get(smartVehicle.getType()) - 1
+                    );
+                }
+            });
     }
 
     public Player getPlayer() { return player; }
@@ -281,18 +312,22 @@ public final class MyStrategy implements Strategy {
     }
 
     public static Map<Long, SmartVehicle> getVehicles() {
-        return vehicles;
+        return smartVehicles;
     }
 
     public static Map<Long, SmartVehicle> getEnemyVehicles() {
-        return enemyVehicles;
+        return playerVehicles.get(MyStrategy.getEnemyPlayerId());
+    }
+
+    public static Map<Long, SmartVehicle> getAllyVehicles() {
+        return playerVehicles.get(MyStrategy.player.getId());
     }
 
     public static Map<VehicleType, Integer> getEnemyTypeVehiclesCount() {
-        return enemyVehiclesByType;
+        return playerVehiclesByType.get(MyStrategy.getEnemyPlayerId());
     }
 
     public static Map<VehicleType, Integer> getAllyTypeVehiclesCount() {
-        return allyVehiclesByType;
+        return playerVehiclesByType.get(MyStrategy.player.getId());
     }
 }

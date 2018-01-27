@@ -1,5 +1,7 @@
 package strategy;
 
+import java.awt.*;
+
 public class Point2D {
 
     public static double defaultEps = 1.0;
@@ -39,6 +41,16 @@ public class Point2D {
 
     public double distance(Point2D point) {
         return distance(point.getX(), point.getY());
+    }
+
+    public double squaredDistance(Point2D point) {
+        return squaredDistance(point.getX(), point.getY());
+    }
+
+    public double squaredDistance(double x, double y) {
+        double a = getX() - x;
+        double b = getY() - y;
+        return a * a + b * b;
     }
 
     public Point2D add(double x, double y) {
